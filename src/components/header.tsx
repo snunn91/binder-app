@@ -28,9 +28,42 @@ export default function Header() {
     }
   };
 
+  //Disappear on scroll
+  const [showNav, setShowNav] = useState(true);
+
+  useEffect(() => {
+    let lastScrollY = window.scrollY;
+
+    const updateNavVisibility = () => {
+      if (window.scrollY < 10) {
+        setShowNav(true);
+        return;
+      }
+
+      if (window.scrollY > lastScrollY) {
+        // Scrolling down → hide nav
+        setShowNav(false);
+      } else {
+        // Scrolling up → show nav
+        setShowNav(true);
+      }
+
+      lastScrollY = window.scrollY;
+    };
+
+    window.addEventListener("scroll", updateNavVisibility);
+
+    return () => {
+      window.removeEventListener("scroll", updateNavVisibility);
+    };
+  }, []);
+
   return (
-    <header className="w-full border-b border-zinc-200/60 bg-white/70 px-6 py-4 backdrop-blur-sm dark:border-zinc-800/60 dark:bg-zinc-950/60">
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between">
+    <header
+      className={`fixed top-0 left-0 w-full z-50 dark:bg-zinc-800/10 bg-slate-100/10 border-b border-zinc-300 backdrop-blur-xs h-fit py-5 flex items-center transition-transform duration-300 ${
+        showNav ? "translate-y-0" : "-translate-y-full"
+      }`}>
+      <div className="list-none flex items-center justify-between w-full px-8 gap-x-2">
         <Link
           href="/"
           className="text-lg font-exo font-semibold text-zinc-800 dark:text-zinc-100">
@@ -42,14 +75,15 @@ export default function Header() {
             type="button"
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="rounded-full border border-zinc-700 bg-zinc-700 px-5 py-2 text-sm font-exo font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-100 dark:bg-slate-100 dark:text-zinc-800 dark:hover:bg-white">
-            {isLoggingOut ? "Logging out..." : "Logout"}
+            className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-700 text-zinc-700 dark:text-slate-100 dark:border-slate-100 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
+            <span className="relative z-10">Logout</span>
           </button>
         ) : (
           <Link
+            as={"button"}
             href="/signin"
-            className="rounded-full border border-zinc-700 bg-zinc-700 px-5 py-2 text-sm font-exo font-semibold text-white transition hover:bg-zinc-800 dark:border-slate-100 dark:bg-slate-100 dark:text-zinc-800 dark:hover:bg-white">
-            Login
+            className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-700 text-zinc-700 dark:text-slate-100 dark:border-slate-100 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
+            <span className="relative z-10">Login</span>
           </Link>
         )}
       </div>
