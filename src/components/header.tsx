@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import type { User } from "firebase/auth";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
 import { logOut } from "@/lib/firebase/auth";
+import { useAppSelector } from "@/lib/storeHooks";
 
 export default function Header() {
-  const [user, setUser] = useState<User | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
-      setUser(nextUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  const user = useAppSelector((state) => state.auth.user);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -80,7 +70,6 @@ export default function Header() {
           </button>
         ) : (
           <Link
-            as={"button"}
             href="/signin"
             className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-700 text-zinc-700 dark:text-slate-100 dark:border-slate-100 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
             <span className="relative z-10">Login</span>
