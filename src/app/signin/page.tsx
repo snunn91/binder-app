@@ -96,12 +96,6 @@ export default function SignInPage() {
               />
             </div>
 
-            {error && (
-              <p className="w-full text-md font-exo font-medium text-red-600">
-                {error}
-              </p>
-            )}
-
             <div className="flex w-full justify-center">
               <button
                 type="submit"
@@ -119,6 +113,11 @@ export default function SignInPage() {
       </CardContent>
 
       <CardFooter className="flex w-full flex-col items-center gap-3">
+        {error && (
+          <p className="w-full text-center text-md font-exo font-medium text-red-600">
+            {error}
+          </p>
+        )}
         <button
           className="flex items-center justify-center me-2 px-6 py-3 text-md text-slate-100 font-normal font-exo bg-zinc-700 dark:bg-slate-100 dark:text-zinc-700 rounded-full shadow-md transition hover:scale-105 active:scale-105 focus:scale-105"
           onClick={handleGoogleSignIn}
