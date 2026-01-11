@@ -21,7 +21,7 @@ export default function RootLayout({
         <Providers>
           <Toaster position="top-center" />
           <Header />
-          {children}
+          <div className="container mx-auto px-4 max-w-6xl">{children}</div>
           <Footer />
         </Providers>
       </body>
