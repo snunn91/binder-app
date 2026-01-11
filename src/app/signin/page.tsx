@@ -7,6 +7,7 @@ import { FcGoogle } from "react-icons/fc";
 import { signIn, signInWithGoogle } from "@/lib/firebase/auth";
 import { ErrorMessage, Field, FormikProvider, useFormik } from "formik";
 import { SignInValidationSchema } from "@/lib/validationSchemas/SignInValidationSchema";
+import { SignInInitialValues } from "@/lib/initialValues/SignInInitialValues";
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ export default function SignInPage() {
   const [error, setError] = useState<string | null>(null);
 
   const formik = useFormik({
-    initialValues: { email: "", password: "" },
+    initialValues: SignInInitialValues,
     validationSchema: SignInValidationSchema,
     onSubmit: async (values, { setSubmitting }) => {
       setError(null);
