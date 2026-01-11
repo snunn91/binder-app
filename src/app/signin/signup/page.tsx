@@ -5,9 +5,16 @@ import { useRouter } from "next/navigation";
 import { signUp } from "@/lib/firebase/auth";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { Check, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { SignUpInitialValues } from "@/lib/initialValues/SignUpInitialValues";
 import { SignUpValidationSchema } from "@/lib/validationSchemas/SignUpValidationSchema";
+import Link from "next/link";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -158,7 +165,7 @@ export default function SignUpPage() {
           <Link
             href="/signin"
             className="font-bold text-sky-700 underline underline-offset-2">
-            Sign In
+            Create an account here
           </Link>
         </p>
       </CardFooter>
