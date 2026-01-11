@@ -132,7 +132,7 @@ export default function SignInPage() {
           <Link
             href="/signin/signup"
             className="font-bold text-sky-700 underline underline-offset-2">
-            Create one here
+            Sign Up
           </Link>
         </p>
       </CardFooter>
