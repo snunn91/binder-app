@@ -2,20 +2,22 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { toast } from "react-hot-toast";
 import { logOut } from "@/lib/firebase/auth";
 import { useAppSelector } from "@/lib/storeHooks";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
 export default function Header() {
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
+    setIsSigningOut(true);
     try {
       await logOut();
+      toast.success("Signed out successfully");
     } finally {
-      setIsLoggingOut(false);
+      setIsSigningOut(false);
     }
   };
 
@@ -66,15 +68,15 @@ export default function Header() {
             <button
               type="button"
               onClick={handleLogout}
-              disabled={isLoggingOut}
+              disabled={isSigningOut}
               className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
-              <span className="relative z-10">Logout</span>
+              <span className="relative z-10">Sign Out</span>
             </button>
           ) : (
             <Link
               href="/signin"
               className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
-              <span className="relative z-10">Login</span>
+              <span className="relative z-10">Sign In</span>
             </Link>
           )}
 

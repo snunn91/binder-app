@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
+import { toast } from "react-hot-toast";
 import { signIn, signInWithGoogle } from "@/lib/firebase/auth";
 import { ErrorMessage, Field, FormikProvider, useFormik } from "formik";
 import { SignInValidationSchema } from "@/lib/validationSchemas/SignInValidationSchema";
@@ -27,9 +28,12 @@ export default function SignInPage() {
       setError(null);
       try {
         await signIn(values.email, values.password);
+        toast.success("Signed in successfully");
         router.push("/");
       } catch (e) {
-        setError((e as Error)?.message ?? "Failed to sign in");
+        const message = (e as Error)?.message ?? "Failed to sign in";
+        setError(message);
+        toast.error(message);
       } finally {
         setSubmitting(false);
       }
@@ -43,9 +47,12 @@ export default function SignInPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
+      toast.success("Signed in successfully");
       router.push("/");
     } catch (e) {
-      setError((e as Error)?.message ?? "Google sign-in failed");
+      const message = (e as Error)?.message ?? "Google sign-in failed";
+      setError(message);
+      toast.error(message);
     } finally {
       setGoogleLoading(false);
     }

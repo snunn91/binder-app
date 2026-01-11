@@ -3,6 +3,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Providers from "@/app/providers";
+import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,6 +19,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-slate-100 dark:bg-zinc-800">
         <Providers>
+          <Toaster position="top-center" />
           <Header />
           {children}
           <Footer />
