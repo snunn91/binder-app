@@ -29,7 +29,7 @@ export default function SignInPage() {
       try {
         await signIn(values.email, values.password);
         toast.success("Signed in successfully");
-        router.push("/");
+        router.push("/binders");
       } catch (e) {
         const message = (e as Error)?.message ?? "Failed to sign in";
         setError(message);
@@ -48,7 +48,7 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
       toast.success("Signed in successfully");
-      router.push("/");
+      router.push("/binders");
     } catch (e) {
       const message = (e as Error)?.message ?? "Google sign-in failed";
       setError(message);

@@ -64,6 +64,13 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
+          {user && (
+            <Link
+              href="/binders"
+              className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+              Binders
+            </Link>
+          )}
           {user ? (
             <button
               type="button"
