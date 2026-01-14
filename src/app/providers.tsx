@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import { Provider } from "react-redux";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase/client";
-import { setAuthState } from "@/lib/authSlice";
+import { setAuthState } from "@/lib/store/slices/authSlice";
+import { fetchBinders, resetBinders } from "@/lib/store/slices/bindersSlice";
 import { logOut } from "@/lib/firebase/auth";
-import { store } from "@/lib/store";
-import { useAppDispatch } from "@/lib/storeHooks";
+import { store } from "@/lib/store/store";
+import { useAppDispatch } from "@/lib/store/storeHooks";
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -33,6 +34,11 @@ function AuthListener({ children }: { children: React.ReactNode }) {
       );
 
       lastUserId.current = nextUser?.uid ?? null;
+      if (nextUser) {
+        dispatch(fetchBinders());
+      } else {
+        dispatch(resetBinders());
+      }
 
       if (!nextUser && inactivityTimer.current) {
         clearTimeout(inactivityTimer.current);

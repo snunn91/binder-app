@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
 import { logOut } from "@/lib/firebase/auth";
-import { useAppSelector } from "@/lib/storeHooks";
+import { useAppSelector } from "@/lib/store/storeHooks";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 
 export default function Header() {
@@ -64,13 +64,11 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-4">
-          {user && (
-            <Link
-              href="/binders"
-              className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-              Binders
-            </Link>
-          )}
+          <Link
+            href="/binders"
+            className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+            Binders
+          </Link>
           {user ? (
             <button
               type="button"

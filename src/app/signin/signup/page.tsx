@@ -42,7 +42,7 @@ export default function SignUpPage() {
   };
 
   return (
-    <Card className="w-full min-w-md rounded-xl px-4 py-8 shadow-xl bg-gray-50 dark:bg-zinc-900/25 backdrop-blur-sm border-zinc-300 dark:border-zinc-500">
+    <Card className="w-full max-w-md rounded-xl px-4 py-8 shadow-xl bg-gray-50 dark:bg-zinc-900/25 backdrop-blur-sm border-zinc-300 dark:border-zinc-500">
       <CardHeader className="items-center">
         <CardTitle className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
           Create account
