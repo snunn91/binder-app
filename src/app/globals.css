@@ -47,7 +47,7 @@
 }
 
 :root {
-  --header-h: 77px;
+  --header-h: 50px;
   --radius: 0.625rem;
   --foreground: oklch(0.147 0.004 49.25);
   --popover: oklch(1 0 0);

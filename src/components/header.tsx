@@ -53,10 +53,10 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 w-full z-50 dark:bg-zinc-800/10 bg-slate-100/10 border-b border-zinc-300 dark:border-zinc-500 backdrop-blur-xs h-fit py-5 flex items-center transition-transform duration-300 ${
+      className={`fixed top-0 left-0 w-full z-50 dark:bg-zinc-800/10 bg-slate-100/10 border-b border-zinc-300 dark:border-zinc-500 backdrop-blur-xs h-[50px] px-8 flex items-center transition-transform duration-300 ${
         showNav ? "translate-y-0" : "-translate-y-full"
       }`}>
-      <div className="list-none flex items-center justify-between w-full px-8 gap-x-2">
+      <div className="list-none flex items-center justify-between w-full gap-x-2">
         <Link
           href="/"
           className="text-lg font-exo font-semibold text-zinc-800 dark:text-zinc-100">
