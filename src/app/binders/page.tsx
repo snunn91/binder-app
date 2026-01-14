@@ -3,10 +3,43 @@
 import { useAppSelector } from "@/lib/store/storeHooks";
 import AddBinderModal from "@/components/AddBinderModal";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function BindersPage() {
   const user = useAppSelector((state) => state.auth.user);
   const binders = useAppSelector((state) => state.binders.items);
+  const themeClasses: Record<string, string> = {
+    "pokeball-theme": "",
+    "flareon-theme": "",
+    "jolteon-theme": "",
+    "vaporeon-theme": "",
+  };
+
+  const themeImages: Record<
+    string,
+    { light: string; dark: string; alt: string }
+  > = {
+    "pokeball-theme": {
+      light: "/assets/binderImages/pokeball-final.png",
+      dark: "/assets/binderImages/pokeball-final-inv.png",
+      alt: "Pokeball theme",
+    },
+    "flareon-theme": {
+      light: "/assets/binderImages/flareon-final.png",
+      dark: "/assets/binderImages/flareon-final-inv.png",
+      alt: "Flareon theme",
+    },
+    "jolteon-theme": {
+      light: "/assets/binderImages/jolteon-final.png",
+      dark: "/assets/binderImages/jolteon-final-inv.png",
+      alt: "Jolteon theme",
+    },
+    "vaporeon-theme": {
+      light: "/assets/binderImages/vaporeon-final.png",
+      dark: "/assets/binderImages/vaporeon-final-inv.png",
+      alt: "Vaporeon theme",
+    },
+  };
 
   return (
     <div
@@ -55,15 +88,40 @@ export default function BindersPage() {
         </div>
       )}
       {binders.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 w-full gap-4 my-5 text-left">
+        <div className="grid grid-cols-2 md:grid-cols-3 w-full gap-4 my-5 text-left">
           {binders.map((binder) => (
             <Link
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
-              className="relative min-h-52 p-4 text-sm font-exo font-medium text-white bg-red-500 rounded-xl shadow-lg">
-              {binder.name}
+              className="relative min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg overflow-hidden dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+              <span>{binder.name}</span>
+              <div className="absolute -top-10 -right-16 w-64 h-64 overflow-hidden ">
+                <Image
+                  src={
+                    themeImages[binder.theme]?.light ??
+                    themeImages["pokeball-theme"].light
+                  }
+                  alt={themeImages[binder.theme]?.alt ?? "Binder theme"}
+                  fill
+                  className="block object-contain dark:hidden"
+                />
+                <Image
+                  src={
+                    themeImages[binder.theme]?.dark ??
+                    themeImages["pokeball-theme"].dark
+                  }
+                  alt={themeImages[binder.theme]?.alt ?? "Binder theme"}
+                  fill
+                  className="hidden object-contain dark:block"
+                />
+              </div>
             </Link>
           ))}
+          <div className="relative min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+            <div className="flex h-full items-center justify-center">
+              <AddBinderModal />
+            </div>
+          </div>
         </div>
       )}
     </div>

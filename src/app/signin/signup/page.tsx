@@ -147,7 +147,7 @@ export default function SignUpPage() {
                 <div className="flex items-center justify-between">
                   <button
                     type="submit"
-                    className="relative flex items-center overflow-hidden rounded-full border border-zinc-700 bg-slate-100 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none dark:border-slate-100 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
+                    className="relative flex items-center overflow-hidden rounded-full border border-zinc-700 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none dark:border-slate-100 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
                     disabled={isSubmitting || !isValid || !dirty}>
                     <span className="relative z-10">
                       {isSubmitting ? "Creating..." : "Create account"}

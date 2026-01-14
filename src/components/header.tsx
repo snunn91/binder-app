@@ -74,13 +74,13 @@ export default function Header() {
               type="button"
               onClick={handleLogout}
               disabled={isSigningOut}
-              className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
+              className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-200 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
               <span className="relative z-10">Sign Out</span>
             </button>
           ) : (
             <Link
               href="/signin"
-              className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-100 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
+            className="relative overflow-hidden flex items-center gap-2 px-2 py-1 rounded-full font-medium text-sm font-exo border border-zinc-300 text-zinc-700 dark:text-slate-100 dark:border-zinc-500 bg-slate-200 dark:bg-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 dark:before:bg-slate-100 before:transition-all before:duration-500 hover:before:w-full hover:text-slate-100 dark:hover:text-zinc-700">
               <span className="relative z-10">Sign In</span>
             </Link>
           )}
