@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppSelector } from "@/lib/store/storeHooks";
-import AddBinderModal from "@/components/AddBinderModal";
+import AddBinderModal from "@/modals/AddBinderModal";
 import Link from "next/link";
 import Image from "next/image";
 
