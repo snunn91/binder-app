@@ -1,6 +1,6 @@
 "use client";
 
-import CardSearch from "@/components/binder/CardSearch";
+import CardSelection from "@/components/binder/CardSelection";
 import {
   Dialog,
   DialogContent,
@@ -20,14 +20,14 @@ export default function AddCardsModal() {
           <span className="relative z-10">Add Card</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-[calc(100vw-25px)]">
         <DialogHeader>
           <DialogTitle>Add Card</DialogTitle>
           <DialogDescription>
             Search for a card and choose where to place it.
           </DialogDescription>
         </DialogHeader>
-        <CardSearch
+        <CardSelection
           onSelect={(card) => {
             console.log("selected", card);
             // next step: show preview + choose binder slot

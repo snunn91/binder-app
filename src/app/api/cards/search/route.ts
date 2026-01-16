@@ -25,7 +25,7 @@ type ApiResponse = {
   totalCount?: number;
 };
 
-const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7days
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
 const SELECT_FIELDS = "id,name,number,rarity,expansion,images";
@@ -144,9 +144,6 @@ export async function GET(req: Request) {
       return NextResponse.json(out);
     }
 
-    // Good “normal search” behavior:
-    // - This is still a prefix search. If you want broader matching, switch to:
-    //   q: `name:${q}` or other query forms.
     const scrydexQuery = `name:${q}*`;
 
     const scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
