@@ -38,6 +38,41 @@ export default function useCardSearch(pageSize = 20) {
   const [error, setError] = React.useState<string | null>(null);
 
   const abortRef = React.useRef<AbortController | null>(null);
+  const hasLoadedDefaultRef = React.useRef(false);
+
+  const runDefault = React.useCallback(async (nextPage: number) => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch(
+        `/api/cards/search?mode=recent&page=${nextPage}&page_size=${pageSize}`,
+        { signal: controller.signal }
+      );
+
+      const json = (await res.json()) as ApiResponse;
+      if (!res.ok) throw new Error(json?.error || "Search failed");
+
+      setResults(json.results ?? []);
+      setTotalCount(json.totalCount);
+    } catch (err: unknown) {
+      const name =
+        typeof err === "object" && err !== null && "name" in err
+          ? String((err as { name?: unknown }).name)
+          : "";
+      if (name !== "AbortError") {
+        setError(getErrorMessage(err));
+        setResults([]);
+        setTotalCount(undefined);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [pageSize]);
 
   async function runSearch(nextQuery: string, nextPage: number) {
     const q = nextQuery.trim();
@@ -94,14 +129,28 @@ export default function useCardSearch(pageSize = 20) {
   function onPrev() {
     const nextPage = Math.max(1, page - 1);
     setPage(nextPage);
+    if (query.trim().length < 2) {
+      void runDefault(nextPage);
+      return;
+    }
     void runSearch(query, nextPage);
   }
 
   function onNext() {
     const nextPage = page + 1;
     setPage(nextPage);
+    if (query.trim().length < 2) {
+      void runDefault(nextPage);
+      return;
+    }
     void runSearch(query, nextPage);
   }
+
+  React.useEffect(() => {
+    if (hasLoadedDefaultRef.current) return;
+    hasLoadedDefaultRef.current = true;
+    void runDefault(1);
+  }, [runDefault]);
 
   return {
     input,
@@ -117,5 +166,6 @@ export default function useCardSearch(pageSize = 20) {
     onNext,
     pageSize,
     runSearch,
+    runDefault,
   };
 }

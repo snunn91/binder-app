@@ -108,8 +108,9 @@ export async function GET(req: Request) {
 
     const qRaw = searchParams.get("q") ?? "";
     const q = normalizeQuery(qRaw);
+    const mode = searchParams.get("mode");
 
-    if (q.length < 2) {
+    if (q.length < 2 && mode !== "recent") {
       const empty: ApiResponse = {
         results: [],
         cached: false,
@@ -131,7 +132,10 @@ export async function GET(req: Request) {
       MAX_PAGE_SIZE
     );
 
-    const cacheKey = `${q}|page=${page}|page_size=${pageSize}`;
+    const cacheKey =
+      mode === "recent"
+        ? `recent|page=${page}|page_size=${pageSize}`
+        : `${q}|page=${page}|page_size=${pageSize}`;
     const cached = await getCachedSearch(cacheKey);
 
     if (cached) {
@@ -145,13 +149,32 @@ export async function GET(req: Request) {
     }
 
     const scrydexQuery = `name:${q}*`;
+    let scrydexUnknown: unknown;
 
-    const scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
-      q: scrydexQuery,
-      page: String(page),
-      page_size: String(pageSize),
-      select: SELECT_FIELDS,
-    });
+    if (mode === "recent") {
+      try {
+        scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+          page: String(page),
+          page_size: String(pageSize),
+          sort: "releaseDate",
+          order: "desc",
+          select: SELECT_FIELDS,
+        });
+      } catch {
+        scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+          page: String(page),
+          page_size: String(pageSize),
+          select: SELECT_FIELDS,
+        });
+      }
+    } else {
+      scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+        q: scrydexQuery,
+        page: String(page),
+        page_size: String(pageSize),
+        select: SELECT_FIELDS,
+      });
+    }
 
     let data: unknown[] = [];
     let totalCount: number | undefined = undefined;

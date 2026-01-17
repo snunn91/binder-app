@@ -20,19 +20,23 @@ export default function AddCardsModal() {
           <span className="relative z-10">Add Card</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-[calc(100vw-25px)]">
-        <DialogHeader>
-          <DialogTitle>Add Card</DialogTitle>
-          <DialogDescription>
-            Search for a card and choose where to place it.
-          </DialogDescription>
-        </DialogHeader>
-        <CardSelection
-          onSelect={(card) => {
-            console.log("selected", card);
-            // next step: show preview + choose binder slot
-          }}
-        />
+      <DialogContent className="flex h-[calc(100vh-25px)] max-h-[calc(100vh-25px)] max-w-[calc(100vw-25px)] flex-col">
+        <div>
+          <DialogHeader>
+            <DialogTitle>Add Card</DialogTitle>
+            <DialogDescription>
+              Search for a card and choose where to place it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-1 min-h-0">
+            <CardSelection
+              onSelect={(card) => {
+                console.log("selected", card);
+                // next step: show preview + choose binder slot
+              }}
+            />
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
