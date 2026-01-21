@@ -168,7 +168,7 @@ export default function BinderDetailPage() {
               type="button"
               onClick={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
               disabled={spreadIndex === 0}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
               <ChevronLeft className="h-4 w-4" />
             </button>
 
@@ -208,7 +208,7 @@ export default function BinderDetailPage() {
                 )
               }
               disabled={pagesSorted.length <= 1 || spreadIndex === 1}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>

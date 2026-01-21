@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { Filter } from "lucide-react";
-import CollapsiblePanel from "@/components/binder/CollapsiblePanel";
-import FilterList from "@/components/binder/FilterList";
+import FilterList from "@/components/filters/FilterList";
 import SearchBar from "@/components/binder/SearchBar";
 import useCardSearch, {
   type CardSearchPreview,
@@ -40,35 +39,45 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
   const [selectedCard, setSelectedCard] =
     React.useState<CardSearchPreview | null>(null);
 
-  const [searchMode, setSearchMode] =
-    React.useState<"cards" | "sets">("cards");
+  const [searchMode, setSearchMode] = React.useState<"cards" | "sets">("cards");
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const handleFilterExpandedChange = React.useCallback(() => undefined, []);
 
   return (
-    <div className="w-full h-full overflow-hidden">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start min-w-0">
-        <CollapsiblePanel
-          title="Filters"
-          triggerIcon={Filter}
-          expandedWidth="w-48"
-          collapsedWidth="w-14"
-        >
-          {(expanded) => (
-            <FilterList
-              expanded={expanded}
-              mode={searchMode}
-              onModeChange={setSearchMode}
-              setsEnabled={false}
-            />
-          )}
-        </CollapsiblePanel>
+    <div className="flex h-full w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+      <div className="flex h-full min-w-0 flex-1 flex-col divide-y divide-zinc-200 dark:divide-zinc-800 lg:flex-row lg:divide-x lg:divide-y-0">
+        <div className="flex flex-col gap-3 p-3">
+          <button
+            type="button"
+            onClick={() => setFiltersOpen((open) => !open)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-300 bg-slate-200 text-zinc-800 shadow-sm transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700"
+            aria-expanded={filtersOpen}
+            aria-controls="filter-list">
+            <Filter className="h-4 w-4" />
+            <span className="sr-only">
+              {filtersOpen ? "Hide filters" : "Show filters"}
+            </span>
+          </button>
 
-        <div className="flex-1 space-y-4 min-w-0">
+          {filtersOpen ? (
+            <div id="filter-list" className="w-48 ">
+              <FilterList
+                expanded
+                onExpandedChange={handleFilterExpandedChange}
+                showLabels
+              />
+            </div>
+          ) : null}
+        </div>
+
+        <div className="flex-1 space-y-4 min-w-0 p-3">
           <SearchBar
             value={input}
             onChange={setInput}
             onSubmit={onSubmit}
             loading={loading}
             mode={searchMode}
+            onModeChange={setSearchMode}
           />
 
           {error ? (
@@ -103,84 +112,86 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
             </div>
           ) : null}
 
-          {loading ? (
-            <div className="text-sm text-zinc-500">Searching…</div>
-          ) : null}
+          <div className="rounded-xl border border-zinc-200 bg-white/80 p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+            {loading ? (
+              <div className="text-sm text-zinc-500">Searching…</div>
+            ) : null}
 
-          {!loading && query && results.length === 0 && !error ? (
-            <div className="text-sm text-zinc-500">No results.</div>
-          ) : null}
+            {!loading && query && results.length === 0 && !error ? (
+              <div className="text-sm text-zinc-500">No results.</div>
+            ) : null}
 
-          {results.length > 0 ? (
-            <>
-              <div className="max-h-[calc(100vh-244px)] overflow-y-auto overflow-x-hidden pr-1">
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 min-w-0">
-                  {results.map((card) => (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedCard(card);
-                        onSelect?.(card);
-                      }}
-                      className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm transition hover:shadow-md focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900">
-                      <div className="aspect-[63/88] w-full bg-zinc-100 dark:bg-zinc-800">
-                        {card.image?.small ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={card.image.small}
-                            alt={card.name}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
-                            No image
+            {results.length > 0 ? (
+              <>
+                <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 min-w-0">
+                    {results.map((card) => (
+                      <button
+                        key={card.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCard(card);
+                          onSelect?.(card);
+                        }}
+                        className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900">
+                        <div className="aspect-[63/88] w-full bg-zinc-100 dark:bg-zinc-800">
+                          {card.image?.small ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={card.image.small}
+                              alt={card.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
+                              No image
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-0.5 p-1.5">
+                          <div className="truncate text-xs font-medium text-zinc-900 dark:text-white">
+                            {card.name}
                           </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-0.5 p-1.5">
-                        <div className="truncate text-xs font-medium text-zinc-900 dark:text-white">
-                          {card.name}
+                          <div className="truncate text-[11px] text-zinc-500">
+                            {card.expansion?.name ?? "Unknown set"}
+                            {card.number ? ` • #${card.number}` : ""}
+                            {card.rarity ? ` • ${card.rarity}` : ""}
+                          </div>
                         </div>
-                        <div className="truncate text-[11px] text-zinc-500">
-                          {card.expansion?.name ?? "Unknown set"}
-                          {card.number ? ` • #${card.number}` : ""}
-                          {card.rarity ? ` • ${card.rarity}` : ""}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={onPrev}
-                  disabled={!hasPrev || loading}
-                  className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
-                  Prev
-                </button>
-
-                <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                  Page <span className="font-medium">{page}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={onNext}
-                  disabled={!hasNext || loading}
-                  className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
-                  Next
-                </button>
-              </div>
-            </>
-          ) : null}
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    type="button"
+                    onClick={onPrev}
+                    disabled={!hasPrev || loading}
+                    className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
+                    Prev
+                  </button>
+
+                  <div className="text-sm text-zinc-600 dark:text-zinc-300">
+                    Page <span className="font-medium">{page}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onNext}
+                    disabled={!hasNext || loading}
+                    className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
+                    Next
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
         </div>
 
-        <div className="w-full rounded-xl border border-zinc-300 bg-gray-50 p-4 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 lg:w-80">
+        <div className="w-full p-3 lg:w-80">
           <div className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
             Card Pile
           </div>

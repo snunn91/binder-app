@@ -41,7 +41,7 @@ export default function AddBinderModal() {
         <button
           type="button"
           disabled={!user}
-          className="relative flex items-center gap-2 overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
+          className="relative flex items-center gap-2 overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
           <span className="relative z-10 flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Create a Binder
@@ -73,7 +73,7 @@ export default function AddBinderModal() {
                   name="name"
                   type="text"
                   placeholder="My Binder"
-                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:border-zinc-300 focus:outline-none dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 active:border-accent active:ring-2 active:ring-accent/40 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                 />
                 <ErrorMessage
                   name="name"
@@ -92,7 +92,7 @@ export default function AddBinderModal() {
                   as="select"
                   id="binder-layout"
                   name="layout"
-                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm focus:border-zinc-300 focus:outline-none dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100">
+                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 active:border-accent active:ring-2 active:ring-accent/40 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100">
                   <option value="2x2">2x2</option>
                   <option value="3x3">3x3</option>
                   <option value="4x4">4x4</option>
@@ -114,7 +114,7 @@ export default function AddBinderModal() {
                   as="select"
                   id="binder-theme"
                   name="theme"
-                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm focus:border-zinc-300 focus:outline-none dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100">
+                  className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 active:border-accent active:ring-2 active:ring-accent/40 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100">
                   <option value="pokeball-theme">Pokeball (default)</option>
                   <option value="flareon-theme">Flareon</option>
                   <option value="jolteon-theme">Jolteon</option>
@@ -131,7 +131,7 @@ export default function AddBinderModal() {
                 <button
                   type="submit"
                   disabled={creating || !dirty || !isValid}
-                  className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
+                  className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
                   <span className="relative z-10">
                     {creating ? "Creating..." : "Create Binder"}
                   </span>

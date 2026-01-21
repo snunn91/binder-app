@@ -78,7 +78,7 @@ export default function SignInPage() {
                 name="email"
                 type="email"
                 placeholder="Email"
-                className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:border-zinc-300 focus:outline-none dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
               />
               <ErrorMessage
                 name="email"
@@ -94,7 +94,7 @@ export default function SignInPage() {
                 name="password"
                 type="password"
                 placeholder="Password"
-                className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:border-zinc-300 focus:outline-none dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
               />
               <ErrorMessage
                 name="password"
@@ -106,7 +106,7 @@ export default function SignInPage() {
             <div className="flex w-full justify-center">
               <button
                 type="submit"
-                className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
+                className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
                 disabled={
                   !formik.isValid || !formik.dirty || formik.isSubmitting
                 }>
@@ -126,7 +126,7 @@ export default function SignInPage() {
           </p>
         )}
         <button
-          className="flex items-center justify-center me-2 px-6 py-3 text-md text-slate-100 font-normal font-exo bg-zinc-700 dark:bg-slate-100 dark:text-zinc-700 rounded-full shadow-md transition hover:scale-105 active:scale-105 focus:scale-105"
+          className="flex items-center justify-center me-2 px-6 py-3 text-md text-slate-100 font-normal font-exo bg-zinc-700 dark:bg-slate-100 dark:text-zinc-700 rounded-full shadow-md transition hover:scale-105 active:scale-105 focus:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent"
           onClick={handleGoogleSignIn}
           disabled={googleLoading}>
           <FcGoogle className="w-6 h-6 mr-2" />
