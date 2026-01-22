@@ -25,10 +25,12 @@ type ApiResponse = {
   totalCount?: number;
 };
 
-const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7days
+const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 50;
 const SELECT_FIELDS = "id,name,number,rarity,expansion,images";
+const EN_CARDS_ENDPOINT = "/pokemon/v1/en/cards";
+const CACHE_VERSION = "v2";
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -51,7 +53,7 @@ function getArray(v: unknown): unknown[] {
 }
 
 function extractImage(
-  imagesUnknown: unknown
+  imagesUnknown: unknown,
 ): { small?: string; large?: string } | undefined {
   const imgs = getArray(imagesUnknown).filter(isRecord);
 
@@ -67,6 +69,13 @@ function extractImage(
     ...(small ? { small } : {}),
     ...(large ? { large } : {}),
   };
+}
+
+function isOnlineOnly(cardUnknown: unknown): boolean {
+  if (!isRecord(cardUnknown)) return false;
+  const expansion = cardUnknown.expansion;
+  if (!isRecord(expansion)) return false;
+  return expansion.is_online_only === true;
 }
 
 function toPreview(cardUnknown: unknown): CardSearchPreview | null {
@@ -124,18 +133,19 @@ export async function GET(req: Request) {
     const page = clamp(Number.isFinite(pageRaw) ? pageRaw : 1, 1, 9999);
 
     const pageSizeRaw = Number(
-      searchParams.get("page_size") ?? String(DEFAULT_PAGE_SIZE)
+      searchParams.get("page_size") ?? String(DEFAULT_PAGE_SIZE),
     );
     const pageSize = clamp(
       Number.isFinite(pageSizeRaw) ? pageSizeRaw : DEFAULT_PAGE_SIZE,
       1,
-      MAX_PAGE_SIZE
+      MAX_PAGE_SIZE,
     );
 
-    const cacheKey =
+    const cacheKeyBase =
       mode === "recent"
-        ? `recent|page=${page}|page_size=${pageSize}`
-        : `${q}|page=${page}|page_size=${pageSize}`;
+        ? `recent|lang=en|tcg=1|${CACHE_VERSION}`
+        : `${q}|lang=en|tcg=1|${CACHE_VERSION}`;
+    const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
     const cached = await getCachedSearch(cacheKey);
 
     if (cached) {
@@ -148,12 +158,15 @@ export async function GET(req: Request) {
       return NextResponse.json(out);
     }
 
+    // Good “normal search” behavior:
+    // - This is still a prefix search. If you want broader matching, switch to:
+    //   q: `name:${q}` or other query forms.
     const scrydexQuery = `name:${q}*`;
     let scrydexUnknown: unknown;
 
     if (mode === "recent") {
       try {
-        scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+        scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
           page: String(page),
           page_size: String(pageSize),
           sort: "releaseDate",
@@ -161,14 +174,14 @@ export async function GET(req: Request) {
           select: SELECT_FIELDS,
         });
       } catch {
-        scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+        scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
           page: String(page),
           page_size: String(pageSize),
           select: SELECT_FIELDS,
         });
       }
     } else {
-      scrydexUnknown = await scrydexFetch<unknown>("/pokemon/v1/cards", {
+      scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
         q: scrydexQuery,
         page: String(page),
         page_size: String(pageSize),
@@ -185,6 +198,7 @@ export async function GET(req: Request) {
     }
 
     const results = data
+      .filter((card) => !isOnlineOnly(card))
       .map(toPreview)
       .filter((x): x is CardSearchPreview => x !== null);
 
