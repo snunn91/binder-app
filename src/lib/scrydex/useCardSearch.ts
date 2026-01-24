@@ -26,13 +26,13 @@ function getErrorMessage(err: unknown): string {
   return "Search failed";
 }
 
-export default function useCardSearch(pageSize = 20) {
+export default function useCardSearch(pageSize = 25) {
   const [input, setInput] = React.useState("");
   const [query, setQuery] = React.useState<string>("");
   const [page, setPage] = React.useState(1);
   const [results, setResults] = React.useState<CardSearchPreview[]>([]);
   const [totalCount, setTotalCount] = React.useState<number | undefined>(
-    undefined
+    undefined,
   );
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -40,46 +40,50 @@ export default function useCardSearch(pageSize = 20) {
   const abortRef = React.useRef<AbortController | null>(null);
   const hasLoadedDefaultRef = React.useRef(false);
 
-  const runDefault = React.useCallback(async (nextPage: number) => {
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+  const runDefault = React.useCallback(
+    async (nextPage: number) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
 
-    setLoading(true);
-    setError(null);
+      setLoading(true);
+      setError(null);
 
-    try {
-      const res = await fetch(
-        `/api/cards/search?mode=recent&page=${nextPage}&page_size=${pageSize}`,
-        { signal: controller.signal }
-      );
+      try {
+        const res = await fetch(
+          `/api/cards/search?mode=recent&page=${nextPage}&page_size=${pageSize}`,
+          { signal: controller.signal },
+        );
 
-      const json = (await res.json()) as ApiResponse;
-      if (!res.ok) throw new Error(json?.error || "Search failed");
+        const json = (await res.json()) as ApiResponse;
+        if (!res.ok) throw new Error(json?.error || "Search failed");
 
-      setResults(json.results ?? []);
-      setTotalCount(json.totalCount);
-    } catch (err: unknown) {
-      const name =
-        typeof err === "object" && err !== null && "name" in err
-          ? String((err as { name?: unknown }).name)
-          : "";
-      if (name !== "AbortError") {
-        setError(getErrorMessage(err));
-        setResults([]);
-        setTotalCount(undefined);
+        setResults(json.results ?? []);
+        setTotalCount(json.totalCount);
+        setQuery("");
+      } catch (err: unknown) {
+        const name =
+          typeof err === "object" && err !== null && "name" in err
+            ? String((err as { name?: unknown }).name)
+            : "";
+        if (name !== "AbortError") {
+          setError(getErrorMessage(err));
+          setResults([]);
+          setTotalCount(undefined);
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [pageSize]);
+    },
+    [pageSize],
+  );
 
   async function runSearch(nextQuery: string, nextPage: number) {
     const q = nextQuery.trim();
     if (q.length < 2) {
+      setError("Type at least 2 characters.");
       setResults([]);
       setTotalCount(undefined);
-      setError("Type at least 2 characters.");
       return;
     }
 
@@ -92,10 +96,8 @@ export default function useCardSearch(pageSize = 20) {
 
     try {
       const res = await fetch(
-        `/api/cards/search?q=${encodeURIComponent(
-          q
-        )}&page=${nextPage}&page_size=${pageSize}`,
-        { signal: controller.signal }
+        `/api/cards/search?q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${pageSize}`,
+        { signal: controller.signal },
       );
 
       const json = (await res.json()) as ApiResponse;
@@ -121,30 +123,43 @@ export default function useCardSearch(pageSize = 20) {
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     const q = input.trim();
-    setQuery(q);
+
     setPage(1);
+
+    if (q.length < 2) {
+      setQuery("");
+      void runDefault(1);
+      return;
+    }
+
+    setQuery(q);
     void runSearch(q, 1);
   }
 
   function onPrev() {
     const nextPage = Math.max(1, page - 1);
     setPage(nextPage);
-    if (query.trim().length < 2) {
-      void runDefault(nextPage);
-      return;
-    }
-    void runSearch(query, nextPage);
+    if (query.trim().length < 2) void runDefault(nextPage);
+    else void runSearch(query, nextPage);
   }
 
   function onNext() {
     const nextPage = page + 1;
     setPage(nextPage);
-    if (query.trim().length < 2) {
-      void runDefault(nextPage);
-      return;
-    }
-    void runSearch(query, nextPage);
+    if (query.trim().length < 2) void runDefault(nextPage);
+    else void runSearch(query, nextPage);
   }
+
+  const reset = React.useCallback(() => {
+    abortRef.current?.abort();
+    setInput("");
+    setQuery("");
+    setPage(1);
+    setError(null);
+    setResults([]);
+    setTotalCount(undefined);
+    void runDefault(1);
+  }, [runDefault]);
 
   React.useEffect(() => {
     if (hasLoadedDefaultRef.current) return;
@@ -167,5 +182,6 @@ export default function useCardSearch(pageSize = 20) {
     pageSize,
     runSearch,
     runDefault,
+    reset,
   };
 }

@@ -6,19 +6,13 @@ import {
   getCachedSearch,
   setCachedSearch,
   normalizeQuery,
+  type CardSearchPreview,
+  type SetSearchPreview,
+  type SearchPreview,
 } from "@/lib/scrydex/cache";
 
-type CardSearchPreview = {
-  id: string;
-  name: string;
-  number?: string;
-  rarity?: string;
-  expansion?: { id?: string; name?: string };
-  image?: { small?: string; large?: string };
-};
-
 type ApiResponse = {
-  results: CardSearchPreview[];
+  results: SearchPreview[];
   cached: boolean;
   page: number;
   pageSize: number;
@@ -26,11 +20,22 @@ type ApiResponse = {
 };
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
-const DEFAULT_PAGE_SIZE = 20;
+
+const DEFAULT_PAGE_SIZE = 25; // cards default
+const DEFAULT_SET_PAGE_SIZE = 12; // sets default
 const MAX_PAGE_SIZE = 50;
-const SELECT_FIELDS = "id,name,number,rarity,expansion,images";
-const EN_CARDS_ENDPOINT = "/pokemon/v1/en/cards";
-const CACHE_VERSION = "v2";
+
+const SELECT_CARD_FIELDS = "id,name,number,rarity,expansion,images";
+const SELECT_SET_FIELDS = "id,name,release_date,logo,symbol";
+
+const EN_BASE = "/pokemon/v1/en";
+const EN_CARDS_ENDPOINT = `${EN_BASE}/cards`;
+const EN_EXPANSIONS_ENDPOINT = `${EN_BASE}/expansions`;
+
+// ✅ Sets filter is safe, cards filter is applied locally (more reliable)
+const TCG_ONLY_SETS_Q = "is_online_only:false";
+
+const CACHE_VERSION = "v6";
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -56,36 +61,30 @@ function extractImage(
   imagesUnknown: unknown,
 ): { small?: string; large?: string } | undefined {
   const imgs = getArray(imagesUnknown).filter(isRecord);
-
   const front = imgs.find((img) => getString(img.type) === "front") ?? imgs[0];
   if (!front) return undefined;
 
   const small = getString(front.small);
   const large = getString(front.large);
-
   if (!small && !large) return undefined;
 
-  return {
-    ...(small ? { small } : {}),
-    ...(large ? { large } : {}),
-  };
+  return { ...(small ? { small } : {}), ...(large ? { large } : {}) };
 }
 
-function isOnlineOnly(cardUnknown: unknown): boolean {
+function isOnlineOnlyCard(cardUnknown: unknown): boolean {
   if (!isRecord(cardUnknown)) return false;
   const expansion = cardUnknown.expansion;
   if (!isRecord(expansion)) return false;
   return expansion.is_online_only === true;
 }
 
-function toPreview(cardUnknown: unknown): CardSearchPreview | null {
+function toCardPreview(cardUnknown: unknown): CardSearchPreview | null {
   if (!isRecord(cardUnknown)) return null;
 
   const id = getString(cardUnknown.id);
   const name = getString(cardUnknown.name);
   if (!id || !name) return null;
 
-  // expansion
   let expansion: CardSearchPreview["expansion"] | undefined = undefined;
   const exp = cardUnknown.expansion;
   if (isRecord(exp)) {
@@ -111,44 +110,156 @@ function toPreview(cardUnknown: unknown): CardSearchPreview | null {
   };
 }
 
+function toSetPreview(setUnknown: unknown): SetSearchPreview | null {
+  if (!isRecord(setUnknown)) return null;
+
+  const id = getString(setUnknown.id);
+  const name = getString(setUnknown.name);
+  if (!id || !name) return null;
+
+  const releaseDate = getString(setUnknown.release_date);
+  const releaseYear = releaseDate ? Number(releaseDate.slice(0, 4)) : undefined;
+
+  const logo = getString(setUnknown.logo);
+  const symbol = getString(setUnknown.symbol);
+
+  return {
+    id,
+    name,
+    ...(releaseDate ? { releaseDate } : {}),
+    ...(releaseYear ? { releaseYear } : {}),
+    ...(logo ? { logo } : {}),
+    ...(symbol ? { symbol } : {}),
+  };
+}
+
+function buildQuery(parts: Array<string | undefined>) {
+  return parts.filter(Boolean).join(" ");
+}
+
+async function fetchSets(params: {
+  q?: string;
+  page: number;
+  pageSize: number;
+  mode?: string | null;
+}) {
+  const { q, page, pageSize, mode } = params;
+
+  if (mode === "recent") {
+    return await scrydexFetch<unknown>(EN_EXPANSIONS_ENDPOINT, {
+      page: String(page),
+      page_size: String(pageSize),
+      orderBy: "-release_date",
+      select: SELECT_SET_FIELDS,
+      q: TCG_ONLY_SETS_Q,
+    });
+  }
+
+  return await scrydexFetch<unknown>(EN_EXPANSIONS_ENDPOINT, {
+    page: String(page),
+    page_size: String(pageSize),
+    select: SELECT_SET_FIELDS,
+    ...(q ? { q } : {}),
+  });
+}
+
+async function fetchCards(params: {
+  q?: string;
+  page: number;
+  pageSize: number;
+  mode?: string | null;
+  setId?: string | null;
+}) {
+  const { q, page, pageSize, mode, setId } = params;
+
+  const endpoint = setId
+    ? `${EN_EXPANSIONS_ENDPOINT}/${setId}/cards`
+    : EN_CARDS_ENDPOINT;
+
+  if (mode === "recent") {
+    // Prefer “newest-ish”: expansion release date then card sort order
+    try {
+      return await scrydexFetch<unknown>(endpoint, {
+        page: String(page),
+        page_size: String(pageSize),
+        orderBy: "-expansion.release_date,-expansion_sort_order",
+        select: SELECT_CARD_FIELDS,
+        ...(q ? { q } : {}),
+      });
+    } catch {
+      return await scrydexFetch<unknown>(endpoint, {
+        page: String(page),
+        page_size: String(pageSize),
+        select: SELECT_CARD_FIELDS,
+        ...(q ? { q } : {}),
+      });
+    }
+  }
+
+  return await scrydexFetch<unknown>(endpoint, {
+    page: String(page),
+    page_size: String(pageSize),
+    select: SELECT_CARD_FIELDS,
+    ...(q ? { q } : {}),
+  });
+}
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
-    const qRaw = searchParams.get("q") ?? "";
-    const q = normalizeQuery(qRaw);
-    const mode = searchParams.get("mode");
+    const type = searchParams.get("type") === "sets" ? "sets" : "cards";
+    const mode = searchParams.get("mode"); // "recent" | null
+    const setId = searchParams.get("set");
 
-    if (q.length < 2 && mode !== "recent") {
-      const empty: ApiResponse = {
-        results: [],
-        cached: false,
-        page: 1,
-        pageSize: DEFAULT_PAGE_SIZE,
-      };
-      return NextResponse.json(empty);
-    }
+    const qRaw = searchParams.get("q") ?? "";
+    const qNorm = normalizeQuery(qRaw);
 
     const pageRaw = Number(searchParams.get("page") ?? "1");
     const page = clamp(Number.isFinite(pageRaw) ? pageRaw : 1, 1, 9999);
 
+    const defaultPageSize =
+      type === "sets" ? DEFAULT_SET_PAGE_SIZE : DEFAULT_PAGE_SIZE;
+
     const pageSizeRaw = Number(
-      searchParams.get("page_size") ?? String(DEFAULT_PAGE_SIZE),
+      searchParams.get("page_size") ?? String(defaultPageSize),
     );
     const pageSize = clamp(
-      Number.isFinite(pageSizeRaw) ? pageSizeRaw : DEFAULT_PAGE_SIZE,
+      Number.isFinite(pageSizeRaw) ? pageSizeRaw : defaultPageSize,
       1,
       MAX_PAGE_SIZE,
     );
 
-    const cacheKeyBase =
-      mode === "recent"
-        ? `recent|lang=en|tcg=1|${CACHE_VERSION}`
-        : `${q}|lang=en|tcg=1|${CACHE_VERSION}`;
-    const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
-    const cached = await getCachedSearch(cacheKey);
+    // ✅ If not recent and no query, return empty.
+    // In sets mode, the UI uses mode=recent for defaults.
+    if (qNorm.length < 2 && mode !== "recent") {
+      const empty: ApiResponse = {
+        results: [],
+        cached: false,
+        page: 1,
+        pageSize,
+      };
+      return NextResponse.json(empty);
+    }
 
-    if (cached) {
+    // Cache key includes: type, mode, query, set scope
+    const cacheKeyBase =
+      type === "sets"
+        ? mode === "recent"
+          ? `sets|recent|lang=en|tcg=1|${CACHE_VERSION}`
+          : `sets|q=${qNorm}|lang=en|tcg=1|${CACHE_VERSION}`
+        : setId
+          ? mode === "recent"
+            ? `cards|recent|set=${setId}|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|set=${setId}|lang=en|tcg=1|${CACHE_VERSION}`
+          : mode === "recent"
+            ? `cards|recent|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|lang=en|tcg=1|${CACHE_VERSION}`;
+
+    const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
+
+    const cached = await getCachedSearch(cacheKey);
+    if (cached && cached.length > 0) {
       const out: ApiResponse = {
         results: cached,
         cached: true,
@@ -158,39 +269,58 @@ export async function GET(req: Request) {
       return NextResponse.json(out);
     }
 
-    // Good “normal search” behavior:
-    // - This is still a prefix search. If you want broader matching, switch to:
-    //   q: `name:${q}` or other query forms.
-    const scrydexQuery = `name:${q}*`;
     let scrydexUnknown: unknown;
 
-    if (mode === "recent") {
-      try {
-        scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
-          page: String(page),
-          page_size: String(pageSize),
-          sort: "releaseDate",
-          order: "desc",
-          select: SELECT_FIELDS,
-        });
-      } catch {
-        scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
-          page: String(page),
-          page_size: String(pageSize),
-          select: SELECT_FIELDS,
-        });
+    if (type === "sets") {
+      if (mode === "recent") {
+        scrydexUnknown = await fetchSets({ page, pageSize, mode });
+      } else {
+        const namePrefix = qNorm.length >= 2 ? `name:${qNorm}*` : undefined;
+        const setsQuery = buildQuery([TCG_ONLY_SETS_Q, namePrefix]);
+        scrydexUnknown = await fetchSets({ q: setsQuery, page, pageSize });
       }
+
+      let data: unknown[] = [];
+      let totalCount: number | undefined;
+
+      if (isRecord(scrydexUnknown)) {
+        data = getArray(scrydexUnknown.data);
+        totalCount = getNumber(scrydexUnknown.totalCount);
+      }
+
+      const results = data
+        .map(toSetPreview)
+        .filter((x): x is SetSearchPreview => x !== null);
+
+      await setCachedSearch(cacheKey, results, CACHE_TTL_MS);
+
+      const out: ApiResponse = {
+        results,
+        cached: false,
+        page,
+        pageSize,
+        totalCount,
+      };
+      return NextResponse.json(out);
+    }
+
+    // cards
+    if (mode === "recent") {
+      // For recent, no q filter; pocket filtered locally
+      scrydexUnknown = await fetchCards({ page, pageSize, mode, setId });
     } else {
-      scrydexUnknown = await scrydexFetch<unknown>(EN_CARDS_ENDPOINT, {
-        q: scrydexQuery,
-        page: String(page),
-        page_size: String(pageSize),
-        select: SELECT_FIELDS,
+      const namePrefix = qNorm.length >= 2 ? `name:${qNorm}*` : undefined;
+      scrydexUnknown = await fetchCards({
+        q: namePrefix,
+        page,
+        pageSize,
+        mode: null,
+        setId,
       });
     }
 
     let data: unknown[] = [];
-    let totalCount: number | undefined = undefined;
+    let totalCount: number | undefined;
 
     if (isRecord(scrydexUnknown)) {
       data = getArray(scrydexUnknown.data);
@@ -198,8 +328,8 @@ export async function GET(req: Request) {
     }
 
     const results = data
-      .filter((card) => !isOnlineOnly(card))
-      .map(toPreview)
+      .filter((c) => !isOnlineOnlyCard(c))
+      .map(toCardPreview)
       .filter((x): x is CardSearchPreview => x !== null);
 
     await setCachedSearch(cacheKey, results, CACHE_TTL_MS);

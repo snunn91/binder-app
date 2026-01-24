@@ -5,17 +5,28 @@ export type CardSearchPreview = {
   id: string;
   name: string;
   number?: string;
+  rarity?: string;
   expansion?: { id?: string; name?: string };
   image?: { small?: string; large?: string };
-  rarity?: string;
 };
+
+export type SetSearchPreview = {
+  id: string;
+  name: string;
+  releaseDate?: string;
+  releaseYear?: number;
+  logo?: string;
+  symbol?: string;
+};
+
+export type SearchPreview = CardSearchPreview | SetSearchPreview;
 
 type CacheDoc = {
   queryKey: string;
   q: string;
   createdAt: number;
   expiresAt: number;
-  results: CardSearchPreview[];
+  results: SearchPreview[];
 };
 
 const COLLECTION = "scrydexSearchCache";
@@ -30,9 +41,9 @@ export function makeQueryKey(q: string) {
   return crypto.createHash("sha256").update(norm).digest("hex").slice(0, 32);
 }
 
-export async function getCachedSearch(
-  q: string
-): Promise<CardSearchPreview[] | null> {
+export async function getCachedSearch<T extends SearchPreview = SearchPreview>(
+  q: string,
+): Promise<T[] | null> {
   const queryKey = makeQueryKey(q);
   const ref = adminDb.collection(COLLECTION).doc(queryKey);
   const snap = await ref.get();
@@ -42,13 +53,13 @@ export async function getCachedSearch(
   const data = snap.data() as CacheDoc;
   if (!data?.expiresAt || Date.now() > data.expiresAt) return null;
 
-  return data.results || [];
+  return (data.results || []) as T[];
 }
 
 export async function setCachedSearch(
   q: string,
-  results: CardSearchPreview[],
-  ttlMs: number
+  results: SearchPreview[],
+  ttlMs: number,
 ) {
   const queryKey = makeQueryKey(q);
   const ref = adminDb.collection(COLLECTION).doc(queryKey);
