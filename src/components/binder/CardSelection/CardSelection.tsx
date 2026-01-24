@@ -71,7 +71,6 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
         </div>
 
         <div className="flex-1 min-w-0 p-3 space-y-4">
-          {/* ✅ Key: remount SearchBar when toggling modes so UI never “sticks” */}
           <SearchBar
             key={searchMode}
             value={active.input}

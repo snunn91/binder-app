@@ -32,7 +32,6 @@ const EN_BASE = "/pokemon/v1/en";
 const EN_CARDS_ENDPOINT = `${EN_BASE}/cards`;
 const EN_EXPANSIONS_ENDPOINT = `${EN_BASE}/expansions`;
 
-// ✅ Sets filter is safe, cards filter is applied locally (more reliable)
 const TCG_ONLY_SETS_Q = "is_online_only:false";
 
 const CACHE_VERSION = "v6";
@@ -230,7 +229,6 @@ export async function GET(req: Request) {
       MAX_PAGE_SIZE,
     );
 
-    // ✅ If not recent and no query, return empty.
     // In sets mode, the UI uses mode=recent for defaults.
     if (qNorm.length < 2 && mode !== "recent") {
       const empty: ApiResponse = {

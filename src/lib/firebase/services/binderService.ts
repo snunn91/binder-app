@@ -46,7 +46,6 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     createdAt: serverTimestamp(),
   });
 
-  // ✅ Use layout to determine correct slot count
   const slots = layoutToSlots(payload.layout);
 
   const pagesRef = collection(
@@ -116,7 +115,6 @@ async function fetchBinderPages(userId: string, binderId: string) {
 }
 
 /**
- * ✅ Updates binder layout AND migrates all pages to the new slot count.
  *
  * Expanding (e.g. 3x3 -> 4x4): appends nulls to cardOrder.
  * Shrinking (e.g. 4x4 -> 3x3): blocks if any cards exist in removed slots.

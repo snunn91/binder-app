@@ -303,14 +303,12 @@ export default function useSetSearch(opts?: {
   }
 
   function selectSet(set: SetSearchPreview) {
-    // ✅ clear + fetch set cards immediately using set.id (no stale state)
     clearSearchState();
     setSelectedSet(set);
     void runDefaultSetCards(set.id, 1);
   }
 
   function backToSets() {
-    // ✅ clear + fetch sets immediately (no stale state)
     clearSearchState();
     setSelectedSet(null);
     void runDefaultSets(1);
