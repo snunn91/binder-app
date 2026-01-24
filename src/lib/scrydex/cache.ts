@@ -13,6 +13,8 @@ export type CardSearchPreview = {
 export type SetSearchPreview = {
   id: string;
   name: string;
+  series?: string;
+  total?: number;
   releaseDate?: string;
   releaseYear?: number;
   logo?: string;

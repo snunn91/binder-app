@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
   SetSearchPreview,
   CardSearchPreview,
@@ -48,7 +49,27 @@ export default function SetsResults({
   onSelectSet,
   onBackToSets,
   onSelectCard,
+  pageSize,
 }: SetsResultsProps) {
+  const skeletons = React.useMemo(
+    () => Array.from({ length: pageSize }, (_, index) => index),
+    [pageSize],
+  );
+  const groupedSets = React.useMemo(() => {
+    if (view !== "sets") return [];
+    const groups = new Map<string, SetSearchPreview[]>();
+    (results as SetSearchPreview[]).forEach((set) => {
+      const key = set.series?.trim() || "Other";
+      const group = groups.get(key);
+      if (group) {
+        group.push(set);
+      } else {
+        groups.set(key, [set]);
+      }
+    });
+    return Array.from(groups.entries());
+  }, [results, view]);
+
   return (
     <div className="space-y-4">
       {error ? (
@@ -71,7 +92,7 @@ export default function SetsResults({
 
       <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
         <div>
-          {view === "sets" ? (
+          {/* {view === "sets" ? (
             <span className="font-medium text-zinc-900 dark:text-white">
               Sets
             </span>
@@ -82,7 +103,7 @@ export default function SetsResults({
                 {selectedSet?.name ?? "Set"}
               </span>
             </>
-          )}
+          )} */}
 
           {totalCount !== undefined ? (
             <span className="ml-2 text-zinc-500 dark:text-zinc-400">
@@ -103,32 +124,108 @@ export default function SetsResults({
       </div>
 
       <div className="rounded-xl border border-zinc-200 bg-white/80 p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
-        {loading ? <div className="text-sm text-zinc-500">Loading…</div> : null}
+        {loading ? (
+          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
+            {view === "sets" ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
+                {skeletons.map((key) => (
+                  <div
+                    key={key}
+                    className="flex h-44 flex-col rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                    <div className="flex h-16 items-center justify-center">
+                      <Skeleton className="h-10 w-24" />
+                    </div>
+                    <div className="mt-2 space-y-2">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                    <div className="mt-3 border-t border-zinc-200 pt-2 dark:border-zinc-800">
+                      <div className="flex items-center justify-between">
+                        <Skeleton className="h-3 w-16" />
+                        <Skeleton className="h-3 w-10" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+                {skeletons.map((key) => (
+                  <div
+                    key={key}
+                    className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                    <Skeleton className="aspect-[63/88] w-full" />
+                    <div className="space-y-1 p-1.5">
+                      <Skeleton className="h-3 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : null}
 
         {!loading && results.length === 0 && !error ? (
           <div className="text-sm text-zinc-500">No results.</div>
         ) : null}
 
-        {results.length > 0 ? (
+        {!loading && results.length > 0 ? (
           <>
             <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
               {view === "sets" ? (
-                <div className="grid grid-cols-4 gap-2">
-                  {(results as SetSearchPreview[]).map((set) => (
-                    <button
-                      key={set.id}
-                      type="button"
-                      onClick={() => onSelectSet(set)}
-                      className="flex flex-col items-start gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-left text-sm text-zinc-700 shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100">
-                      <div className="font-medium">{set.name}</div>
-                      <div className="text-xs text-zinc-500 dark:text-zinc-400">
-                        {set.releaseYear ?? "—"}
+                <div className="space-y-4">
+                  {groupedSets.map(([series, sets]) => (
+                    <div key={series} className="space-y-2">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                        {series}
                       </div>
-                    </button>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
+                        {sets.map((set) => (
+                          <button
+                            key={set.id}
+                            type="button"
+                            onClick={() => onSelectSet(set)}
+                            className="flex h-44 flex-col rounded-lg border border-zinc-200 bg-white p-3 text-left text-sm text-zinc-700 shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100">
+                            <div className="flex h-16 items-center justify-center">
+                              {set.logo ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={set.logo}
+                                  alt={`${set.name} logo`}
+                                  className="h-10 w-auto object-contain"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="h-10 w-24 rounded-md bg-zinc-100 dark:bg-zinc-800" />
+                              )}
+                            </div>
+                            <div className="mt-2">
+                              <div className="line-clamp-2 text-sm font-medium text-zinc-900 dark:text-white">
+                                {set.name}
+                              </div>
+                              <div className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                                {set.series ?? "—"}
+                              </div>
+                            </div>
+                            <div className="mt-3 border-t border-zinc-200 pt-2 text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                              <div className="flex items-center justify-between">
+                                <span>
+                                  {set.total !== undefined
+                                    ? `${set.total} cards`
+                                    : "— cards"}
+                                </span>
+                                <span>{set.releaseYear ?? "—"}</span>
+                              </div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 min-w-0">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
                   {(results as CardSearchPreview[]).map((card) => (
                     <button
                       key={card.id}

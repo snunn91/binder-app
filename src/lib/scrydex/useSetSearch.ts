@@ -5,6 +5,8 @@ import * as React from "react";
 export type SetSearchPreview = {
   id: string;
   name: string;
+  series?: string;
+  total?: number;
   releaseDate?: string;
   releaseYear?: number;
   logo?: string;
@@ -48,7 +50,7 @@ export default function useSetSearch(opts?: {
   setsPageSize?: number;
   cardsPageSize?: number;
 }) {
-  const setsPageSize = opts?.setsPageSize ?? 12;
+  const setsPageSize = opts?.setsPageSize ?? 15;
   const cardsPageSize = opts?.cardsPageSize ?? 20;
 
   // SearchBar state for SETS mode (used for set search OR set-card search)

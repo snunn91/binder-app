@@ -21,12 +21,12 @@ type ApiResponse = {
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 
-const DEFAULT_PAGE_SIZE = 25; // cards default
-const DEFAULT_SET_PAGE_SIZE = 12; // sets default
+const DEFAULT_PAGE_SIZE = 24; // cards default
+const DEFAULT_SET_PAGE_SIZE = 15; // sets default
 const MAX_PAGE_SIZE = 50;
 
 const SELECT_CARD_FIELDS = "id,name,number,rarity,expansion,images";
-const SELECT_SET_FIELDS = "id,name,release_date,logo,symbol";
+const SELECT_SET_FIELDS = "id,name,series,total,release_date,logo,symbol";
 
 const EN_BASE = "/pokemon/v1/en";
 const EN_CARDS_ENDPOINT = `${EN_BASE}/cards`;
@@ -34,7 +34,7 @@ const EN_EXPANSIONS_ENDPOINT = `${EN_BASE}/expansions`;
 
 const TCG_ONLY_SETS_Q = "is_online_only:false";
 
-const CACHE_VERSION = "v6";
+const CACHE_VERSION = "v7";
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -118,6 +118,8 @@ function toSetPreview(setUnknown: unknown): SetSearchPreview | null {
 
   const releaseDate = getString(setUnknown.release_date);
   const releaseYear = releaseDate ? Number(releaseDate.slice(0, 4)) : undefined;
+  const series = getString(setUnknown.series);
+  const total = getNumber(setUnknown.total);
 
   const logo = getString(setUnknown.logo);
   const symbol = getString(setUnknown.symbol);
@@ -125,6 +127,8 @@ function toSetPreview(setUnknown: unknown): SetSearchPreview | null {
   return {
     id,
     name,
+    ...(series ? { series } : {}),
+    ...(total !== undefined ? { total } : {}),
     ...(releaseDate ? { releaseDate } : {}),
     ...(releaseYear ? { releaseYear } : {}),
     ...(logo ? { logo } : {}),

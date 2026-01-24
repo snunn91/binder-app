@@ -26,7 +26,7 @@ function getErrorMessage(err: unknown): string {
   return "Search failed";
 }
 
-export default function useCardSearch(pageSize = 25) {
+export default function useCardSearch(pageSize = 24) {
   const [input, setInput] = React.useState("");
   const [query, setQuery] = React.useState<string>("");
   const [page, setPage] = React.useState(1);

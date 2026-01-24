@@ -21,8 +21,8 @@ type CardSelectionProps = {
 };
 
 export default function CardSelection({ onSelect }: CardSelectionProps) {
-  const cardSearch = useCardSearch(25);
-  const setSearch = useSetSearch({ setsPageSize: 12, cardsPageSize: 20 });
+  const cardSearch = useCardSearch(24);
+  const setSearch = useSetSearch({ setsPageSize: 15, cardsPageSize: 20 });
 
   const [searchMode, setSearchMode] = React.useState<"cards" | "sets">("cards");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -81,7 +81,7 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
             onModeChange={(mode) => {
               setSearchMode(mode);
 
-              // When user goes back to Cards mode, they want the global default 25 cards
+              // When user goes back to Cards mode, reset to the default card page size.
               if (mode === "cards") {
                 setSelectedCard(null);
                 cardSearch.reset();
@@ -130,6 +130,7 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
               hasPrev={hasPrev}
               hasNext={hasNext}
               page={cardSearch.page}
+              pageSize={cardSearch.pageSize}
               onPrev={cardSearch.onPrev}
               onNext={cardSearch.onNext}
               onSelectCard={(card) => {

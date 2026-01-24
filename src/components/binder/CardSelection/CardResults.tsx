@@ -1,3 +1,5 @@
+import * as React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { CardSearchPreview } from "@/lib/scrydex/useCardSearch";
 
 type CardResultsProps = {
@@ -11,6 +13,7 @@ type CardResultsProps = {
   hasPrev: boolean;
   hasNext: boolean;
   page: number;
+  pageSize: number;
   onPrev: () => void;
   onNext: () => void;
   onSelectCard: (card: CardSearchPreview) => void;
@@ -27,10 +30,16 @@ export default function CardResults({
   hasPrev,
   hasNext,
   page,
+  pageSize,
   onPrev,
   onNext,
   onSelectCard,
 }: CardResultsProps) {
+  const skeletons = React.useMemo(
+    () => Array.from({ length: pageSize }, (_, index) => index),
+    [pageSize],
+  );
+
   return (
     <div className="space-y-4">
       {error ? (
@@ -67,17 +76,31 @@ export default function CardResults({
 
       <div className="rounded-xl border border-zinc-200 bg-white/80 p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
         {loading ? (
-          <div className="text-sm text-zinc-500">Searching...</div>
+          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+              {skeletons.map((key) => (
+                <div
+                  key={key}
+                  className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
+                  <Skeleton className="aspect-[63/88] w-full" />
+                  <div className="space-y-1 p-1.5">
+                    <Skeleton className="h-3 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         {!loading && query && results.length === 0 && !error ? (
           <div className="text-sm text-zinc-500">No results.</div>
         ) : null}
 
-        {results.length > 0 ? (
+        {!loading && results.length > 0 ? (
           <>
             <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5 min-w-0">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
                 {results.map((card) => (
                   <button
                     key={card.id}
