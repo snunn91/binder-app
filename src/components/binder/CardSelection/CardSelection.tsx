@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Filter } from "lucide-react";
+import { FunnelPlus, FunnelX } from "lucide-react";
 import FilterList from "@/components/filters/FilterList";
 import SearchBar from "@/components/binder/SearchBar";
 
@@ -72,7 +72,11 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
             className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-300 bg-slate-200 text-zinc-800 shadow-sm transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700"
             aria-expanded={filtersOpen}
             aria-controls="filter-list">
-            <Filter className="h-4 w-4" />
+            {filtersOpen ? (
+              <FunnelX className="h-4 w-4" />
+            ) : (
+              <FunnelPlus className="h-4 w-4" />
+            )}
             <span className="sr-only">
               {filtersOpen ? "Hide filters" : "Show filters"}
             </span>
