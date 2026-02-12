@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 
 export type SetSearchPreview = {
   id: string;
@@ -49,9 +50,15 @@ function getErrorMessage(err: unknown): string {
 export default function useSetSearch(opts?: {
   setsPageSize?: number;
   cardsPageSize?: number;
+  rarityFilters?: string[];
 }) {
   const setsPageSize = opts?.setsPageSize ?? 15;
-  const cardsPageSize = opts?.cardsPageSize ?? 20;
+  const cardsPageSize = opts?.cardsPageSize ?? 24;
+  const normalizedRarities = React.useMemo(
+    () => sanitizeRarityFilters(opts?.rarityFilters),
+    [opts?.rarityFilters],
+  );
+  const rarityKey = normalizedRarities.join("|");
 
   // SearchBar state for SETS mode (used for set search OR set-card search)
   const [input, setInput] = React.useState("");
@@ -125,12 +132,17 @@ export default function useSetSearch(opts?: {
       setError(null);
 
       try {
-        const res = await fetch(
-          `/api/cards/search?mode=recent&set=${encodeURIComponent(
-            setId,
-          )}&page=${nextPage}&page_size=${cardsPageSize}`,
-          { signal: controller.signal },
-        );
+        const params = new URLSearchParams({
+          mode: "recent",
+          set: setId,
+          page: String(nextPage),
+          page_size: String(cardsPageSize),
+        });
+        normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+
+        const res = await fetch(`/api/cards/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
 
         const json = (await res.json()) as CardsApiResponse;
         if (!res.ok) throw new Error(json?.error || "Search failed");
@@ -151,7 +163,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize],
+    [cardsPageSize, normalizedRarities],
   );
 
   async function runSearchSets(nextQuery: string, nextPage: number) {
@@ -193,50 +205,54 @@ export default function useSetSearch(opts?: {
     }
   }
 
-  async function runSearchSetCards(
-    setId: string,
-    nextQuery: string,
-    nextPage: number,
-  ) {
-    const q = nextQuery.trim();
-    if (q.length < 2) {
-      setError("Type at least 2 characters.");
-      setResults([]);
-      setTotalCount(undefined);
-      return;
-    }
-
-    const controller = abortAndNewController();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(
-        `/api/cards/search?q=${encodeURIComponent(q)}&set=${encodeURIComponent(
-          setId,
-        )}&page=${nextPage}&page_size=${cardsPageSize}`,
-        { signal: controller.signal },
-      );
-
-      const json = (await res.json()) as CardsApiResponse;
-      if (!res.ok) throw new Error(json?.error || "Search failed");
-
-      setResults(json.results ?? []);
-      setTotalCount(json.totalCount);
-    } catch (err: unknown) {
-      const name =
-        typeof err === "object" && err !== null && "name" in err
-          ? String((err as { name?: unknown }).name)
-          : "";
-      if (name !== "AbortError") {
-        setError(getErrorMessage(err));
+  const runSearchSetCards = React.useCallback(
+    async (setId: string, nextQuery: string, nextPage: number) => {
+      const q = nextQuery.trim();
+      if (q.length < 2) {
+        setError("Type at least 2 characters.");
         setResults([]);
         setTotalCount(undefined);
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }
+
+      const controller = abortAndNewController();
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({
+          q,
+          set: setId,
+          page: String(nextPage),
+          page_size: String(cardsPageSize),
+        });
+        normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+
+        const res = await fetch(`/api/cards/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        const json = (await res.json()) as CardsApiResponse;
+        if (!res.ok) throw new Error(json?.error || "Search failed");
+
+        setResults(json.results ?? []);
+        setTotalCount(json.totalCount);
+      } catch (err: unknown) {
+        const name =
+          typeof err === "object" && err !== null && "name" in err
+            ? String((err as { name?: unknown }).name)
+            : "";
+        if (name !== "AbortError") {
+          setError(getErrorMessage(err));
+          setResults([]);
+          setTotalCount(undefined);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [cardsPageSize, normalizedRarities],
+  );
 
   function clearSearchState() {
     setInput("");
@@ -322,6 +338,13 @@ export default function useSetSearch(opts?: {
     hasLoadedDefaultRef.current = true;
     void runDefaultSets(1);
   }, [runDefaultSets]);
+
+  React.useEffect(() => {
+    if (!hasLoadedDefaultRef.current || !selectedSet) return;
+    setPage(1);
+    if (query.trim().length < 2) void runDefaultSetCards(selectedSet.id, 1);
+    else void runSearchSetCards(selectedSet.id, query, 1);
+  }, [query, rarityKey, runDefaultSetCards, runSearchSetCards, selectedSet]);
 
   return {
     // SearchBar state

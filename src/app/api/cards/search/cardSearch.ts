@@ -10,10 +10,17 @@ import {
   EN_CARDS_ENDPOINT,
   EN_EXPANSIONS_ENDPOINT,
 } from "@/app/api/cards/search/searchEndpoints";
+import { buildRarityQuery, sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 
 export const DEFAULT_PAGE_SIZE = 24;
 
 const SELECT_CARD_FIELDS = "id,name,number,rarity,expansion,images";
+
+function buildCardsQuery(q: string | undefined, rarityFilters: string[] | undefined) {
+  const rarityQuery = buildRarityQuery(sanitizeRarityFilters(rarityFilters));
+  if (q && rarityQuery) return `(${q}) (${rarityQuery})`;
+  return q || rarityQuery;
+}
 
 function extractImage(
   imagesUnknown: unknown,
@@ -94,8 +101,10 @@ export async function fetchCards(params: {
   pageSize: number;
   mode?: string | null;
   setId?: string | null;
+  rarityFilters?: string[];
 }) {
-  const { q, page, pageSize, mode, setId } = params;
+  const { q, page, pageSize, mode, setId, rarityFilters } = params;
+  const query = buildCardsQuery(q, rarityFilters);
 
   const endpoint = setId
     ? `${EN_EXPANSIONS_ENDPOINT}/${setId}/cards`
@@ -108,14 +117,14 @@ export async function fetchCards(params: {
         page_size: String(pageSize),
         orderBy: "-expansion.release_date,-expansion_sort_order",
         select: SELECT_CARD_FIELDS,
-        ...(q ? { q } : {}),
+        ...(query ? { q: query } : {}),
       });
     } catch {
       return await scrydexFetch<unknown>(endpoint, {
         page: String(page),
         page_size: String(pageSize),
         select: SELECT_CARD_FIELDS,
-        ...(q ? { q } : {}),
+        ...(query ? { q: query } : {}),
       });
     }
   }
@@ -124,6 +133,6 @@ export async function fetchCards(params: {
     page: String(page),
     page_size: String(pageSize),
     select: SELECT_CARD_FIELDS,
-    ...(q ? { q } : {}),
+    ...(query ? { q: query } : {}),
   });
 }

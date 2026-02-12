@@ -21,8 +21,13 @@ type CardSelectionProps = {
 };
 
 export default function CardSelection({ onSelect }: CardSelectionProps) {
-  const cardSearch = useCardSearch(24);
-  const setSearch = useSetSearch({ setsPageSize: 15, cardsPageSize: 20 });
+  const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
+  const cardSearch = useCardSearch(24, selectedRarities);
+  const setSearch = useSetSearch({
+    setsPageSize: 15,
+    cardsPageSize: 24,
+    rarityFilters: selectedRarities,
+  });
 
   const [searchMode, setSearchMode] = React.useState<"cards" | "sets">("cards");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
@@ -65,6 +70,11 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
                 expanded
                 onExpandedChange={handleFilterExpandedChange}
                 showLabels
+                selectedRarities={selectedRarities}
+                onSelectedRaritiesChange={setSelectedRarities}
+                showRarityFilter={
+                  searchMode === "cards" || setSearch.view === "setCards"
+                }
               />
             </div>
           ) : null}

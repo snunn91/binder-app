@@ -7,12 +7,18 @@ type FilterListProps = {
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   showLabels: boolean;
+  selectedRarities: string[];
+  onSelectedRaritiesChange: (rarities: string[]) => void;
+  showRarityFilter?: boolean;
 };
 
 export default function FilterList({
   expanded,
   onExpandedChange,
   showLabels,
+  selectedRarities,
+  onSelectedRaritiesChange,
+  showRarityFilter = true,
 }: FilterListProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-y-3">
@@ -21,11 +27,15 @@ export default function FilterList({
         onExpandedChange={onExpandedChange}
         showLabels={showLabels}
       />
-      <RarityFilter
-        expanded={expanded}
-        onExpandedChange={onExpandedChange}
-        showLabels={showLabels}
-      />
+      {showRarityFilter ? (
+        <RarityFilter
+          expanded={expanded}
+          onExpandedChange={onExpandedChange}
+          showLabels={showLabels}
+          selectedRarities={selectedRarities}
+          onSelectedRaritiesChange={onSelectedRaritiesChange}
+        />
+      ) : null}
     </div>
   );
 }

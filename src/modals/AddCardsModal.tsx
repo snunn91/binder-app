@@ -23,10 +23,7 @@ export default function AddCardsModal() {
       <DialogContent className="flex h-[calc(100vh-25px)] max-h-[calc(100vh-25px)] max-w-[calc(100vw-25px)] flex-col rounded-2xl border border-zinc-200 bg-white/90 p-0 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex h-full flex-col">
           <DialogHeader className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
-            <DialogTitle>Add Card</DialogTitle>
-            <DialogDescription>
-              Search for a card and choose where to place it.
-            </DialogDescription>
+            <DialogTitle className="text-left">Add Card</DialogTitle>
           </DialogHeader>
           <div className="flex-1 min-h-0 p-4">
             <CardSelection

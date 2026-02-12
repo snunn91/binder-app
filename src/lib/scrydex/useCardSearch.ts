@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 
 export type CardSearchPreview = {
   id: string;
@@ -26,7 +27,7 @@ function getErrorMessage(err: unknown): string {
   return "Search failed";
 }
 
-export default function useCardSearch(pageSize = 24) {
+export default function useCardSearch(pageSize = 24, rarityFilters: string[] = []) {
   const [input, setInput] = React.useState("");
   const [query, setQuery] = React.useState<string>("");
   const [page, setPage] = React.useState(1);
@@ -39,6 +40,11 @@ export default function useCardSearch(pageSize = 24) {
 
   const abortRef = React.useRef<AbortController | null>(null);
   const hasLoadedDefaultRef = React.useRef(false);
+  const normalizedRarities = React.useMemo(
+    () => sanitizeRarityFilters(rarityFilters),
+    [rarityFilters],
+  );
+  const rarityKey = normalizedRarities.join("|");
 
   const runDefault = React.useCallback(
     async (nextPage: number) => {
@@ -50,10 +56,16 @@ export default function useCardSearch(pageSize = 24) {
       setError(null);
 
       try {
-        const res = await fetch(
-          `/api/cards/search?mode=recent&page=${nextPage}&page_size=${pageSize}`,
-          { signal: controller.signal },
-        );
+        const params = new URLSearchParams({
+          mode: "recent",
+          page: String(nextPage),
+          page_size: String(pageSize),
+        });
+        normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+
+        const res = await fetch(`/api/cards/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
 
         const json = (await res.json()) as ApiResponse;
         if (!res.ok) throw new Error(json?.error || "Search failed");
@@ -75,50 +87,59 @@ export default function useCardSearch(pageSize = 24) {
         setLoading(false);
       }
     },
-    [pageSize],
+    [normalizedRarities, pageSize],
   );
 
-  async function runSearch(nextQuery: string, nextPage: number) {
-    const q = nextQuery.trim();
-    if (q.length < 2) {
-      setError("Type at least 2 characters.");
-      setResults([]);
-      setTotalCount(undefined);
-      return;
-    }
-
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch(
-        `/api/cards/search?q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${pageSize}`,
-        { signal: controller.signal },
-      );
-
-      const json = (await res.json()) as ApiResponse;
-      if (!res.ok) throw new Error(json?.error || "Search failed");
-
-      setResults(json.results ?? []);
-      setTotalCount(json.totalCount);
-    } catch (err: unknown) {
-      const name =
-        typeof err === "object" && err !== null && "name" in err
-          ? String((err as { name?: unknown }).name)
-          : "";
-      if (name !== "AbortError") {
-        setError(getErrorMessage(err));
+  const runSearch = React.useCallback(
+    async (nextQuery: string, nextPage: number) => {
+      const q = nextQuery.trim();
+      if (q.length < 2) {
+        setError("Type at least 2 characters.");
         setResults([]);
         setTotalCount(undefined);
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams({
+          q,
+          page: String(nextPage),
+          page_size: String(pageSize),
+        });
+        normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+
+        const res = await fetch(`/api/cards/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        const json = (await res.json()) as ApiResponse;
+        if (!res.ok) throw new Error(json?.error || "Search failed");
+
+        setResults(json.results ?? []);
+        setTotalCount(json.totalCount);
+      } catch (err: unknown) {
+        const name =
+          typeof err === "object" && err !== null && "name" in err
+            ? String((err as { name?: unknown }).name)
+            : "";
+        if (name !== "AbortError") {
+          setError(getErrorMessage(err));
+          setResults([]);
+          setTotalCount(undefined);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [normalizedRarities, pageSize],
+  );
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -166,6 +187,13 @@ export default function useCardSearch(pageSize = 24) {
     hasLoadedDefaultRef.current = true;
     void runDefault(1);
   }, [runDefault]);
+
+  React.useEffect(() => {
+    if (!hasLoadedDefaultRef.current) return;
+    setPage(1);
+    if (query.trim().length < 2) void runDefault(1);
+    else void runSearch(query, 1);
+  }, [query, rarityKey, runDefault, runSearch]);
 
   return {
     input,

@@ -19,6 +19,7 @@ import {
   fetchSets,
   parseSets,
 } from "@/app/api/cards/search/setSearch";
+import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
 const MAX_PAGE_SIZE = 50;
@@ -39,6 +40,7 @@ export async function GET(req: Request) {
     const type = searchParams.get("type") === "sets" ? "sets" : "cards";
     const mode = searchParams.get("mode");
     const setId = searchParams.get("set");
+    const rarityFilters = sanitizeRarityFilters(searchParams.getAll("rarity"));
 
     const qRaw = searchParams.get("q") ?? "";
     const qNorm = normalizeQuery(qRaw);
@@ -75,11 +77,11 @@ export async function GET(req: Request) {
           : `sets|q=${qNorm}|lang=en|tcg=1|${CACHE_VERSION}`
         : setId
           ? mode === "recent"
-            ? `cards|recent|set=${setId}|lang=en|tcg=1|${CACHE_VERSION}`
-            : `cards|q=${qNorm}|set=${setId}|lang=en|tcg=1|${CACHE_VERSION}`
+            ? `cards|recent|set=${setId}|rarity=${rarityFilters.join(",")}|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|set=${setId}|rarity=${rarityFilters.join(",")}|lang=en|tcg=1|${CACHE_VERSION}`
           : mode === "recent"
-            ? `cards|recent|lang=en|tcg=1|${CACHE_VERSION}`
-            : `cards|q=${qNorm}|lang=en|tcg=1|${CACHE_VERSION}`;
+            ? `cards|recent|rarity=${rarityFilters.join(",")}|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|rarity=${rarityFilters.join(",")}|lang=en|tcg=1|${CACHE_VERSION}`;
 
     const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
     const cached = await getCachedSearch<SearchPreview>(cacheKey);
@@ -120,13 +122,14 @@ export async function GET(req: Request) {
 
     const scrydexUnknown =
       mode === "recent"
-        ? await fetchCards({ page, pageSize, mode, setId })
+        ? await fetchCards({ page, pageSize, mode, setId, rarityFilters })
         : await fetchCards({
             q: qNorm.length >= 2 ? `name:${qNorm}*` : undefined,
             page,
             pageSize,
             mode: null,
             setId,
+            rarityFilters,
           });
 
     const { results, totalCount } = parseCards(scrydexUnknown);

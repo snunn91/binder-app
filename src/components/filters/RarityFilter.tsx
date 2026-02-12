@@ -15,29 +15,31 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { RARITY_FILTER_OPTIONS } from "@/lib/scrydex/rarity";
 
 type RarityFilterProps = {
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   showLabels: boolean;
+  selectedRarities: string[];
+  onSelectedRaritiesChange: (rarities: string[]) => void;
 };
 
 export default function RarityFilter({
   expanded,
   onExpandedChange,
   showLabels,
+  selectedRarities,
+  onSelectedRaritiesChange,
 }: RarityFilterProps) {
   const [rarityOpen, setRarityOpen] = React.useState(false);
-  const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
-
-  const rarityOptions = ["Common", "Uncommon", "Rare", "Ultra Rare", "Promo"];
+  const rarityOptions = RARITY_FILTER_OPTIONS;
 
   function toggleRarity(value: string) {
-    setSelectedRarities((prev) =>
-      prev.includes(value)
-        ? prev.filter((item) => item !== value)
-        : [...prev, value]
-    );
+    const next = selectedRarities.includes(value)
+      ? selectedRarities.filter((item) => item !== value)
+      : [...selectedRarities, value];
+    onSelectedRaritiesChange(next);
   }
 
   return expanded ? (

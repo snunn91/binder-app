@@ -71,7 +71,7 @@ export default function SetsResults({
   }, [results, view]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-y-2">
       {error ? (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {error}
@@ -90,42 +90,9 @@ export default function SetsResults({
         </div>
       ) : null}
 
-      <div className="flex items-center justify-between text-sm text-zinc-600 dark:text-zinc-300">
-        <div>
-          {/* {view === "sets" ? (
-            <span className="font-medium text-zinc-900 dark:text-white">
-              Sets
-            </span>
-          ) : (
-            <>
-              Cards in{" "}
-              <span className="font-medium text-zinc-900 dark:text-white">
-                {selectedSet?.name ?? "Set"}
-              </span>
-            </>
-          )} */}
-
-          {totalCount !== undefined ? (
-            <span className="ml-2 text-zinc-500 dark:text-zinc-400">
-              ({totalCount.toLocaleString()} total)
-            </span>
-          ) : null}
-        </div>
-
-        <div className="text-zinc-500 dark:text-zinc-400">
-          {results.length > 0 ? (
-            <span>
-              {startIndex}–{endIndex}
-            </span>
-          ) : (
-            <span>—</span>
-          )}
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-zinc-200 bg-white/80 p-2 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/40">
+      <>
         {loading ? (
-          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
+          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
             {view === "sets" ? (
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
                 {skeletons.map((key) => (
@@ -172,11 +139,11 @@ export default function SetsResults({
 
         {!loading && results.length > 0 ? (
           <>
-            <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1">
+            <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
               {view === "sets" ? (
-                <div className="space-y-4">
+                <div className="space-y-4 pe-4">
                   {groupedSets.map(([series, sets]) => (
-                    <div key={series} className="space-y-2">
+                    <div key={series} className="space-y-4">
                       <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                         {series}
                       </div>
@@ -225,7 +192,7 @@ export default function SetsResults({
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 mb-0">
                   {(results as CardSearchPreview[]).map((card) => (
                     <button
                       key={card.id}
@@ -264,12 +231,12 @@ export default function SetsResults({
               )}
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex items-center justify-between">
               <button
                 type="button"
                 onClick={onPrev}
                 disabled={!hasPrev || loading}
-                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
+                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-slate-300 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
                 Prev
               </button>
 
@@ -281,13 +248,13 @@ export default function SetsResults({
                 type="button"
                 onClick={onNext}
                 disabled={!hasNext || loading}
-                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100">
+                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-slate-300 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
                 Next
               </button>
             </div>
           </>
         ) : null}
-      </div>
+      </>
     </div>
   );
 }
