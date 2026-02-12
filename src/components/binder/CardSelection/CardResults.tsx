@@ -102,7 +102,7 @@ export default function CardResults({
         {!loading && results.length > 0 ? (
           <>
             <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 pr-4">
                 {results.map((card) => (
                   <Tilt
                     key={card.id}

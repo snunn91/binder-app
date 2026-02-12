@@ -186,46 +186,49 @@ export default function useSetSearch(opts?: {
     [cardsPageSize, normalizedCardSort, normalizedRarities],
   );
 
-  async function runSearchSets(nextQuery: string, nextPage: number) {
-    const q = nextQuery.trim();
-    if (q.length < 2) {
-      setError("Type at least 2 characters.");
-      setResults([]);
-      setTotalCount(undefined);
-      return;
-    }
-
-    const controller = abortAndNewController();
-    setLoading(true);
-    setError(null);
-    await waitForNextPaint();
-    if (controller.signal.aborted) return;
-
-    try {
-      const res = await fetch(
-        `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
-        { signal: controller.signal },
-      );
-
-      const json = (await res.json()) as SetsApiResponse;
-      if (!res.ok) throw new Error(json?.error || "Search failed");
-
-      setResults(json.results ?? []);
-      setTotalCount(json.totalCount);
-    } catch (err: unknown) {
-      const name =
-        typeof err === "object" && err !== null && "name" in err
-          ? String((err as { name?: unknown }).name)
-          : "";
-      if (name !== "AbortError") {
-        setError(getErrorMessage(err));
+  const runSearchSets = React.useCallback(
+    async (nextQuery: string, nextPage: number) => {
+      const q = nextQuery.trim();
+      if (q.length < 2) {
+        setError("Type at least 2 characters.");
         setResults([]);
         setTotalCount(undefined);
+        return;
       }
-    } finally {
-      setLoading(false);
-    }
-  }
+
+      const controller = abortAndNewController();
+      setLoading(true);
+      setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
+
+      try {
+        const res = await fetch(
+          `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
+          { signal: controller.signal },
+        );
+
+        const json = (await res.json()) as SetsApiResponse;
+        if (!res.ok) throw new Error(json?.error || "Search failed");
+
+        setResults(json.results ?? []);
+        setTotalCount(json.totalCount);
+      } catch (err: unknown) {
+        const name =
+          typeof err === "object" && err !== null && "name" in err
+            ? String((err as { name?: unknown }).name)
+            : "";
+        if (name !== "AbortError") {
+          setError(getErrorMessage(err));
+          setResults([]);
+          setTotalCount(undefined);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [normalizedSetSort, setsPageSize],
+  );
 
   const runSearchSetCards = React.useCallback(
     async (setId: string, nextQuery: string, nextPage: number) => {
@@ -363,6 +366,13 @@ export default function useSetSearch(opts?: {
     hasLoadedDefaultRef.current = true;
     void runDefaultSets(1);
   }, [runDefaultSets]);
+
+  React.useEffect(() => {
+    if (!hasLoadedDefaultRef.current || selectedSet) return;
+    setPage(1);
+    if (query.trim().length < 2) void runDefaultSets(1);
+    else void runSearchSets(query, 1);
+  }, [normalizedSetSort, query, runDefaultSets, runSearchSets, selectedSet]);
 
   React.useEffect(() => {
     if (!hasLoadedDefaultRef.current || !selectedSet) return;
