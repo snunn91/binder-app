@@ -15,18 +15,26 @@ import useSetSearch, {
 
 import CardResults from "@/components/binder/CardSelection/CardResults";
 import SetsResults from "@/components/binder/CardSelection/SetsResults";
+import {
+  DEFAULT_CARD_SORT,
+  sanitizeSortForScope,
+  type SearchSortOption,
+  type SortScope,
+} from "@/lib/scrydex/sort";
 
 type CardSelectionProps = {
   onSelect?: (card: GlobalCardPreview) => void;
 };
 
 export default function CardSelection({ onSelect }: CardSelectionProps) {
+  const [sortBy, setSortBy] = React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
   const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
-  const cardSearch = useCardSearch(24, selectedRarities);
+  const cardSearch = useCardSearch(24, selectedRarities, sortBy);
   const setSearch = useSetSearch({
     setsPageSize: 15,
     cardsPageSize: 24,
     rarityFilters: selectedRarities,
+    sortBy,
   });
 
   const [searchMode, setSearchMode] = React.useState<"cards" | "sets">("cards");
@@ -35,6 +43,12 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
 
   const [selectedCard, setSelectedCard] =
     React.useState<GlobalCardPreview | null>(null);
+  const sortScope: SortScope =
+    searchMode === "sets" && setSearch.view === "sets" ? "sets" : "cards";
+
+  React.useEffect(() => {
+    setSortBy((prev) => sanitizeSortForScope(prev, sortScope));
+  }, [sortScope]);
 
   // Active search state depends on mode (independent!)
   const active = searchMode === "cards" ? cardSearch : setSearch;
@@ -70,6 +84,9 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
                 expanded
                 onExpandedChange={handleFilterExpandedChange}
                 showLabels
+                sortScope={sortScope}
+                sortBy={sortBy}
+                onSortChange={setSortBy}
                 selectedRarities={selectedRarities}
                 onSelectedRaritiesChange={setSelectedRarities}
                 showRarityFilter={

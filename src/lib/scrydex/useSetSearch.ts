@@ -2,6 +2,12 @@
 
 import * as React from "react";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import {
+  DEFAULT_CARD_SORT,
+  sanitizeCardSort,
+  sanitizeSetSort,
+  type SearchSortOption,
+} from "@/lib/scrydex/sort";
 
 export type SetSearchPreview = {
   id: string;
@@ -47,10 +53,17 @@ function getErrorMessage(err: unknown): string {
   return "Search failed";
 }
 
+function waitForNextPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
 export default function useSetSearch(opts?: {
   setsPageSize?: number;
   cardsPageSize?: number;
   rarityFilters?: string[];
+  sortBy?: SearchSortOption;
 }) {
   const setsPageSize = opts?.setsPageSize ?? 15;
   const cardsPageSize = opts?.cardsPageSize ?? 24;
@@ -59,6 +72,8 @@ export default function useSetSearch(opts?: {
     [opts?.rarityFilters],
   );
   const rarityKey = normalizedRarities.join("|");
+  const normalizedCardSort = sanitizeCardSort(opts?.sortBy ?? DEFAULT_CARD_SORT);
+  const normalizedSetSort = sanitizeSetSort(opts?.sortBy ?? DEFAULT_CARD_SORT);
 
   // SearchBar state for SETS mode (used for set search OR set-card search)
   const [input, setInput] = React.useState("");
@@ -96,10 +111,12 @@ export default function useSetSearch(opts?: {
       const controller = abortAndNewController();
       setLoading(true);
       setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
 
       try {
         const res = await fetch(
-          `/api/cards/search?type=sets&mode=recent&page=${nextPage}&page_size=${setsPageSize}`,
+          `/api/cards/search?type=sets&mode=recent&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
           { signal: controller.signal },
         );
 
@@ -122,7 +139,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [setsPageSize],
+    [normalizedSetSort, setsPageSize],
   );
 
   const runDefaultSetCards = React.useCallback(
@@ -130,6 +147,8 @@ export default function useSetSearch(opts?: {
       const controller = abortAndNewController();
       setLoading(true);
       setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
 
       try {
         const params = new URLSearchParams({
@@ -137,6 +156,7 @@ export default function useSetSearch(opts?: {
           set: setId,
           page: String(nextPage),
           page_size: String(cardsPageSize),
+          sort: normalizedCardSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
 
@@ -163,7 +183,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedRarities],
+    [cardsPageSize, normalizedCardSort, normalizedRarities],
   );
 
   async function runSearchSets(nextQuery: string, nextPage: number) {
@@ -178,10 +198,12 @@ export default function useSetSearch(opts?: {
     const controller = abortAndNewController();
     setLoading(true);
     setError(null);
+    await waitForNextPaint();
+    if (controller.signal.aborted) return;
 
     try {
       const res = await fetch(
-        `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${setsPageSize}`,
+        `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
         { signal: controller.signal },
       );
 
@@ -218,6 +240,8 @@ export default function useSetSearch(opts?: {
       const controller = abortAndNewController();
       setLoading(true);
       setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
 
       try {
         const params = new URLSearchParams({
@@ -225,6 +249,7 @@ export default function useSetSearch(opts?: {
           set: setId,
           page: String(nextPage),
           page_size: String(cardsPageSize),
+          sort: normalizedCardSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
 
@@ -251,7 +276,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedRarities],
+    [cardsPageSize, normalizedCardSort, normalizedRarities],
   );
 
   function clearSearchState() {
@@ -344,7 +369,15 @@ export default function useSetSearch(opts?: {
     setPage(1);
     if (query.trim().length < 2) void runDefaultSetCards(selectedSet.id, 1);
     else void runSearchSetCards(selectedSet.id, query, 1);
-  }, [query, rarityKey, runDefaultSetCards, runSearchSetCards, selectedSet]);
+  }, [
+    normalizedCardSort,
+    normalizedSetSort,
+    query,
+    rarityKey,
+    runDefaultSetCards,
+    runSearchSetCards,
+    selectedSet,
+  ]);
 
   return {
     // SearchBar state

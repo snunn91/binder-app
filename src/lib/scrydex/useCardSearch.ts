@@ -2,6 +2,11 @@
 
 import * as React from "react";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import {
+  DEFAULT_CARD_SORT,
+  sanitizeCardSort,
+  type CardSortOption,
+} from "@/lib/scrydex/sort";
 
 export type CardSearchPreview = {
   id: string;
@@ -27,7 +32,17 @@ function getErrorMessage(err: unknown): string {
   return "Search failed";
 }
 
-export default function useCardSearch(pageSize = 24, rarityFilters: string[] = []) {
+function waitForNextPaint() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+export default function useCardSearch(
+  pageSize = 24,
+  rarityFilters: string[] = [],
+  sortBy: CardSortOption = DEFAULT_CARD_SORT,
+) {
   const [input, setInput] = React.useState("");
   const [query, setQuery] = React.useState<string>("");
   const [page, setPage] = React.useState(1);
@@ -35,7 +50,7 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
   const [totalCount, setTotalCount] = React.useState<number | undefined>(
     undefined,
   );
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   const abortRef = React.useRef<AbortController | null>(null);
@@ -45,6 +60,7 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
     [rarityFilters],
   );
   const rarityKey = normalizedRarities.join("|");
+  const normalizedSort = sanitizeCardSort(sortBy);
 
   const runDefault = React.useCallback(
     async (nextPage: number) => {
@@ -54,12 +70,15 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
 
       setLoading(true);
       setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
 
       try {
         const params = new URLSearchParams({
           mode: "recent",
           page: String(nextPage),
           page_size: String(pageSize),
+          sort: normalizedSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
 
@@ -87,7 +106,7 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
         setLoading(false);
       }
     },
-    [normalizedRarities, pageSize],
+    [normalizedRarities, normalizedSort, pageSize],
   );
 
   const runSearch = React.useCallback(
@@ -106,12 +125,15 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
 
       setLoading(true);
       setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
 
       try {
         const params = new URLSearchParams({
           q,
           page: String(nextPage),
           page_size: String(pageSize),
+          sort: normalizedSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
 
@@ -138,7 +160,7 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
         setLoading(false);
       }
     },
-    [normalizedRarities, pageSize],
+    [normalizedRarities, normalizedSort, pageSize],
   );
 
   function onSubmit(e: React.FormEvent) {
@@ -193,7 +215,7 @@ export default function useCardSearch(pageSize = 24, rarityFilters: string[] = [
     setPage(1);
     if (query.trim().length < 2) void runDefault(1);
     else void runSearch(query, 1);
-  }, [query, rarityKey, runDefault, runSearch]);
+  }, [normalizedSort, query, rarityKey, runDefault, runSearch]);
 
   return {
     input,

@@ -7,6 +7,12 @@ import {
   isRecord,
 } from "@/app/api/cards/search/searchUtils";
 import { EN_EXPANSIONS_ENDPOINT } from "@/app/api/cards/search/searchEndpoints";
+import {
+  DEFAULT_SET_SORT,
+  sanitizeSetSort,
+  setSortToOrderBy,
+  type SetSortOption,
+} from "@/lib/scrydex/sort";
 
 export const DEFAULT_SET_PAGE_SIZE = 15;
 
@@ -67,14 +73,17 @@ export async function fetchSets(params: {
   page: number;
   pageSize: number;
   mode?: string | null;
+  sort?: SetSortOption;
 }) {
   const { q, page, pageSize, mode } = params;
+  const sort = sanitizeSetSort(params.sort ?? DEFAULT_SET_SORT);
+  const orderBy = setSortToOrderBy(sort);
 
   if (mode === "recent") {
     return await scrydexFetch<unknown>(EN_EXPANSIONS_ENDPOINT, {
       page: String(page),
       page_size: String(pageSize),
-      orderBy: "-release_date",
+      orderBy,
       select: SELECT_SET_FIELDS,
       q: TCG_ONLY_SETS_Q,
     });
@@ -83,6 +92,7 @@ export async function fetchSets(params: {
   return await scrydexFetch<unknown>(EN_EXPANSIONS_ENDPOINT, {
     page: String(page),
     page_size: String(pageSize),
+    orderBy,
     select: SELECT_SET_FIELDS,
     ...(q ? { q } : {}),
   });

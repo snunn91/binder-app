@@ -11,6 +11,12 @@ import {
   EN_EXPANSIONS_ENDPOINT,
 } from "@/app/api/cards/search/searchEndpoints";
 import { buildRarityQuery, sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import {
+  DEFAULT_CARD_SORT,
+  cardSortToOrderBy,
+  sanitizeCardSort,
+  type CardSortOption,
+} from "@/lib/scrydex/sort";
 
 export const DEFAULT_PAGE_SIZE = 24;
 
@@ -102,9 +108,12 @@ export async function fetchCards(params: {
   mode?: string | null;
   setId?: string | null;
   rarityFilters?: string[];
+  sort?: CardSortOption;
 }) {
   const { q, page, pageSize, mode, setId, rarityFilters } = params;
+  const sort = sanitizeCardSort(params.sort ?? DEFAULT_CARD_SORT);
   const query = buildCardsQuery(q, rarityFilters);
+  const orderBy = cardSortToOrderBy(sort);
 
   const endpoint = setId
     ? `${EN_EXPANSIONS_ENDPOINT}/${setId}/cards`
@@ -115,7 +124,7 @@ export async function fetchCards(params: {
       return await scrydexFetch<unknown>(endpoint, {
         page: String(page),
         page_size: String(pageSize),
-        orderBy: "-expansion.release_date,-expansion_sort_order",
+        orderBy,
         select: SELECT_CARD_FIELDS,
         ...(query ? { q: query } : {}),
       });
@@ -123,6 +132,7 @@ export async function fetchCards(params: {
       return await scrydexFetch<unknown>(endpoint, {
         page: String(page),
         page_size: String(pageSize),
+        orderBy,
         select: SELECT_CARD_FIELDS,
         ...(query ? { q: query } : {}),
       });
@@ -132,6 +142,7 @@ export async function fetchCards(params: {
   return await scrydexFetch<unknown>(endpoint, {
     page: String(page),
     page_size: String(pageSize),
+    orderBy,
     select: SELECT_CARD_FIELDS,
     ...(query ? { q: query } : {}),
   });

@@ -15,27 +15,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  getSortGroups,
+  type SearchSortOption,
+  type SortScope,
+} from "@/lib/scrydex/sort";
 
 type SortByFilterProps = {
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   showLabels: boolean;
+  sortScope: SortScope;
+  sortBy: SearchSortOption;
+  onSortChange: (sort: SearchSortOption) => void;
 };
-
-const SORT_GROUPS = [
-  {
-    title: "Release Date",
-    options: ["Newest", "Oldest"],
-  },
-  {
-    title: "Name",
-    options: ["Name A-Z", "Name Z-A"],
-  },
-  {
-    title: "Number",
-    options: ["Number ASC", "Number DESC"],
-  },
-] as const;
 
 const SORT_ICON_MAP: Record<
   string,
@@ -53,9 +46,12 @@ export default function SortByFilter({
   expanded,
   onExpandedChange,
   showLabels,
+  sortScope,
+  sortBy,
+  onSortChange,
 }: SortByFilterProps) {
   const [sortOpen, setSortOpen] = React.useState(false);
-  const [sortBy, setSortBy] = React.useState("Newest");
+  const sortGroups = React.useMemo(() => getSortGroups(sortScope), [sortScope]);
 
   return expanded ? (
     <div className="flex w-full flex-col gap-2">
@@ -94,7 +90,7 @@ export default function SortByFilter({
           align="start"
           className="w-[var(--radix-popover-trigger-width)] p-2">
           <div className="flex flex-col gap-2">
-            {SORT_GROUPS.map((group, groupIndex) => (
+            {sortGroups.map((group, groupIndex) => (
               <div key={group.title} className="flex flex-col gap-1">
                 <div className="px-2 text-[11px] font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                   {group.title}
@@ -104,7 +100,7 @@ export default function SortByFilter({
                     key={option}
                     type="button"
                     onClick={() => {
-                      setSortBy(option);
+                      onSortChange(option);
                       setSortOpen(false);
                     }}
                     className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 active:ring-2 active:ring-accent/40 ${
@@ -118,7 +114,7 @@ export default function SortByFilter({
                     <span>{option}</span>
                   </button>
                 ))}
-                {groupIndex < SORT_GROUPS.length - 1 ? (
+                {groupIndex < sortGroups.length - 1 ? (
                   <div className="mt-1 border-t border-zinc-200 dark:border-zinc-700" />
                 ) : null}
               </div>
