@@ -114,7 +114,7 @@ export default function CardResults({
                     <button
                       type="button"
                       onClick={() => onSelectCard(card)}
-                      className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900">
+                      className="w-full overflow-hidden rounded-lg  bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900">
                       <div className="relative aspect-[63/88] w-full bg-zinc-100 dark:bg-zinc-800">
                         {card.image?.small ? (
                           <Image
@@ -140,7 +140,6 @@ export default function CardResults({
                         <div className="truncate text-[11px] text-zinc-500">
                           {card.expansion?.name ?? "Unknown set"}
                           {card.number ? ` - #${card.number}` : ""}
-                          {card.rarity ? ` - ${card.rarity}` : ""}
                         </div>
                       </div>
                     </button>

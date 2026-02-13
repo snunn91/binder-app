@@ -22,7 +22,7 @@ import {
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 import { sanitizeCardSort, sanitizeSetSort } from "@/lib/scrydex/sort";
 
-const CACHE_TTL_MS = 1000 * 60 * 60 * 12; // 12h
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14d
 const MAX_PAGE_SIZE = 50;
 const CACHE_VERSION = "v7";
 
