@@ -199,5 +199,6 @@ export {
   fetchBindersForUser,
   fetchBinderById,
   fetchBinderPages,
+  layoutToSlots,
   updateBinderLayout,
 };

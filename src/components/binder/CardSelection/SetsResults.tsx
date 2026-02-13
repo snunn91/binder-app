@@ -6,6 +6,7 @@ import type {
   SetSearchPreview,
   CardSearchPreview,
 } from "@/lib/scrydex/useSetSearch";
+import CardItem from "@/components/binder/CardSelection/CardItem";
 
 type SetsResultsProps = {
   view: "sets" | "setCards";
@@ -30,6 +31,8 @@ type SetsResultsProps = {
   onBackToSets: () => void;
 
   onSelectCard: (card: CardSearchPreview) => void;
+  selectedCardIds: Set<string>;
+  selectionLocked: boolean;
 };
 
 export default function SetsResults({
@@ -50,6 +53,8 @@ export default function SetsResults({
   onBackToSets,
   onSelectCard,
   pageSize,
+  selectedCardIds,
+  selectionLocked,
 }: SetsResultsProps) {
   const skeletons = React.useMemo(
     () => Array.from({ length: pageSize }, (_, index) => index),
@@ -193,40 +198,24 @@ export default function SetsResults({
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 mb-0">
-                  {(results as CardSearchPreview[]).map((card) => (
-                    <button
-                      key={card.id}
-                      type="button"
-                      onClick={() => onSelectCard(card)}
-                      className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900">
-                      <div className="aspect-[63/88] w-full bg-zinc-100 dark:bg-zinc-800">
-                        {card.image?.small ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={card.image.small}
-                            alt={card.name}
-                            className="h-full w-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
-                            No image
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="space-y-0.5 p-1.5">
-                        <div className="truncate text-xs font-medium text-zinc-900 dark:text-white">
-                          {card.name}
-                        </div>
-                        <div className="truncate text-[11px] text-zinc-500">
-                          {card.expansion?.name ?? "Unknown set"}
-                          {card.number ? ` • #${card.number}` : ""}
-                          {card.rarity ? ` • ${card.rarity}` : ""}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                  {(results as CardSearchPreview[]).map((card) => {
+                    const isSelected = selectedCardIds.has(card.id);
+                    const isDisabled = selectionLocked && !isSelected;
+                    return (
+                      <button
+                        key={card.id}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => onSelectCard(card)}
+                        className={`w-full overflow-hidden rounded-lg bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-2 active:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 ${
+                          isSelected
+                            ? "border-[3px] border-accent"
+                            : "border border-zinc-200 dark:border-zinc-700"
+                        }`}>
+                        <CardItem card={card} />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

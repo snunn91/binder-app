@@ -4,13 +4,16 @@ import CardSelection from "@/components/binder/CardSelection";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function AddCardsModal() {
+type AddCardsModalProps = {
+  maxCardsInPile?: number;
+};
+
+export default function AddCardsModal({ maxCardsInPile }: AddCardsModalProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -27,6 +30,7 @@ export default function AddCardsModal() {
           </DialogHeader>
           <div className="flex-1 min-h-0 p-4">
             <CardSelection
+              maxCardsInPile={maxCardsInPile}
               onSelect={(card) => {
                 console.log("selected", card);
                 // next step: show preview + choose binder slot

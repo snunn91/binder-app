@@ -15,6 +15,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   fetchBinderById,
   fetchBinderPages,
+  layoutToSlots,
 } from "@/lib/firebase/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
@@ -153,7 +154,9 @@ export default function BinderDetailPage() {
   return (
     <div className="w-full py-4">
       <div className="mb-4 flex justify-end">
-        <AddCardsModal />
+        <AddCardsModal
+          maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+        />
       </div>
       <div>
         {loading && (

@@ -15,6 +15,7 @@ import useSetSearch, {
 
 import CardResults from "@/components/binder/CardSelection/CardResults";
 import SetsResults from "@/components/binder/CardSelection/SetsResults";
+import CardPile from "@/components/binder/CardSelection/CardPile";
 import {
   DEFAULT_CARD_SORT,
   sanitizeSortForScope,
@@ -24,10 +25,20 @@ import {
 
 type CardSelectionProps = {
   onSelect?: (card: GlobalCardPreview) => void;
+  maxCardsInPile?: number;
 };
 
-export default function CardSelection({ onSelect }: CardSelectionProps) {
-  const [sortBy, setSortBy] = React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
+type CardPileEntry = {
+  card: GlobalCardPreview;
+  quantity: number;
+};
+
+export default function CardSelection({
+  onSelect,
+  maxCardsInPile,
+}: CardSelectionProps) {
+  const [sortBy, setSortBy] =
+    React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
   const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
   const cardSearch = useCardSearch(24, selectedRarities, sortBy);
   const setSearch = useSetSearch({
@@ -41,8 +52,7 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
   const [filtersOpen, setFiltersOpen] = React.useState(false);
   const handleFilterExpandedChange = React.useCallback(() => undefined, []);
 
-  const [selectedCard, setSelectedCard] =
-    React.useState<GlobalCardPreview | null>(null);
+  const [pileItems, setPileItems] = React.useState<CardPileEntry[]>([]);
   const sortScope: SortScope =
     searchMode === "sets" && setSearch.view === "sets" ? "sets" : "cards";
 
@@ -61,6 +71,73 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
     active.totalCount === undefined
       ? active.results.length === active.pageSize
       : endIndex < active.totalCount;
+  const selectedCardIds = React.useMemo(
+    () => new Set(pileItems.map((item) => item.card.id)),
+    [pileItems],
+  );
+  const totalCardsInPile = React.useMemo(
+    () => pileItems.reduce((sum, item) => sum + item.quantity, 0),
+    [pileItems],
+  );
+  const pileLimit = maxCardsInPile ?? Number.POSITIVE_INFINITY;
+  const isPileAtLimit = totalCardsInPile >= pileLimit;
+
+  const incrementCardInPile = React.useCallback(
+    (card: GlobalCardPreview) => {
+      let added = false;
+      setPileItems((prev) => {
+        const total = prev.reduce((sum, item) => sum + item.quantity, 0);
+        if (total >= pileLimit) return prev;
+
+        const index = prev.findIndex((item) => item.card.id === card.id);
+        if (index >= 0) {
+          return prev.map((item, itemIndex) =>
+            itemIndex === index
+              ? { ...item, quantity: item.quantity + 1 }
+              : item,
+          );
+        }
+
+        if (prev.length >= pileLimit) return prev;
+        added = true;
+        return [...prev, { card, quantity: 1 }];
+      });
+      if (added) onSelect?.(card);
+    },
+    [onSelect, pileLimit],
+  );
+
+  const toggleCardInPile = React.useCallback(
+    (card: GlobalCardPreview) => {
+      let added = false;
+      setPileItems((prev) => {
+        const index = prev.findIndex((item) => item.card.id === card.id);
+        if (index >= 0) {
+          return prev.filter((item) => item.card.id !== card.id);
+        }
+
+        const total = prev.reduce((sum, item) => sum + item.quantity, 0);
+        if (total >= pileLimit) return prev;
+
+        added = true;
+        return [...prev, { card, quantity: 1 }];
+      });
+      if (added) onSelect?.(card);
+    },
+    [onSelect, pileLimit],
+  );
+
+  const decrementCardInPile = React.useCallback((cardId: string) => {
+    setPileItems((prev) =>
+      prev
+        .map((item) =>
+          item.card.id === cardId
+            ? { ...item, quantity: item.quantity - 1 }
+            : item,
+        )
+        .filter((item) => item.quantity > 0),
+    );
+  }, []);
 
   return (
     <div className="flex h-full w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
@@ -114,7 +191,6 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
 
               // When user goes back to Cards mode, reset to the default card page size.
               if (mode === "cards") {
-                setSelectedCard(null);
                 cardSearch.reset();
               }
 
@@ -143,10 +219,10 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
               onNext={setSearch.onNext}
               onSelectSet={(set) => setSearch.selectSet(set)}
               onBackToSets={() => setSearch.backToSets()}
+              selectedCardIds={selectedCardIds}
+              selectionLocked={isPileAtLimit}
               onSelectCard={(card) => {
-                // selecting a card in Sets mode should still preview it on the right
-                setSelectedCard(card as unknown as GlobalCardPreview);
-                onSelect?.(card as unknown as GlobalCardPreview);
+                toggleCardInPile(card as unknown as GlobalCardPreview);
               }}
             />
           ) : (
@@ -164,57 +240,27 @@ export default function CardSelection({ onSelect }: CardSelectionProps) {
               pageSize={cardSearch.pageSize}
               onPrev={cardSearch.onPrev}
               onNext={cardSearch.onNext}
+              selectedCardIds={selectedCardIds}
+              selectionLocked={isPileAtLimit}
               onSelectCard={(card) => {
-                setSelectedCard(card);
-                onSelect?.(card);
+                toggleCardInPile(card);
               }}
             />
           )}
         </div>
 
-        <div className="w-full p-3 lg:w-80">
-          <div className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-            Card Pile
-          </div>
-
-          {selectedCard ? (
-            <div className="mt-4 space-y-3">
-              <div className="aspect-[63/88] w-full overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
-                {selectedCard.image?.large || selectedCard.image?.small ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={
-                      selectedCard.image?.large ??
-                      selectedCard.image?.small ??
-                      ""
-                    }
-                    alt={selectedCard.name}
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-zinc-500">
-                    No image
-                  </div>
-                )}
-              </div>
-
-              <div className="text-sm font-exo font-medium text-zinc-900 dark:text-white">
-                {selectedCard.name}
-              </div>
-
-              <div className="text-xs text-zinc-500 dark:text-zinc-300">
-                {selectedCard.expansion?.name ?? "Unknown set"}
-                {selectedCard.number ? ` • #${selectedCard.number}` : ""}
-                {selectedCard.rarity ? ` • ${selectedCard.rarity}` : ""}
-              </div>
-            </div>
-          ) : (
-            <p className="mt-4 text-sm font-exo text-zinc-700 dark:text-slate-100">
-              Select a card to preview it here.
-            </p>
-          )}
-        </div>
+        <CardPile
+          items={pileItems}
+          totalCardsInPile={totalCardsInPile}
+          pileLimit={pileLimit}
+          isPileAtLimit={isPileAtLimit}
+          onIncrementCard={incrementCardInPile}
+          onDecrementCard={decrementCardInPile}
+          onClearAll={() => setPileItems([])}
+          onAddCards={() => {
+            console.log("add cards", pileItems);
+          }}
+        />
       </div>
     </div>
   );
