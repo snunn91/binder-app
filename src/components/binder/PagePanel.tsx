@@ -10,17 +10,17 @@ import {
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import DraggedSlot from "@/components/binder/DraggedSlot";
 import SlotItem from "@/components/binder/SlotItem";
+import type { BinderCard } from "@/lib/firebase/services/binderService";
 
 type BinderPage = {
   id: string;
   index: number;
   slots: number;
-  cardOrder: (string | null)[];
+  cardOrder: (BinderCard | null)[];
 };
 
 type PagePanelProps = {
   page: BinderPage | null;
-  slotOrder: string[];
   layoutColumns: number;
   sensors: SensorDescriptor<Record<string, unknown>>[];
   activeId: string | null;
@@ -31,7 +31,6 @@ type PagePanelProps = {
 
 export default function PagePanel({
   page,
-  slotOrder,
   layoutColumns,
   sensors,
   activeId,
@@ -41,8 +40,13 @@ export default function PagePanel({
 }: PagePanelProps) {
   if (!page) return null;
 
+  const slotOrder = Array.from(
+    { length: page.slots },
+    (_, index) => `${page.id}-slot-${index + 1}`,
+  );
   const activeIndex = activeId ? slotOrder.indexOf(activeId) : -1;
   const activeLabel = activeIndex >= 0 ? `Slot ${activeIndex + 1}` : "";
+  const activeCard = activeIndex >= 0 ? page.cardOrder?.[activeIndex] ?? null : null;
 
   return (
     <div className="p-4 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:bg-zinc-900/25 dark:border-zinc-500">
@@ -62,7 +66,12 @@ export default function PagePanel({
               gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))`,
             }}>
             {slotOrder.map((id, index) => (
-              <SlotItem key={id} id={id} label={`Slot ${index + 1}`} />
+              <SlotItem
+                key={id}
+                id={id}
+                label={`Slot ${index + 1}`}
+                card={page.cardOrder?.[index] ?? null}
+              />
             ))}
           </div>
         </SortableContext>
@@ -70,7 +79,7 @@ export default function PagePanel({
         <DragOverlay>
           {activeId && slotOrder.includes(activeId) ? (
             <div className="rotate-[20deg]">
-              <DraggedSlot label={activeLabel} />
+              <DraggedSlot label={activeLabel} card={activeCard} />
             </div>
           ) : null}
         </DragOverlay>

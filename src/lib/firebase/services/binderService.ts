@@ -23,11 +23,20 @@ type BinderItem = BinderDraft & {
   id: string;
 };
 
+type BinderCard = {
+  id: string;
+  name: string;
+  number?: string;
+  rarity?: string;
+  expansion?: { id?: string; name?: string };
+  image?: { small?: string; large?: string };
+};
+
 type BinderPage = {
   id: string;
   index: number;
   slots: number;
-  cardOrder: (string | null)[];
+  cardOrder: (BinderCard | null)[];
 };
 
 /**
@@ -109,9 +118,79 @@ async function fetchBinderPages(userId: string, binderId: string) {
   const snapshot = await getDocs(pagesQuery);
 
   return snapshot.docs.map((page) => {
-    const data = page.data() as Omit<BinderPage, "id">;
-    return { id: page.id, ...data } as BinderPage;
+    const data = page.data() as Omit<BinderPage, "id"> & {
+      cardOrder?: unknown[];
+    };
+    return {
+      id: page.id,
+      index: data.index,
+      slots: data.slots,
+      cardOrder: normalizeCardOrder(data.cardOrder, data.slots),
+    } as BinderPage;
   });
+}
+
+function normalizeCardOrder(
+  input: unknown[] | undefined,
+  slots: number,
+): (BinderCard | null)[] {
+  const list = Array.isArray(input) ? input : [];
+  const normalized = list.map((entry) => {
+    if (!entry) return null;
+
+    if (typeof entry === "string") {
+      return {
+        id: entry,
+        name: "Unknown card",
+      } as BinderCard;
+    }
+
+    if (typeof entry === "object" && entry !== null && "id" in entry) {
+      const candidate = entry as Partial<BinderCard>;
+      return {
+        id: String(candidate.id ?? ""),
+        name: candidate.name ? String(candidate.name) : "Unknown card",
+        number:
+          candidate.number !== undefined ? String(candidate.number) : undefined,
+        rarity:
+          candidate.rarity !== undefined ? String(candidate.rarity) : undefined,
+        expansion:
+          candidate.expansion && typeof candidate.expansion === "object"
+            ? {
+                id:
+                  candidate.expansion.id !== undefined
+                    ? String(candidate.expansion.id)
+                    : undefined,
+                name:
+                  candidate.expansion.name !== undefined
+                    ? String(candidate.expansion.name)
+                    : undefined,
+              }
+            : undefined,
+        image:
+          candidate.image && typeof candidate.image === "object"
+            ? {
+                small:
+                  candidate.image.small !== undefined
+                    ? String(candidate.image.small)
+                    : undefined,
+                large:
+                  candidate.image.large !== undefined
+                    ? String(candidate.image.large)
+                    : undefined,
+              }
+            : undefined,
+      } as BinderCard;
+    }
+
+    return null;
+  });
+
+  if (normalized.length < slots) {
+    return normalized.concat(Array.from({ length: slots - normalized.length }, () => null));
+  }
+
+  return normalized.slice(0, slots);
 }
 
 /**
@@ -140,12 +219,14 @@ async function updateBinderLayout(
   const snapshot = await getDocs(pagesQuery);
 
   const pages = snapshot.docs.map((d) => {
-    const data = d.data() as { slots?: number; cardOrder?: (string | null)[] };
+    const data = d.data() as { slots?: number; cardOrder?: unknown[] };
+    const slots = data.slots ?? data.cardOrder?.length ?? 0;
+    const cardOrder = normalizeCardOrder(data.cardOrder, slots);
     return {
       ref: d.ref,
       id: d.id,
-      slots: data.slots ?? data.cardOrder?.length ?? 0,
-      cardOrder: data.cardOrder ?? [],
+      slots,
+      cardOrder,
     };
   });
 
@@ -172,7 +253,7 @@ async function updateBinderLayout(
   // Update all pages
   for (const page of pages) {
     const oldOrder = page.cardOrder ?? [];
-    let nextOrder: (string | null)[] = [];
+    let nextOrder: (BinderCard | null)[] = [];
 
     if (newSlots > oldOrder.length) {
       nextOrder = oldOrder.concat(
@@ -193,12 +274,92 @@ async function updateBinderLayout(
   return { layout: newLayout, slots: newSlots };
 }
 
-export type { BinderDraft, BinderItem, BinderPage };
+async function addCardsToBinder(
+  userId: string,
+  binderId: string,
+  cards: BinderCard[],
+) {
+  if (cards.length === 0) {
+    return { addedCount: 0, remainingCount: 0, pages: [] as BinderPage[] };
+  }
+
+  const pagesRef = collection(
+    db,
+    "users",
+    userId,
+    "binders",
+    binderId,
+    "pages",
+  );
+  const pagesQuery = query(pagesRef, orderBy("index", "asc"));
+  const snapshot = await getDocs(pagesQuery);
+
+  const pageDocs = snapshot.docs.map((docSnap) => {
+    const data = docSnap.data() as { index: number; slots?: number; cardOrder?: unknown[] };
+    const slots = data.slots ?? data.cardOrder?.length ?? 0;
+    return {
+      ref: docSnap.ref,
+      id: docSnap.id,
+      index: data.index,
+      slots,
+      cardOrder: normalizeCardOrder(data.cardOrder, slots),
+    };
+  });
+
+  let cardIndex = 0;
+  const changedPages = new Set<string>();
+
+  for (const page of pageDocs) {
+    for (let slotIndex = 0; slotIndex < page.cardOrder.length && cardIndex < cards.length; slotIndex += 1) {
+      if (page.cardOrder[slotIndex] !== null) continue;
+      page.cardOrder[slotIndex] = cards[cardIndex];
+      cardIndex += 1;
+      changedPages.add(page.id);
+    }
+    if (cardIndex >= cards.length) break;
+  }
+
+  if (changedPages.size > 0) {
+    const batch = writeBatch(db);
+    for (const page of pageDocs) {
+      if (!changedPages.has(page.id)) continue;
+      batch.update(page.ref, { cardOrder: page.cardOrder });
+    }
+    await batch.commit();
+  }
+
+  const pages = pageDocs.map((page) => ({
+    id: page.id,
+    index: page.index,
+    slots: page.slots,
+    cardOrder: page.cardOrder,
+  }));
+
+  return {
+    addedCount: cardIndex,
+    remainingCount: cards.length - cardIndex,
+    pages,
+  };
+}
+
+async function updateBinderPageCardOrder(
+  userId: string,
+  binderId: string,
+  pageId: string,
+  cardOrder: (BinderCard | null)[],
+) {
+  const pageRef = doc(db, "users", userId, "binders", binderId, "pages", pageId);
+  await writeBatch(db).update(pageRef, { cardOrder }).commit();
+}
+
+export type { BinderDraft, BinderItem, BinderPage, BinderCard };
 export {
+  addCardsToBinder,
   createBinderDoc,
   fetchBindersForUser,
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
+  updateBinderPageCardOrder,
   updateBinderLayout,
 };

@@ -36,16 +36,20 @@ export default function SearchBar({
 }: SearchBarProps) {
   return (
     <form onSubmit={onSubmit} className="w-full">
-    <div className="flex w-full items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-2 shadow-sm transition-colors focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/50 dark:border-zinc-600 dark:bg-zinc-900">
+      <div className="flex w-full items-center gap-2 rounded-full border border-zinc-300 bg-white px-3 py-2 shadow-sm transition-colors focus-within:border-accent focus-within:ring-2 focus-within:ring-accent/50 dark:border-zinc-600 dark:bg-zinc-900">
         <Select value={mode} onValueChange={onModeChange}>
           <SelectTrigger
             aria-label="Search type"
-            className="w-auto px-4 py-1.5 text-sm font-exo font-medium">
+            className="w-auto ps-4 pe- py-1.5 text-sm font-exo font-medium">
             <SelectValue placeholder="Cards" />
           </SelectTrigger>
           <SelectContent align="start">
-            <SelectItem value="cards">Cards</SelectItem>
-            <SelectItem value="sets">Sets</SelectItem>
+            <SelectItem value="cards">
+              <span className="pe-3">Cards</span>
+            </SelectItem>
+            <SelectItem value="sets">
+              <span className="pe-3">Sets</span>
+            </SelectItem>
           </SelectContent>
         </Select>
 

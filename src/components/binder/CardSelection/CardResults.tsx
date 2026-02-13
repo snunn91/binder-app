@@ -45,6 +45,8 @@ export default function CardResults({
     () => Array.from({ length: pageSize }, (_, index) => index),
     [pageSize],
   );
+  const appButtonClassName =
+    "relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700";
 
   return (
     <div className="flex flex-col gap-y-2">
@@ -140,8 +142,8 @@ export default function CardResults({
                 type="button"
                 onClick={onPrev}
                 disabled={!hasPrev || loading}
-                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-slate-300 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
-                Prev
+                className={appButtonClassName}>
+                <span className="relative z-10">Prev</span>
               </button>
 
               <div className="text-sm text-zinc-600 dark:text-zinc-300">
@@ -152,8 +154,8 @@ export default function CardResults({
                 type="button"
                 onClick={onNext}
                 disabled={!hasNext || loading}
-                className="rounded-md border border-zinc-300 bg-slate-200 px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm transition hover:bg-slate-300 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
-                Next
+                className={appButtonClassName}>
+                <span className="relative z-10">Next</span>
               </button>
             </div>
           </>

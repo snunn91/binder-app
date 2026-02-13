@@ -13,19 +13,23 @@ import {
 import { arraySwap } from "@dnd-kit/sortable";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
+  addCardsToBinder,
+  type BinderCard,
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
+  updateBinderPageCardOrder,
 } from "@/lib/firebase/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";
+import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 
 type BinderPage = {
   id: string;
   index: number;
   slots: number;
-  cardOrder: (string | null)[];
+  cardOrder: (BinderCard | null)[];
 };
 
 export default function BinderDetailPage() {
@@ -42,10 +46,7 @@ export default function BinderDetailPage() {
 
   const [pages, setPages] = useState<BinderPage[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [pageSlotOrders, setPageSlotOrders] = useState<
-    Record<string, string[]>
-  >({});
+  const [addCardsError, setAddCardsError] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -84,17 +85,6 @@ export default function BinderDetailPage() {
       setBinder(binderData);
       setPages(pagesData);
 
-      setPageSlotOrders(
-        pagesData.reduce<Record<string, string[]>>((acc, page) => {
-          const slots = page.slots ?? page.cardOrder?.length ?? 0;
-          acc[page.id] = Array.from(
-            { length: slots },
-            (_, index) => `${page.id}-slot-${index + 1}`
-          );
-          return acc;
-        }, {})
-      );
-
       setSpreadIndex(0);
       setLoading(false);
     };
@@ -120,16 +110,37 @@ export default function BinderDetailPage() {
       return;
     }
 
-    setPageSlotOrders((prev) => {
-      const items = prev[pageId] ?? [];
+    setPages((prev) => {
+      const page = prev.find((item) => item.id === pageId);
+      if (!page) return prev;
+
+      const items = Array.from(
+        { length: page.slots },
+        (_, index) => `${page.id}-slot-${index + 1}`
+      );
       const oldIndex = items.indexOf(String(event.active.id));
       const newIndex = items.indexOf(String(event.over?.id));
-      if (oldIndex < 0 || newIndex < 0) return prev;
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return prev;
 
-      return {
-        ...prev,
-        [pageId]: arraySwap(items, oldIndex, newIndex),
-      };
+      const nextPages = prev.map((item) => {
+        if (item.id !== pageId) return item;
+        return {
+          ...item,
+          cardOrder: arraySwap(item.cardOrder ?? [], oldIndex, newIndex),
+        };
+      });
+
+      const updatedPage = nextPages.find((item) => item.id === pageId);
+      if (updatedPage && user && binderId) {
+        void updateBinderPageCardOrder(
+          user.uid,
+          binderId,
+          pageId,
+          updatedPage.cardOrder
+        );
+      }
+
+      return nextPages;
     });
 
     setActiveId(null);
@@ -151,13 +162,51 @@ export default function BinderDetailPage() {
     );
   }
 
+  const handleAddCards = async (items: CardPileEntry[]) => {
+    if (!user || !binderId || items.length === 0) return;
+
+    const cardsToAdd = items.flatMap(({ card, quantity }) =>
+      Array.from({ length: quantity }, () => ({
+        id: card.id,
+        name: card.name,
+        number: card.number,
+        rarity: card.rarity,
+        expansion: card.expansion,
+        image: card.image,
+      }))
+    );
+
+    if (cardsToAdd.length === 0) return;
+
+    setAddCardsError(null);
+
+    try {
+      const result = await addCardsToBinder(user.uid, binderId, cardsToAdd);
+      setPages(result.pages);
+      if (result.remainingCount > 0) {
+        setAddCardsError(
+          `Only ${result.addedCount} card(s) were added because the binder is full.`
+        );
+      }
+    } catch {
+      setAddCardsError("Failed to add cards to binder.");
+      throw new Error("Failed to add cards.");
+    }
+  };
+
   return (
     <div className="w-full py-4">
       <div className="mb-4 flex justify-end">
         <AddCardsModal
           maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+          onAddCards={handleAddCards}
         />
       </div>
+      {addCardsError ? (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+          {addCardsError}
+        </div>
+      ) : null}
       <div>
         {loading && (
           <div className="p-4 text-sm font-exo text-zinc-700 dark:text-slate-100">
@@ -181,7 +230,6 @@ export default function BinderDetailPage() {
               ) : (
                 <PagePanel
                   page={leftPage}
-                  slotOrder={leftPage ? pageSlotOrders[leftPage.id] ?? [] : []}
                   layoutColumns={layoutColumns}
                   sensors={sensors}
                   activeId={activeId}
@@ -193,7 +241,6 @@ export default function BinderDetailPage() {
 
               <PagePanel
                 page={rightPage}
-                slotOrder={rightPage ? pageSlotOrders[rightPage.id] ?? [] : []}
                 layoutColumns={layoutColumns}
                 sensors={sensors}
                 activeId={activeId}

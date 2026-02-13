@@ -2,6 +2,7 @@
 
 import SortByFilter from "@/components/filters/SortByFilter";
 import RarityFilter from "@/components/filters/RarityFilter";
+import TypeFilter from "@/components/filters/TypeFilter";
 import type { SearchSortOption, SortScope } from "@/lib/scrydex/sort";
 
 type FilterListProps = {
@@ -13,7 +14,10 @@ type FilterListProps = {
   onSortChange: (sort: SearchSortOption) => void;
   selectedRarities: string[];
   onSelectedRaritiesChange: (rarities: string[]) => void;
+  selectedTypes: string[];
+  onSelectedTypesChange: (types: string[]) => void;
   showRarityFilter?: boolean;
+  showTypeFilter?: boolean;
   showSortFilter?: boolean;
 };
 
@@ -26,7 +30,10 @@ export default function FilterList({
   onSortChange,
   selectedRarities,
   onSelectedRaritiesChange,
+  selectedTypes,
+  onSelectedTypesChange,
   showRarityFilter = true,
+  showTypeFilter = true,
   showSortFilter = true,
 }: FilterListProps) {
   return (
@@ -48,6 +55,15 @@ export default function FilterList({
           showLabels={showLabels}
           selectedRarities={selectedRarities}
           onSelectedRaritiesChange={onSelectedRaritiesChange}
+        />
+      ) : null}
+      {showTypeFilter ? (
+        <TypeFilter
+          expanded={expanded}
+          onExpandedChange={onExpandedChange}
+          showLabels={showLabels}
+          selectedTypes={selectedTypes}
+          onSelectedTypesChange={onSelectedTypesChange}
         />
       ) : null}
     </div>

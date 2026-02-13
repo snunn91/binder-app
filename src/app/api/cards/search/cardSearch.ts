@@ -11,6 +11,7 @@ import {
   EN_EXPANSIONS_ENDPOINT,
 } from "@/app/api/cards/search/searchEndpoints";
 import { buildRarityQuery, sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import { buildTypeQuery, sanitizeTypeFilters } from "@/lib/scrydex/type";
 import {
   DEFAULT_CARD_SORT,
   cardSortToOrderBy,
@@ -22,10 +23,16 @@ export const DEFAULT_PAGE_SIZE = 24;
 
 const SELECT_CARD_FIELDS = "id,name,number,rarity,expansion,images";
 
-function buildCardsQuery(q: string | undefined, rarityFilters: string[] | undefined) {
+function buildCardsQuery(
+  q: string | undefined,
+  rarityFilters: string[] | undefined,
+  typeFilters: string[] | undefined,
+) {
   const rarityQuery = buildRarityQuery(sanitizeRarityFilters(rarityFilters));
-  if (q && rarityQuery) return `(${q}) (${rarityQuery})`;
-  return q || rarityQuery;
+  const typeQuery = buildTypeQuery(sanitizeTypeFilters(typeFilters));
+  const clauses = [q, rarityQuery, typeQuery].filter(Boolean);
+  if (clauses.length === 0) return undefined;
+  return clauses.map((clause) => `(${clause})`).join(" ");
 }
 
 function extractImage(
@@ -108,11 +115,12 @@ export async function fetchCards(params: {
   mode?: string | null;
   setId?: string | null;
   rarityFilters?: string[];
+  typeFilters?: string[];
   sort?: CardSortOption;
 }) {
-  const { q, page, pageSize, mode, setId, rarityFilters } = params;
+  const { q, page, pageSize, mode, setId, rarityFilters, typeFilters } = params;
   const sort = sanitizeCardSort(params.sort ?? DEFAULT_CARD_SORT);
-  const query = buildCardsQuery(q, rarityFilters);
+  const query = buildCardsQuery(q, rarityFilters, typeFilters);
   const orderBy = cardSortToOrderBy(sort);
 
   const endpoint = setId

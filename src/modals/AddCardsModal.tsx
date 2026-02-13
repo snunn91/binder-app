@@ -1,6 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import CardSelection from "@/components/binder/CardSelection";
+import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 import {
   Dialog,
   DialogContent,
@@ -11,11 +13,32 @@ import {
 
 type AddCardsModalProps = {
   maxCardsInPile?: number;
+  onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
 };
 
-export default function AddCardsModal({ maxCardsInPile }: AddCardsModalProps) {
+export default function AddCardsModal({
+  maxCardsInPile,
+  onAddCards,
+}: AddCardsModalProps) {
+  const [open, setOpen] = useState(false);
+  const [selectionKey, setSelectionKey] = useState(0);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    if (!nextOpen) {
+      setSelectionKey((prev) => prev + 1);
+    }
+  };
+
+  const handleAddCards = async (items: CardPileEntry[]) => {
+    if (!onAddCards || items.length === 0) return;
+    await onAddCards(items);
+    setOpen(false);
+    setSelectionKey((prev) => prev + 1);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <button
           type="button"
@@ -30,11 +53,9 @@ export default function AddCardsModal({ maxCardsInPile }: AddCardsModalProps) {
           </DialogHeader>
           <div className="flex-1 min-h-0 p-4">
             <CardSelection
+              key={selectionKey}
               maxCardsInPile={maxCardsInPile}
-              onSelect={(card) => {
-                console.log("selected", card);
-                // next step: show preview + choose binder slot
-              }}
+              onAddCards={handleAddCards}
             />
           </div>
         </div>

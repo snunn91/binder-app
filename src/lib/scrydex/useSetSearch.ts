@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import { sanitizeTypeFilters } from "@/lib/scrydex/type";
 import {
   DEFAULT_CARD_SORT,
   sanitizeCardSort,
@@ -63,6 +64,7 @@ export default function useSetSearch(opts?: {
   setsPageSize?: number;
   cardsPageSize?: number;
   rarityFilters?: string[];
+  typeFilters?: string[];
   sortBy?: SearchSortOption;
 }) {
   const setsPageSize = opts?.setsPageSize ?? 15;
@@ -71,7 +73,12 @@ export default function useSetSearch(opts?: {
     () => sanitizeRarityFilters(opts?.rarityFilters),
     [opts?.rarityFilters],
   );
+  const normalizedTypes = React.useMemo(
+    () => sanitizeTypeFilters(opts?.typeFilters),
+    [opts?.typeFilters],
+  );
   const rarityKey = normalizedRarities.join("|");
+  const typeKey = normalizedTypes.join("|");
   const normalizedCardSort = sanitizeCardSort(opts?.sortBy ?? DEFAULT_CARD_SORT);
   const normalizedSetSort = sanitizeSetSort(opts?.sortBy ?? DEFAULT_CARD_SORT);
 
@@ -159,6 +166,7 @@ export default function useSetSearch(opts?: {
           sort: normalizedCardSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+        normalizedTypes.forEach((type) => params.append("type", type));
 
         const res = await fetch(`/api/cards/search?${params.toString()}`, {
           signal: controller.signal,
@@ -183,7 +191,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedCardSort, normalizedRarities],
+    [cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
   );
 
   const runSearchSets = React.useCallback(
@@ -255,6 +263,7 @@ export default function useSetSearch(opts?: {
           sort: normalizedCardSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+        normalizedTypes.forEach((type) => params.append("type", type));
 
         const res = await fetch(`/api/cards/search?${params.toString()}`, {
           signal: controller.signal,
@@ -279,7 +288,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedCardSort, normalizedRarities],
+    [cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
   );
 
   function clearSearchState() {
@@ -384,6 +393,7 @@ export default function useSetSearch(opts?: {
     normalizedSetSort,
     query,
     rarityKey,
+    typeKey,
     runDefaultSetCards,
     runSearchSetCards,
     selectedSet,

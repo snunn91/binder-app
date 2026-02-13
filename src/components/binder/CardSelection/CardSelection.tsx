@@ -25,26 +25,30 @@ import {
 
 type CardSelectionProps = {
   onSelect?: (card: GlobalCardPreview) => void;
+  onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
   maxCardsInPile?: number;
 };
 
-type CardPileEntry = {
+export type CardPileEntry = {
   card: GlobalCardPreview;
   quantity: number;
 };
 
 export default function CardSelection({
   onSelect,
+  onAddCards,
   maxCardsInPile,
 }: CardSelectionProps) {
   const [sortBy, setSortBy] =
     React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
   const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
-  const cardSearch = useCardSearch(24, selectedRarities, sortBy);
+  const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
+  const cardSearch = useCardSearch(24, selectedRarities, selectedTypes, sortBy);
   const setSearch = useSetSearch({
     setsPageSize: 15,
     cardsPageSize: 24,
     rarityFilters: selectedRarities,
+    typeFilters: selectedTypes,
     sortBy,
   });
 
@@ -170,7 +174,12 @@ export default function CardSelection({
                 onSortChange={setSortBy}
                 selectedRarities={selectedRarities}
                 onSelectedRaritiesChange={setSelectedRarities}
+                selectedTypes={selectedTypes}
+                onSelectedTypesChange={setSelectedTypes}
                 showRarityFilter={
+                  searchMode === "cards" || setSearch.view === "setCards"
+                }
+                showTypeFilter={
                   searchMode === "cards" || setSearch.view === "setCards"
                 }
               />
@@ -257,9 +266,7 @@ export default function CardSelection({
           onIncrementCard={incrementCardInPile}
           onDecrementCard={decrementCardInPile}
           onClearAll={() => setPileItems([])}
-          onAddCards={() => {
-            console.log("add cards", pileItems);
-          }}
+          onAddCards={() => void onAddCards?.(pileItems)}
         />
       </div>
     </div>

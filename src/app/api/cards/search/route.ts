@@ -20,6 +20,7 @@ import {
   parseSets,
 } from "@/app/api/cards/search/setSearch";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import { sanitizeTypeFilters } from "@/lib/scrydex/type";
 import { sanitizeCardSort, sanitizeSetSort } from "@/lib/scrydex/sort";
 
 const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14d
@@ -42,6 +43,7 @@ export async function GET(req: Request) {
     const mode = searchParams.get("mode");
     const setId = searchParams.get("set");
     const rarityFilters = sanitizeRarityFilters(searchParams.getAll("rarity"));
+    const typeFilters = sanitizeTypeFilters(searchParams.getAll("type"));
     const rawSort = searchParams.get("sort");
     const cardSort = sanitizeCardSort(rawSort);
     const setSort = sanitizeSetSort(rawSort);
@@ -81,11 +83,11 @@ export async function GET(req: Request) {
           : `sets|q=${qNorm}|sort=${setSort}|lang=en|tcg=1|${CACHE_VERSION}`
         : setId
           ? mode === "recent"
-            ? `cards|recent|set=${setId}|rarity=${rarityFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
-            : `cards|q=${qNorm}|set=${setId}|rarity=${rarityFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
+            ? `cards|recent|set=${setId}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|set=${setId}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
           : mode === "recent"
-            ? `cards|recent|rarity=${rarityFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
-            : `cards|q=${qNorm}|rarity=${rarityFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`;
+            ? `cards|recent|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
+            : `cards|q=${qNorm}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`;
 
     const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
     const cached = await getCachedSearch<SearchPreview>(cacheKey);
@@ -133,6 +135,7 @@ export async function GET(req: Request) {
             mode,
             setId,
             rarityFilters,
+            typeFilters,
             sort: cardSort,
           })
         : await fetchCards({
@@ -142,6 +145,7 @@ export async function GET(req: Request) {
             mode: null,
             setId,
             rarityFilters,
+            typeFilters,
             sort: cardSort,
           });
 

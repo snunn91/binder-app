@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
+import { sanitizeTypeFilters } from "@/lib/scrydex/type";
 import {
   DEFAULT_CARD_SORT,
   sanitizeCardSort,
@@ -41,6 +42,7 @@ function waitForNextPaint() {
 export default function useCardSearch(
   pageSize = 24,
   rarityFilters: string[] = [],
+  typeFilters: string[] = [],
   sortBy: CardSortOption = DEFAULT_CARD_SORT,
 ) {
   const [input, setInput] = React.useState("");
@@ -59,7 +61,12 @@ export default function useCardSearch(
     () => sanitizeRarityFilters(rarityFilters),
     [rarityFilters],
   );
+  const normalizedTypes = React.useMemo(
+    () => sanitizeTypeFilters(typeFilters),
+    [typeFilters],
+  );
   const rarityKey = normalizedRarities.join("|");
+  const typeKey = normalizedTypes.join("|");
   const normalizedSort = sanitizeCardSort(sortBy);
 
   const runDefault = React.useCallback(
@@ -81,6 +88,7 @@ export default function useCardSearch(
           sort: normalizedSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+        normalizedTypes.forEach((type) => params.append("type", type));
 
         const res = await fetch(`/api/cards/search?${params.toString()}`, {
           signal: controller.signal,
@@ -106,7 +114,7 @@ export default function useCardSearch(
         setLoading(false);
       }
     },
-    [normalizedRarities, normalizedSort, pageSize],
+    [normalizedRarities, normalizedSort, normalizedTypes, pageSize],
   );
 
   const runSearch = React.useCallback(
@@ -136,6 +144,7 @@ export default function useCardSearch(
           sort: normalizedSort,
         });
         normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+        normalizedTypes.forEach((type) => params.append("type", type));
 
         const res = await fetch(`/api/cards/search?${params.toString()}`, {
           signal: controller.signal,
@@ -160,7 +169,7 @@ export default function useCardSearch(
         setLoading(false);
       }
     },
-    [normalizedRarities, normalizedSort, pageSize],
+    [normalizedRarities, normalizedSort, normalizedTypes, pageSize],
   );
 
   function onSubmit(e: React.FormEvent) {
@@ -215,7 +224,7 @@ export default function useCardSearch(
     setPage(1);
     if (query.trim().length < 2) void runDefault(1);
     else void runSearch(query, 1);
-  }, [normalizedSort, query, rarityKey, runDefault, runSearch]);
+  }, [normalizedSort, query, rarityKey, typeKey, runDefault, runSearch]);
 
   return {
     input,
