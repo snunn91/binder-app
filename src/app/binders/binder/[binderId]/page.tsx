@@ -32,6 +32,28 @@ type BinderPage = {
   cardOrder: (BinderCard | null)[];
 };
 
+function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
+  const cardsToAdd: BinderCard[] = [];
+
+  for (const { card, quantity } of items) {
+    if (quantity <= 0) continue;
+
+    // Keep card pile order exact, and place duplicates consecutively.
+    for (let index = 0; index < quantity; index += 1) {
+      cardsToAdd.push({
+        id: card.id,
+        name: card.name,
+        number: card.number,
+        rarity: card.rarity,
+        expansion: card.expansion,
+        image: card.image,
+      });
+    }
+  }
+
+  return cardsToAdd;
+}
+
 export default function BinderDetailPage() {
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
@@ -165,16 +187,7 @@ export default function BinderDetailPage() {
   const handleAddCards = async (items: CardPileEntry[]) => {
     if (!user || !binderId || items.length === 0) return;
 
-    const cardsToAdd = items.flatMap(({ card, quantity }) =>
-      Array.from({ length: quantity }, () => ({
-        id: card.id,
-        name: card.name,
-        number: card.number,
-        rarity: card.rarity,
-        expansion: card.expansion,
-        image: card.image,
-      }))
-    );
+    const cardsToAdd = buildCardsToAddFromPile(items);
 
     if (cardsToAdd.length === 0) return;
 
