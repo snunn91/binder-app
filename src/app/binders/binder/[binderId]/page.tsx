@@ -11,14 +11,13 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Save } from "lucide-react";
 import {
-  addCardsToBinder,
   type BinderCard,
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
-  updateBinderPageCardOrder,
+  updateBinderPageCardOrders,
 } from "@/lib/firebase/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
@@ -54,6 +53,46 @@ function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
   return cardsToAdd;
 }
 
+function addCardsToLocalPages(
+  pages: BinderPage[],
+  cards: BinderCard[],
+): {
+  nextPages: BinderPage[];
+  changedPageIds: string[];
+  addedCount: number;
+  remainingCount: number;
+} {
+  const nextPages = pages.map((page) => ({
+    ...page,
+    cardOrder: [...(page.cardOrder ?? [])],
+  }));
+  const orderedPages = [...nextPages].sort((a, b) => a.index - b.index);
+  const changedPageIds = new Set<string>();
+  let cardIndex = 0;
+
+  for (const page of orderedPages) {
+    for (
+      let slotIndex = 0;
+      slotIndex < page.slots && cardIndex < cards.length;
+      slotIndex += 1
+    ) {
+      if (page.cardOrder[slotIndex] !== null) continue;
+      page.cardOrder[slotIndex] = cards[cardIndex];
+      cardIndex += 1;
+      changedPageIds.add(page.id);
+    }
+
+    if (cardIndex >= cards.length) break;
+  }
+
+  return {
+    nextPages,
+    changedPageIds: Array.from(changedPageIds),
+    addedCount: cardIndex,
+    remainingCount: cards.length - cardIndex,
+  };
+}
+
 export default function BinderDetailPage() {
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
@@ -69,6 +108,9 @@ export default function BinderDetailPage() {
   const [pages, setPages] = useState<BinderPage[]>([]);
   const [loading, setLoading] = useState(true);
   const [addCardsError, setAddCardsError] = useState<string | null>(null);
+  const [dirtyPageIds, setDirtyPageIds] = useState<Set<string>>(new Set());
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -83,12 +125,14 @@ export default function BinderDetailPage() {
 
   const pagesSorted = useMemo(
     () => [...pages].sort((a, b) => a.index - b.index),
-    [pages]
+    [pages],
   );
 
   const [firstPage, secondPage, thirdPage] = pagesSorted;
-  const leftPage = spreadIndex === 0 ? null : secondPage ?? null;
-  const rightPage = spreadIndex === 0 ? firstPage ?? null : thirdPage ?? null;
+  const leftPage = spreadIndex === 0 ? null : (secondPage ?? null);
+  const rightPage =
+    spreadIndex === 0 ? (firstPage ?? null) : (thirdPage ?? null);
+  const hasUnsavedChanges = dirtyPageIds.size > 0;
 
   useEffect(() => {
     if (!user || !binderId) return;
@@ -106,6 +150,8 @@ export default function BinderDetailPage() {
 
       setBinder(binderData);
       setPages(pagesData);
+      setDirtyPageIds(new Set());
+      setSaveError(null);
 
       setSpreadIndex(0);
       setLoading(false);
@@ -132,38 +178,36 @@ export default function BinderDetailPage() {
       return;
     }
 
+    let didChange = false;
     setPages((prev) => {
       const page = prev.find((item) => item.id === pageId);
       if (!page) return prev;
 
       const items = Array.from(
         { length: page.slots },
-        (_, index) => `${page.id}-slot-${index + 1}`
+        (_, index) => `${page.id}-slot-${index + 1}`,
       );
       const oldIndex = items.indexOf(String(event.active.id));
       const newIndex = items.indexOf(String(event.over?.id));
       if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return prev;
+      didChange = true;
 
-      const nextPages = prev.map((item) => {
+      return prev.map((item) => {
         if (item.id !== pageId) return item;
         return {
           ...item,
           cardOrder: arraySwap(item.cardOrder ?? [], oldIndex, newIndex),
         };
       });
-
-      const updatedPage = nextPages.find((item) => item.id === pageId);
-      if (updatedPage && user && binderId) {
-        void updateBinderPageCardOrder(
-          user.uid,
-          binderId,
-          pageId,
-          updatedPage.cardOrder
-        );
-      }
-
-      return nextPages;
     });
+    if (didChange) {
+      setDirtyPageIds((prev) => {
+        const next = new Set(prev);
+        next.add(pageId);
+        return next;
+      });
+      setSaveError(null);
+    }
 
     setActiveId(null);
   };
@@ -185,39 +229,63 @@ export default function BinderDetailPage() {
   }
 
   const handleAddCards = async (items: CardPileEntry[]) => {
-    if (!user || !binderId || items.length === 0) return;
+    if (items.length === 0) return;
 
     const cardsToAdd = buildCardsToAddFromPile(items);
 
     if (cardsToAdd.length === 0) return;
 
     setAddCardsError(null);
+    setSaveError(null);
+
+    const result = addCardsToLocalPages(pages, cardsToAdd);
+    setPages(result.nextPages);
+    if (result.changedPageIds.length > 0) {
+      setDirtyPageIds((prev) => {
+        const next = new Set(prev);
+        for (const changedId of result.changedPageIds) {
+          next.add(changedId);
+        }
+        return next;
+      });
+    }
+    if (result.remainingCount > 0) {
+      setAddCardsError(
+        `Only ${result.addedCount} card(s) were added because the binder is full.`,
+      );
+    }
+  };
+
+  const handleSaveChanges = async () => {
+    if (!user || !binderId || !hasUnsavedChanges || isSaving) return;
+
+    setIsSaving(true);
+    setSaveError(null);
 
     try {
-      const result = await addCardsToBinder(user.uid, binderId, cardsToAdd);
-      setPages(result.pages);
-      if (result.remainingCount > 0) {
-        setAddCardsError(
-          `Only ${result.addedCount} card(s) were added because the binder is full.`
-        );
-      }
+      const dirtyIds = new Set(dirtyPageIds);
+      const updates = pages
+        .filter((page) => dirtyIds.has(page.id))
+        .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
+      await updateBinderPageCardOrders(user.uid, binderId, updates);
+      setDirtyPageIds(new Set());
     } catch {
-      setAddCardsError("Failed to add cards to binder.");
-      throw new Error("Failed to add cards.");
+      setSaveError("Failed to save changes.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
   return (
     <div className="w-full py-4">
-      <div className="mb-4 flex justify-end">
-        <AddCardsModal
-          maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
-          onAddCards={handleAddCards}
-        />
-      </div>
       {addCardsError ? (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {addCardsError}
+        </div>
+      ) : null}
+      {saveError ? (
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+          {saveError}
         </div>
       ) : null}
       <div>
@@ -267,7 +335,7 @@ export default function BinderDetailPage() {
               type="button"
               onClick={() =>
                 setSpreadIndex((prev) =>
-                  Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0)
+                  Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
                 )
               }
               disabled={pagesSorted.length <= 1 || spreadIndex === 1}
@@ -276,6 +344,29 @@ export default function BinderDetailPage() {
             </button>
           </div>
         )}
+      </div>
+
+      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+        <AddCardsModal
+          maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+          onAddCards={handleAddCards}
+        />
+
+        <button
+          type="button"
+          onClick={() => void handleSaveChanges()}
+          disabled={!hasUnsavedChanges || isSaving}
+          aria-label={isSaving ? "Saving changes" : "Save changes"}
+          className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+            hasUnsavedChanges && !isSaving
+              ? "border-emerald-600 bg-emerald-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+              : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
+          }`}>
+          <Save className="h-4 w-4 shrink-0" />
+          <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+            {isSaving ? "Saving..." : "Save"}
+          </span>
+        </button>
       </div>
     </div>
   );

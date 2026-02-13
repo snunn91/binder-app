@@ -352,6 +352,29 @@ async function updateBinderPageCardOrder(
   await writeBatch(db).update(pageRef, { cardOrder }).commit();
 }
 
+async function updateBinderPageCardOrders(
+  userId: string,
+  binderId: string,
+  updates: Array<{ pageId: string; cardOrder: (BinderCard | null)[] }>,
+) {
+  if (updates.length === 0) return;
+
+  const batch = writeBatch(db);
+  for (const update of updates) {
+    const pageRef = doc(
+      db,
+      "users",
+      userId,
+      "binders",
+      binderId,
+      "pages",
+      update.pageId,
+    );
+    batch.update(pageRef, { cardOrder: update.cardOrder });
+  }
+  await batch.commit();
+}
+
 export type { BinderDraft, BinderItem, BinderPage, BinderCard };
 export {
   addCardsToBinder,
@@ -361,5 +384,6 @@ export {
   fetchBinderPages,
   layoutToSlots,
   updateBinderPageCardOrder,
+  updateBinderPageCardOrders,
   updateBinderLayout,
 };
