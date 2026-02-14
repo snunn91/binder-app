@@ -24,6 +24,7 @@ type PagePanelProps = {
   layoutColumns: number;
   sensors: SensorDescriptor<Record<string, unknown>>[];
   activeId: string | null;
+  colorScheme?: string;
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onDragCancel: () => void;
@@ -34,6 +35,7 @@ export default function PagePanel({
   layoutColumns,
   sensors,
   activeId,
+  colorScheme = "default",
   onDragStart,
   onDragEnd,
   onDragCancel,
@@ -71,10 +73,17 @@ export default function PagePanel({
       : isThreeByThreeLayout
         ? "w-[84%] justify-self-center"
         : "w-full";
+  const panelColorSchemeClassName = {
+    default: "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500",
+    red: "bg-red-950/25 border-red-800/50",
+    blue: "bg-blue-950/25 border-blue-800/50",
+    green: "bg-green-950/25 border-green-800/50",
+    yellow: "bg-yellow-950/25 border-yellow-800/50",
+  }[colorScheme] ?? "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500";
 
   return (
     <div
-      className={`${panelPaddingClassName} bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:bg-zinc-900/25 dark:border-zinc-500`}>
+      className={`${panelPaddingClassName} ${panelColorSchemeClassName} rounded-xl border shadow-lg`}>
       <p className="text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
         Page {page.index}
       </p>

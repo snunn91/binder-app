@@ -113,7 +113,7 @@ export default function BinderDetailPage() {
     id: string;
     name: string;
     layout: string;
-    theme: string;
+    colorScheme: string;
   } | null>(null);
 
   const [pages, setPages] = useState<BinderPage[]>([]);
@@ -485,13 +485,14 @@ export default function BinderDetailPage() {
                     : "mx-auto w-full max-w-[68rem] flex-none gap-4"
               }`}>
               {spreadIndex === 0 ? (
-                <InsideCover />
+                <InsideCover colorScheme={binder?.colorScheme} />
               ) : (
                 <PagePanel
                   page={leftPage}
                   layoutColumns={layoutColumns}
                   sensors={sensors}
                   activeId={activeId}
+                  colorScheme={binder?.colorScheme}
                   onDragStart={handleDragStart}
                   onDragEnd={leftPage ? handleDragEnd(leftPage.id) : () => {}}
                   onDragCancel={handleDragCancel}
@@ -503,6 +504,7 @@ export default function BinderDetailPage() {
                 layoutColumns={layoutColumns}
                 sensors={sensors}
                 activeId={activeId}
+                colorScheme={binder?.colorScheme}
                 onDragStart={handleDragStart}
                 onDragEnd={rightPage ? handleDragEnd(rightPage.id) : () => {}}
                 onDragCancel={handleDragCancel}

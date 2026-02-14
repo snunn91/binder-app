@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-slate-100 dark:bg-zinc-800">
+      <body className="bg-slate-50 dark:bg-zinc-800">
         <Providers>
           <Toaster position="top-center" />
           <Header />

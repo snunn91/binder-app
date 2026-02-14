@@ -52,7 +52,7 @@ export default function AddBinderModal() {
         <DialogHeader>
           <DialogTitle>Create a Binder</DialogTitle>
           <DialogDescription>
-            Name your binder and choose its layout and theme.
+            Name your binder and choose its layout and color scheme.
           </DialogDescription>
         </DialogHeader>
 
@@ -106,22 +106,23 @@ export default function AddBinderModal() {
 
               <div>
                 <label
-                  htmlFor="binder-theme"
+                  htmlFor="binder-color-scheme"
                   className="mb-2 block text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-                  Theme
+                  Color scheme
                 </label>
                 <Field
                   as="select"
-                  id="binder-theme"
-                  name="theme"
+                  id="binder-color-scheme"
+                  name="colorScheme"
                   className="w-full rounded-md border border-zinc-300 bg-slate-100 p-3 text-sm font-exo text-zinc-700 shadow-sm focus:outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 active:border-accent active:ring-2 active:ring-accent/40 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100">
-                  <option value="pokeball-theme">Pokeball (default)</option>
-                  <option value="flareon-theme">Flareon</option>
-                  <option value="jolteon-theme">Jolteon</option>
-                  <option value="vaporeon-theme">Vaporeon</option>
+                  <option value="default">Default (No color)</option>
+                  <option value="red">Red</option>
+                  <option value="blue">Blue</option>
+                  <option value="green">Green</option>
+                  <option value="yellow">Yellow</option>
                 </Field>
                 <ErrorMessage
-                  name="theme"
+                  name="colorScheme"
                   component="p"
                   className="mt-1 text-sm text-red-600"
                 />

@@ -3,41 +3,30 @@
 import { useAppSelector } from "@/lib/store/storeHooks";
 import AddBinderModal from "@/modals/AddBinderModal";
 import Link from "next/link";
-import Image from "next/image";
 
 export default function BindersPage() {
   const user = useAppSelector((state) => state.auth.user);
   const binders = useAppSelector((state) => state.binders.items);
-  const themeClasses: Record<string, string> = {
-    "pokeball-theme": "",
-    "flareon-theme": "",
-    "jolteon-theme": "",
-    "vaporeon-theme": "",
-  };
-
-  const themeImages: Record<
-    string,
-    { light: string; dark: string; alt: string }
-  > = {
-    "pokeball-theme": {
-      light: "/assets/binderImages/pokeball-final.png",
-      dark: "/assets/binderImages/pokeball-final-inv.png",
-      alt: "Pokeball theme",
+  const colorSchemeClasses: Record<string, { card: string; orb: string }> = {
+    default: {
+      card: "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500",
+      orb: "bg-zinc-300/35 dark:bg-zinc-700/35",
     },
-    "flareon-theme": {
-      light: "/assets/binderImages/flareon-final.png",
-      dark: "/assets/binderImages/flareon-final-inv.png",
-      alt: "Flareon theme",
+    red: {
+      card: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800/50",
+      orb: "bg-red-400/35 dark:bg-red-500/35",
     },
-    "jolteon-theme": {
-      light: "/assets/binderImages/jolteon-final.png",
-      dark: "/assets/binderImages/jolteon-final-inv.png",
-      alt: "Jolteon theme",
+    blue: {
+      card: "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800/50",
+      orb: "bg-blue-400/35 dark:bg-blue-500/35",
     },
-    "vaporeon-theme": {
-      light: "/assets/binderImages/vaporeon-final.png",
-      dark: "/assets/binderImages/vaporeon-final-inv.png",
-      alt: "Vaporeon theme",
+    green: {
+      card: "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800/50",
+      orb: "bg-green-400/35 dark:bg-green-500/35",
+    },
+    yellow: {
+      card: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800/50",
+      orb: "bg-yellow-300/40 dark:bg-yellow-500/30",
     },
   };
 
@@ -93,27 +82,20 @@ export default function BindersPage() {
             <Link
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
-              className="relative min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg overflow-hidden dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+              className={`relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-exo font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
+                colorSchemeClasses[binder.colorScheme]?.card ??
+                colorSchemeClasses.default.card
+              }`}>
               <span>{binder.name}</span>
-              <div className="absolute -top-10 -right-16 w-64 h-64 overflow-hidden ">
-                <Image
-                  src={
-                    themeImages[binder.theme]?.light ??
-                    themeImages["pokeball-theme"].light
-                  }
-                  alt={themeImages[binder.theme]?.alt ?? "Binder theme"}
-                  fill
-                  className="block object-contain dark:hidden"
-                />
-                <Image
-                  src={
-                    themeImages[binder.theme]?.dark ??
-                    themeImages["pokeball-theme"].dark
-                  }
-                  alt={themeImages[binder.theme]?.alt ?? "Binder theme"}
-                  fill
-                  className="hidden object-contain dark:block"
-                />
+              <div
+                className={`pointer-events-none absolute -right-14 -top-14 h-52 w-52 rounded-full blur-2xl ${
+                  colorSchemeClasses[binder.colorScheme]?.orb ??
+                  colorSchemeClasses.default.orb
+                }`}
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />
+              <div className="absolute bottom-4 right-4 rounded-full border border-zinc-300/60 bg-white/60 px-2 py-0.5 text-xs capitalize dark:border-zinc-600/60 dark:bg-zinc-900/50">
+                {binder.colorScheme ?? "default"}
               </div>
             </Link>
           ))}

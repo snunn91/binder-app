@@ -16,7 +16,7 @@ import { db } from "@/lib/firebase/client";
 type BinderDraft = {
   name: string;
   layout: string; // "2x2" | "3x3" | "4x4"
-  theme: string;
+  colorScheme: string;
 };
 
 type BinderItem = BinderDraft & {
@@ -91,12 +91,12 @@ async function fetchBindersForUser(userId: string) {
   const snapshot = await getDocs(bindersQuery);
 
   return snapshot.docs.map((d) => {
-    const data = d.data() as BinderDraft;
+    const data = d.data() as BinderDraft & { theme?: string };
     return {
       id: d.id,
       name: data.name,
       layout: data.layout,
-      theme: data.theme,
+      colorScheme: data.colorScheme ?? data.theme ?? "default",
     } as BinderItem;
   });
 }
@@ -106,8 +106,13 @@ async function fetchBinderById(userId: string, binderId: string) {
   const snapshot = await getDoc(binderRef);
   if (!snapshot.exists()) return null;
 
-  const data = snapshot.data() as BinderDraft;
-  return { id: snapshot.id, ...data } as BinderItem;
+  const data = snapshot.data() as BinderDraft & { theme?: string };
+  return {
+    id: snapshot.id,
+    name: data.name,
+    layout: data.layout,
+    colorScheme: data.colorScheme ?? data.theme ?? "default",
+  } as BinderItem;
 }
 
 async function fetchBinderPages(userId: string, binderId: string) {

@@ -97,7 +97,7 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-slate-100 text-zinc-700 dark:bg-zinc-800 dark:text-slate-100;
+    @apply bg-slate-50 text-zinc-700 dark:bg-zinc-800 dark:text-slate-100;
   }
   button {
     @apply cursor-pointer;
@@ -112,6 +112,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-slate-100 text-zinc-700 dark:bg-zinc-800 dark:text-slate-100;
+    @apply bg-slate-50 text-zinc-700 dark:bg-zinc-800 dark:text-slate-100;
   }
 }
