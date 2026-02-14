@@ -12,7 +12,14 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
-import { ChevronLeft, ChevronRight, Save } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  EllipsisVertical,
+  Pencil,
+  Save,
+  Settings,
+} from "lucide-react";
 import {
   type BinderCard,
   fetchBinderById,
@@ -123,6 +130,7 @@ export default function BinderDetailPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
   const hasUnsavedChangesRef = useRef(false);
@@ -147,6 +155,8 @@ export default function BinderDetailPage() {
   const leftPage = spreadIndex === 0 ? null : (secondPage ?? null);
   const rightPage =
     spreadIndex === 0 ? (firstPage ?? null) : (thirdPage ?? null);
+  const currentPageIndex = spreadIndex === 0 ? 1 : 2;
+  const totalPageSpreads = pagesSorted.length > 1 ? 2 : 1;
   const hasUnsavedChanges = dirtyPageIds.size > 0;
   const isTwoByTwoLayout = layoutColumns === 2;
   const isFourByFourLayout = layoutColumns === 4;
@@ -308,6 +318,21 @@ export default function BinderDetailPage() {
     continuePendingNavigation();
   }, [continuePendingNavigation, handleSaveChanges]);
 
+  const handleSaveFromMenu = async () => {
+    const saved = await handleSaveChanges();
+    if (saved) setIsActionMenuOpen(false);
+  };
+
+  const handleEditFromMenu = () => {
+    setIsActionMenuOpen(false);
+    toast("Edit mode coming soon");
+  };
+
+  const handleSettingsFromMenu = () => {
+    setIsActionMenuOpen(false);
+    toast("Settings coming soon");
+  };
+
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges || bypassUnsavedGuardRef.current) return;
@@ -389,7 +414,7 @@ export default function BinderDetailPage() {
   }
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden py-3">
+    <div className="flex h-full w-full flex-col overflow-hidden">
       {addCardsError ? (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {addCardsError}
@@ -400,16 +425,28 @@ export default function BinderDetailPage() {
           {saveError}
         </div>
       ) : null}
-      <div className="flex-1 min-h-0 pt-3 pb-20">
+      <div className="flex-1 min-h-0 pt-2 pb-20">
         {loading && (
-          <div className="flex h-full min-w-0 items-center justify-center gap-4">
-            <button
-              type="button"
-              disabled
-              aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
+          <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                disabled
+                aria-hidden="true"
+                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 opacity-50 dark:text-slate-100">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="min-w-[3.5rem] text-center text-xs font-exo font-medium text-zinc-700 opacity-60 dark:text-slate-100">
+                {currentPageIndex}/{totalPageSpreads}
+              </span>
+              <button
+                type="button"
+                disabled
+                aria-hidden="true"
+                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 opacity-50 dark:text-slate-100">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
 
             <div
               className={`grid min-w-0 grid-cols-2 ${
@@ -455,26 +492,34 @@ export default function BinderDetailPage() {
                 </div>
               ))}
             </div>
-
-            <button
-              type="button"
-              disabled
-              aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
-              <ChevronRight className="h-4 w-4" />
-            </button>
           </div>
         )}
 
         {!loading && (
-          <div className="flex h-full min-w-0 items-center justify-center gap-4">
-            <button
-              type="button"
-              onClick={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
-              disabled={spreadIndex === 0}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
+          <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
+                disabled={spreadIndex === 0}
+                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:text-slate-100">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="min-w-[3.5rem] text-center text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
+                {currentPageIndex}/{totalPageSpreads}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setSpreadIndex((prev) =>
+                    Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
+                  )
+                }
+                disabled={pagesSorted.length <= 1 || spreadIndex === 1}
+                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:text-slate-100">
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
 
             <div
               className={`grid min-w-0 grid-cols-2 ${
@@ -510,42 +555,68 @@ export default function BinderDetailPage() {
                 onDragCancel={handleDragCancel}
               />
             </div>
-
-            <button
-              type="button"
-              onClick={() =>
-                setSpreadIndex((prev) =>
-                  Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
-                )
-              }
-              disabled={pagesSorted.length <= 1 || spreadIndex === 1}
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
-              <ChevronRight className="h-4 w-4" />
-            </button>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-6 left-6 right-6 z-40 flex justify-end gap-3">
-        <AddCardsModal
-          maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
-          onAddCards={handleAddCards}
-        />
+      <div className="fixed bottom-6 right-6 z-40">
+        <div
+          className={`absolute bottom-14 right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
+            isActionMenuOpen
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-2 opacity-0"
+          }`}>
+          <button
+            type="button"
+            onClick={() => void handleSaveFromMenu()}
+            disabled={!hasUnsavedChanges || isSaving}
+            aria-label={isSaving ? "Saving changes" : "Save changes"}
+            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+              hasUnsavedChanges && !isSaving
+                ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
+            }`}>
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+              {isSaving ? "Saving..." : "Save"}
+            </span>
+          </button>
+
+          <AddCardsModal
+            maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+            onAddCards={handleAddCards}
+            onTriggerClick={() => setIsActionMenuOpen(false)}
+          />
+
+          <button
+            type="button"
+            onClick={handleEditFromMenu}
+            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+            <Pencil className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+              Edit
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSettingsFromMenu}
+            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+            <Settings className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+              Settings
+            </span>
+          </button>
+        </div>
 
         <button
           type="button"
-          onClick={() => void handleSaveChanges()}
-          disabled={!hasUnsavedChanges || isSaving}
-          aria-label={isSaving ? "Saving changes" : "Save changes"}
-          className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-            hasUnsavedChanges && !isSaving
-              ? "border-emerald-600 bg-emerald-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
-              : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
-          }`}>
-          <Save className="h-4 w-4 shrink-0" />
-          <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-            {isSaving ? "Saving..." : "Save"}
-          </span>
+          onClick={() => setIsActionMenuOpen((open) => !open)}
+          aria-expanded={isActionMenuOpen}
+          aria-label={isActionMenuOpen ? "Hide actions" : "Show actions"}
+          className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-300 bg-slate-200 text-zinc-700 shadow-lg transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+          <EllipsisVertical className="h-4 w-4" />
+          <span className="sr-only">Actions</span>
         </button>
       </div>
 
