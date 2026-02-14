@@ -347,29 +347,34 @@ export default function BinderDetailPage() {
     }
   };
 
-  const handleSaveChanges = useCallback(async (): Promise<boolean> => {
-    if (!user || !binderId || !hasUnsavedChanges || isSaving) return false;
+  const handleSaveChanges = useCallback(
+    async (
+      successMessage = "your binder has been updated",
+    ): Promise<boolean> => {
+      if (!user || !binderId || !hasUnsavedChanges || isSaving) return false;
 
-    setIsSaving(true);
-    setSaveError(null);
+      setIsSaving(true);
+      setSaveError(null);
 
-    try {
-      const dirtyIds = new Set(dirtyPageIds);
-      const updates = pages
-        .filter((page) => dirtyIds.has(page.id))
-        .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
-      await updateBinderPageCardOrders(user.uid, binderId, updates);
-      baselinePageSignaturesRef.current = buildPageSignatures(pages);
-      setDirtyPageIds(new Set());
-      toast.success("your binder has been updated");
-      return true;
-    } catch {
-      setSaveError("Failed to save changes.");
-      return false;
-    } finally {
-      setIsSaving(false);
-    }
-  }, [binderId, dirtyPageIds, hasUnsavedChanges, isSaving, pages, user]);
+      try {
+        const dirtyIds = new Set(dirtyPageIds);
+        const updates = pages
+          .filter((page) => dirtyIds.has(page.id))
+          .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
+        await updateBinderPageCardOrders(user.uid, binderId, updates);
+        baselinePageSignaturesRef.current = buildPageSignatures(pages);
+        setDirtyPageIds(new Set());
+        toast.success(successMessage);
+        return true;
+      } catch {
+        setSaveError("Failed to save changes.");
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [binderId, dirtyPageIds, hasUnsavedChanges, isSaving, pages, user],
+  );
 
   const openLeaveModal = useCallback((navigationAction: () => void) => {
     pendingNavigationRef.current = navigationAction;
@@ -405,7 +410,7 @@ export default function BinderDetailPage() {
 
     setIsEditMode(false);
     if (hasUnsavedChanges) {
-      await handleSaveChanges();
+      await handleSaveChanges("Your edits have been saved");
     }
     setIsActionMenuOpen(false);
   };
