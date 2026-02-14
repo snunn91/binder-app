@@ -2,6 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { X } from "lucide-react";
 import type { BinderCard } from "@/lib/firebase/services/binderService";
 
 type SlotItemProps = {
@@ -10,6 +11,9 @@ type SlotItemProps = {
   card: BinderCard | null;
   aspectClassName?: string;
   sizeClassName?: string;
+  onAddCard?: () => void;
+  onDeleteCard?: () => void;
+  isEditMode?: boolean;
 };
 
 export default function SlotItem({
@@ -18,37 +22,75 @@ export default function SlotItem({
   card,
   aspectClassName = "aspect-[2/3]",
   sizeClassName = "w-full",
+  onAddCard,
+  onDeleteCard,
+  isEditMode = false,
 }: SlotItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
   const isDragging = transform !== null;
   const imageSrc = card?.image?.small ?? card?.image?.large;
+  const isDraggable = Boolean(card) && !isEditMode;
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
+  const cursorClassName = imageSrc
+    ? "cursor-grab active:cursor-grabbing"
+    : "cursor-default";
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className={`relative flex ${aspectClassName} ${sizeClassName} items-center justify-center overflow-hidden rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
+      {...(isDraggable ? attributes : {})}
+      {...(isDraggable ? listeners : {})}
+      className={`group relative flex ${aspectClassName} ${sizeClassName} ${cursorClassName} items-center justify-center overflow-visible rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
         isDragging ? "border-dashed opacity-40" : ""
       }`}>
-      {imageSrc ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageSrc}
-          alt={card?.name ?? label}
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="px-2 text-center">{card?.name ?? label}</div>
-      )}
+      <div className="relative h-full w-full overflow-hidden rounded-lg">
+        {imageSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={imageSrc}
+            alt={card?.name ?? label}
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        ) : (
+          <>
+            {card?.name ? (
+              <div className="px-2 text-center">{card.name}</div>
+            ) : null}
+            {onAddCard ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onAddCard();
+                }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-slate-200 px-2 py-0.5 text-[10px] font-exo font-medium text-zinc-700 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100">
+                Add Card
+              </button>
+            ) : null}
+          </>
+        )}
+      </div>
+      {isEditMode && card && onDeleteCard ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onDeleteCard();
+          }}
+          className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-red-500 bg-red-500 text-white shadow-sm transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent">
+          <X className="h-3 w-3" />
+          <span className="sr-only">Remove card</span>
+        </button>
+      ) : null}
     </div>
   );
 }

@@ -13,10 +13,12 @@ import {
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   EllipsisVertical,
   Pencil,
+  Plus,
   Save,
   Settings,
 } from "lucide-react";
@@ -161,6 +163,8 @@ export default function BinderDetailPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
+  const [isAddCardsModalOpen, setIsAddCardsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
   const hasUnsavedChangesRef = useRef(false);
@@ -228,7 +232,23 @@ export default function BinderDetailPage() {
   }, [binderId, user]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(String(event.active.id));
+    const activeId = String(event.active.id);
+    const match = activeId.match(/^(.*)-slot-(\d+)$/);
+    if (!match) {
+      setActiveId(activeId);
+      return;
+    }
+
+    const [, pageId, slotNumber] = match;
+    const page = pages.find((item) => item.id === pageId);
+    const slotIndex = Number(slotNumber) - 1;
+    const card = page?.cardOrder?.[slotIndex] ?? null;
+    if (!card) {
+      setActiveId(null);
+      return;
+    }
+
+    setActiveId(activeId);
   };
 
   const handleDragEnd = (pageId: string) => (event: DragEndEvent) => {
@@ -254,6 +274,7 @@ export default function BinderDetailPage() {
       const oldIndex = items.indexOf(String(event.active.id));
       const newIndex = items.indexOf(String(event.over?.id));
       if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return prev;
+      if (page.cardOrder?.[oldIndex] == null) return prev;
       didChange = true;
 
       nextPagesResult = prev.map((item) => {
@@ -279,6 +300,29 @@ export default function BinderDetailPage() {
 
   const handleDragCancel = () => {
     setActiveId(null);
+  };
+
+  const handleDeleteCardFromSlot = (pageId: string, slotIndex: number) => {
+    let nextPagesResult: BinderPage[] | null = null;
+    setPages((prev) => {
+      nextPagesResult = prev.map((page) => {
+        if (page.id !== pageId) return page;
+        const cardOrder = [...(page.cardOrder ?? [])];
+        if (!cardOrder[slotIndex]) return page;
+        cardOrder[slotIndex] = null;
+        return {
+          ...page,
+          cardOrder,
+        };
+      });
+      return nextPagesResult;
+    });
+    if (nextPagesResult) {
+      setDirtyPageIds(
+        computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
+      );
+      setSaveError(null);
+    }
   };
 
   const handleAddCards = async (items: CardPileEntry[]) => {
@@ -349,17 +393,33 @@ export default function BinderDetailPage() {
 
   const handleSaveFromMenu = async () => {
     const saved = await handleSaveChanges();
-    if (saved) setIsActionMenuOpen(false);
+    if (saved && !isEditMode) setIsActionMenuOpen(false);
   };
 
-  const handleEditFromMenu = () => {
+  const handleEditFromMenu = async () => {
+    if (!isEditMode) {
+      setIsEditMode(true);
+      setIsActionMenuOpen(true);
+      return;
+    }
+
+    setIsEditMode(false);
+    if (hasUnsavedChanges) {
+      await handleSaveChanges();
+    }
     setIsActionMenuOpen(false);
-    toast("Edit mode coming soon");
   };
 
   const handleSettingsFromMenu = () => {
     setIsActionMenuOpen(false);
     toast("Settings coming soon");
+  };
+
+  const handleOpenAddCards = () => {
+    if (!isEditMode) {
+      setIsActionMenuOpen(false);
+    }
+    setIsAddCardsModalOpen(true);
   };
 
   useEffect(() => {
@@ -567,6 +627,9 @@ export default function BinderDetailPage() {
                   sensors={sensors}
                   activeId={activeId}
                   colorScheme={binder?.colorScheme}
+                  onAddCard={handleOpenAddCards}
+                  onDeleteCard={handleDeleteCardFromSlot}
+                  isEditMode={isEditMode}
                   onDragStart={handleDragStart}
                   onDragEnd={leftPage ? handleDragEnd(leftPage.id) : () => {}}
                   onDragCancel={handleDragCancel}
@@ -579,6 +642,9 @@ export default function BinderDetailPage() {
                 sensors={sensors}
                 activeId={activeId}
                 colorScheme={binder?.colorScheme}
+                onAddCard={handleOpenAddCards}
+                onDeleteCard={handleDeleteCardFromSlot}
+                isEditMode={isEditMode}
                 onDragStart={handleDragStart}
                 onDragEnd={rightPage ? handleDragEnd(rightPage.id) : () => {}}
                 onDragCancel={handleDragCancel}
@@ -595,11 +661,15 @@ export default function BinderDetailPage() {
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-2 opacity-0"
           }`}>
-          <AddCardsModal
-            maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
-            onAddCards={handleAddCards}
-            onTriggerClick={() => setIsActionMenuOpen(false)}
-          />
+          <button
+            type="button"
+            onClick={handleOpenAddCards}
+            className="group relative flex h-12 items-center overflow-hidden rounded-full border border-accent bg-accent px-4 text-sm font-exo font-medium text-white shadow-lg transition-all duration-300 hover:pr-5 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
+            <Plus className="relative z-10 h-4 w-4 shrink-0" />
+            <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+              Add card
+            </span>
+          </button>
 
           <button
             type="button"
@@ -619,11 +689,19 @@ export default function BinderDetailPage() {
 
           <button
             type="button"
-            onClick={handleEditFromMenu}
-            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-            <Pencil className="h-4 w-4 shrink-0" />
+            onClick={() => void handleEditFromMenu()}
+            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+              isEditMode
+                ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+            }`}>
+            {isEditMode ? (
+              <Check className="h-4 w-4 shrink-0" />
+            ) : (
+              <Pencil className="h-4 w-4 shrink-0" />
+            )}
             <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-              Edit
+              {isEditMode ? "Done" : "Edit"}
             </span>
           </button>
 
@@ -640,7 +718,13 @@ export default function BinderDetailPage() {
 
         <button
           type="button"
-          onClick={() => setIsActionMenuOpen((open) => !open)}
+          onClick={() => {
+            if (isEditMode) {
+              setIsActionMenuOpen(true);
+              return;
+            }
+            setIsActionMenuOpen((open) => !open);
+          }}
           aria-expanded={isActionMenuOpen}
           aria-label={isActionMenuOpen ? "Hide actions" : "Show actions"}
           className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
@@ -652,6 +736,14 @@ export default function BinderDetailPage() {
           <span className="sr-only">Actions</span>
         </button>
       </div>
+
+      <AddCardsModal
+        open={isAddCardsModalOpen}
+        onOpenChange={setIsAddCardsModalOpen}
+        hideTrigger
+        maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+        onAddCards={handleAddCards}
+      />
 
       <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
         <DialogContent className="max-w-md">

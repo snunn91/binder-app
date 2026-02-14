@@ -25,6 +25,9 @@ type PagePanelProps = {
   sensors: SensorDescriptor<Record<string, unknown>>[];
   activeId: string | null;
   colorScheme?: string;
+  onAddCard?: () => void;
+  onDeleteCard?: (pageId: string, slotIndex: number) => void;
+  isEditMode?: boolean;
   onDragStart: (event: DragStartEvent) => void;
   onDragEnd: (event: DragEndEvent) => void;
   onDragCancel: () => void;
@@ -36,6 +39,9 @@ export default function PagePanel({
   sensors,
   activeId,
   colorScheme = "default",
+  onAddCard,
+  onDeleteCard,
+  isEditMode = false,
   onDragStart,
   onDragEnd,
   onDragCancel,
@@ -110,6 +116,13 @@ export default function PagePanel({
                 card={page.cardOrder?.[index] ?? null}
                 aspectClassName={slotAspectClassName}
                 sizeClassName={slotSizeClassName}
+                onAddCard={page.cardOrder?.[index] ? undefined : onAddCard}
+                onDeleteCard={
+                  page.cardOrder?.[index]
+                    ? () => onDeleteCard?.(page.id, index)
+                    : undefined
+                }
+                isEditMode={isEditMode}
               />
             ))}
           </div>
