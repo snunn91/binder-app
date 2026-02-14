@@ -5,13 +5,19 @@ import type { BinderCard } from "@/lib/firebase/services/binderService";
 type DraggedSlotProps = {
   label: string;
   card: BinderCard | null;
+  aspectClassName?: string;
 };
 
-export default function DraggedSlot({ label, card }: DraggedSlotProps) {
+export default function DraggedSlot({
+  label,
+  card,
+  aspectClassName = "aspect-[2/3]",
+}: DraggedSlotProps) {
   const imageSrc = card?.image?.small ?? card?.image?.large;
 
   return (
-    <div className="relative flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+    <div
+      className={`relative flex ${aspectClassName} items-center justify-center overflow-hidden rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100`}>
       {imageSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img

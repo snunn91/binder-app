@@ -44,13 +44,38 @@ export default function PagePanel({
     { length: page.slots },
     (_, index) => `${page.id}-slot-${index + 1}`,
   );
+  const isTwoByTwoLayout = layoutColumns === 2;
+  const isFourByFourLayout = layoutColumns === 4;
+  const isThreeByThreeLayout = layoutColumns === 3;
   const activeIndex = activeId ? slotOrder.indexOf(activeId) : -1;
   const activeLabel = activeIndex >= 0 ? `Slot ${activeIndex + 1}` : "";
-  const activeCard = activeIndex >= 0 ? page.cardOrder?.[activeIndex] ?? null : null;
+  const activeCard =
+    activeIndex >= 0 ? (page.cardOrder?.[activeIndex] ?? null) : null;
+  const panelPaddingClassName = isFourByFourLayout ? "p-2" : "p-3";
+  const gridGapClassName = isTwoByTwoLayout
+    ? "gap-x-2 gap-y-7"
+    : isFourByFourLayout
+      ? "gap-2"
+      : "gap-2";
+  const slotAspectClassName = isFourByFourLayout
+    ? "aspect-[3/4]"
+    : isTwoByTwoLayout
+      ? "aspect-[73/100]"
+      : isThreeByThreeLayout
+        ? "aspect-[7/10]"
+        : "aspect-[2/3]";
+  const slotSizeClassName = isTwoByTwoLayout
+    ? "w-[84%] justify-self-center"
+    : isFourByFourLayout
+      ? "w-[92%] justify-self-center"
+      : isThreeByThreeLayout
+        ? "w-[84%] justify-self-center"
+        : "w-full";
 
   return (
-    <div className="p-4 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:bg-zinc-900/25 dark:border-zinc-500">
-      <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+    <div
+      className={`${panelPaddingClassName} bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:bg-zinc-900/25 dark:border-zinc-500`}>
+      <p className="text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
         Page {page.index}
       </p>
 
@@ -61,7 +86,7 @@ export default function PagePanel({
         onDragCancel={onDragCancel}>
         <SortableContext items={slotOrder} strategy={rectSortingStrategy}>
           <div
-            className="mt-4 grid gap-3"
+            className={`${isFourByFourLayout ? "mt-2" : "mt-3"} grid ${gridGapClassName}`}
             style={{
               gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))`,
             }}>
@@ -71,6 +96,8 @@ export default function PagePanel({
                 id={id}
                 label={`Slot ${index + 1}`}
                 card={page.cardOrder?.[index] ?? null}
+                aspectClassName={slotAspectClassName}
+                sizeClassName={slotSizeClassName}
               />
             ))}
           </div>
@@ -79,7 +106,11 @@ export default function PagePanel({
         <DragOverlay>
           {activeId && slotOrder.includes(activeId) ? (
             <div className="rotate-[20deg]">
-              <DraggedSlot label={activeLabel} card={activeCard} />
+              <DraggedSlot
+                label={activeLabel}
+                card={activeCard}
+                aspectClassName={slotAspectClassName}
+              />
             </div>
           ) : null}
         </DragOverlay>

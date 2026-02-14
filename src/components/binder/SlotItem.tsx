@@ -8,9 +8,17 @@ type SlotItemProps = {
   id: string;
   label: string;
   card: BinderCard | null;
+  aspectClassName?: string;
+  sizeClassName?: string;
 };
 
-export default function SlotItem({ id, label, card }: SlotItemProps) {
+export default function SlotItem({
+  id,
+  label,
+  card,
+  aspectClassName = "aspect-[2/3]",
+  sizeClassName = "w-full",
+}: SlotItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
   const isDragging = transform !== null;
@@ -27,7 +35,7 @@ export default function SlotItem({ id, label, card }: SlotItemProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`relative flex aspect-[2/3] items-center justify-center overflow-hidden rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
+      className={`relative flex ${aspectClassName} ${sizeClassName} items-center justify-center overflow-hidden rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
         isDragging ? "border-dashed opacity-40" : ""
       }`}>
       {imageSrc ? (

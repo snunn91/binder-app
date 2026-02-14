@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 import { useAppSelector } from "@/lib/store/storeHooks";
 import {
   DragEndEvent,
@@ -22,6 +23,15 @@ import {
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 
 type BinderPage = {
@@ -94,6 +104,7 @@ function addCardsToLocalPages(
 }
 
 export default function BinderDetailPage() {
+  const router = useRouter();
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
   const user = useAppSelector((state) => state.auth.user);
@@ -111,6 +122,10 @@ export default function BinderDetailPage() {
   const [dirtyPageIds, setDirtyPageIds] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const pendingNavigationRef = useRef<null | (() => void)>(null);
+  const bypassUnsavedGuardRef = useRef(false);
+  const hasUnsavedChangesRef = useRef(false);
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -133,6 +148,12 @@ export default function BinderDetailPage() {
   const rightPage =
     spreadIndex === 0 ? (firstPage ?? null) : (thirdPage ?? null);
   const hasUnsavedChanges = dirtyPageIds.size > 0;
+  const isTwoByTwoLayout = layoutColumns === 2;
+  const isFourByFourLayout = layoutColumns === 4;
+
+  useEffect(() => {
+    hasUnsavedChangesRef.current = hasUnsavedChanges;
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
     if (!user || !binderId) return;
@@ -216,18 +237,6 @@ export default function BinderDetailPage() {
     setActiveId(null);
   };
 
-  if (!user) {
-    return (
-      <div className="flex min-h-[calc(100vh-var(--header-h))] items-center justify-center">
-        <div className="w-full max-w-3xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
-          <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
-            Please sign in to view this binder.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const handleAddCards = async (items: CardPileEntry[]) => {
     if (items.length === 0) return;
 
@@ -256,8 +265,8 @@ export default function BinderDetailPage() {
     }
   };
 
-  const handleSaveChanges = async () => {
-    if (!user || !binderId || !hasUnsavedChanges || isSaving) return;
+  const handleSaveChanges = useCallback(async (): Promise<boolean> => {
+    if (!user || !binderId || !hasUnsavedChanges || isSaving) return false;
 
     setIsSaving(true);
     setSaveError(null);
@@ -269,15 +278,118 @@ export default function BinderDetailPage() {
         .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
       await updateBinderPageCardOrders(user.uid, binderId, updates);
       setDirtyPageIds(new Set());
+      toast.success("your binder has been updated");
+      return true;
     } catch {
       setSaveError("Failed to save changes.");
+      return false;
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [binderId, dirtyPageIds, hasUnsavedChanges, isSaving, pages, user]);
+
+  const openLeaveModal = useCallback((navigationAction: () => void) => {
+    pendingNavigationRef.current = navigationAction;
+    setIsLeaveModalOpen(true);
+  }, []);
+
+  const continuePendingNavigation = useCallback(() => {
+    const action = pendingNavigationRef.current;
+    pendingNavigationRef.current = null;
+    setIsLeaveModalOpen(false);
+    if (!action) return;
+    bypassUnsavedGuardRef.current = true;
+    action();
+  }, []);
+
+  const saveAndContinueNavigation = useCallback(async () => {
+    const saved = await handleSaveChanges();
+    if (!saved) return;
+    continuePendingNavigation();
+  }, [continuePendingNavigation, handleSaveChanges]);
+
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!hasUnsavedChanges || bypassUnsavedGuardRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
+
+  useEffect(() => {
+    const onDocumentClick = (event: MouseEvent) => {
+      if (!hasUnsavedChanges || bypassUnsavedGuardRef.current) return;
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+        return;
+
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (anchor.target === "_blank" || anchor.hasAttribute("download")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href || href.startsWith("#")) return;
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      if (nextUrl.origin !== window.location.origin) return;
+
+      const current =
+        window.location.pathname +
+        window.location.search +
+        window.location.hash;
+      const next = nextUrl.pathname + nextUrl.search + nextUrl.hash;
+      if (current === next) return;
+
+      event.preventDefault();
+      openLeaveModal(() => {
+        router.push(next);
+      });
+    };
+
+    document.addEventListener("click", onDocumentClick, true);
+    return () => {
+      document.removeEventListener("click", onDocumentClick, true);
+    };
+  }, [hasUnsavedChanges, openLeaveModal, router]);
+
+  useEffect(() => {
+    window.history.pushState({ binderGuard: true }, "", window.location.href);
+
+    const onPopState = () => {
+      if (!hasUnsavedChangesRef.current || bypassUnsavedGuardRef.current)
+        return;
+      window.history.go(1);
+      openLeaveModal(() => {
+        window.history.back();
+      });
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [openLeaveModal]);
+
+  if (!user) {
+    return (
+      <div className="flex min-h-[calc(100vh-var(--header-h))] items-center justify-center">
+        <div className="w-full max-w-3xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
+          <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
+            Please sign in to view this binder.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="w-full py-4">
+    <div className="flex h-full w-full flex-col overflow-hidden py-3">
       {addCardsError ? (
         <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {addCardsError}
@@ -288,24 +400,90 @@ export default function BinderDetailPage() {
           {saveError}
         </div>
       ) : null}
-      <div>
+      <div className="flex-1 min-h-0 pt-3 pb-20">
         {loading && (
-          <div className="p-4 text-sm font-exo text-zinc-700 dark:text-slate-100">
-            Loading pages...
+          <div className="flex h-full min-w-0 items-center justify-center gap-4">
+            <button
+              type="button"
+              disabled
+              aria-hidden="true"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+
+            <div
+              className={`grid min-w-0 grid-cols-2 ${
+                isTwoByTwoLayout
+                  ? "mx-auto w-full max-w-[68rem] flex-none gap-3"
+                  : isFourByFourLayout
+                    ? "mx-auto w-full max-w-[68rem] flex-none gap-2"
+                    : "mx-auto w-full max-w-[68rem] flex-none gap-4"
+              }`}>
+              {[0, 1].map((panelIndex) => (
+                <div
+                  key={panelIndex}
+                  className={`rounded-xl border border-zinc-300 bg-gray-50 shadow-lg dark:border-zinc-500 dark:bg-zinc-900/25 ${
+                    isFourByFourLayout ? "p-1.5" : "p-3"
+                  }`}>
+                  <Skeleton className="h-4 w-20" />
+                  <div
+                    className={`${isFourByFourLayout ? "mt-2" : "mt-4"} grid ${
+                      isTwoByTwoLayout
+                        ? "gap-x-2 gap-y-7"
+                        : isFourByFourLayout
+                          ? "gap-1"
+                          : "gap-2"
+                    }`}
+                    style={{
+                      gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))`,
+                    }}>
+                    {Array.from({ length: layoutColumns * layoutColumns }).map(
+                      (_, slotIndex) => (
+                        <Skeleton
+                          key={slotIndex}
+                          className={`${
+                            isTwoByTwoLayout
+                              ? "aspect-[73/100] w-[84%] justify-self-center"
+                              : isFourByFourLayout
+                                ? "aspect-[3/4] w-[92%] justify-self-center"
+                                : "aspect-[7/10] w-[84%] justify-self-center"
+                          } rounded-lg`}
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              disabled
+              aria-hidden="true"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm opacity-50 dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         )}
 
         {!loading && (
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex h-full min-w-0 items-center justify-center gap-4">
             <button
               type="button"
               onClick={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
               disabled={spreadIndex === 0}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            <div className="grid w-full grid-cols-2 gap-4">
+            <div
+              className={`grid min-w-0 grid-cols-2 ${
+                isTwoByTwoLayout
+                  ? "mx-auto w-full max-w-[68rem] flex-none gap-3"
+                  : isFourByFourLayout
+                    ? "mx-auto w-full max-w-[68rem] flex-none gap-2"
+                    : "mx-auto w-full max-w-[68rem] flex-none gap-4"
+              }`}>
               {spreadIndex === 0 ? (
                 <InsideCover />
               ) : (
@@ -339,14 +517,14 @@ export default function BinderDetailPage() {
                 )
               }
               disabled={pagesSorted.length <= 1 || spreadIndex === 1}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-300 bg-gray-50 text-zinc-700 shadow-sm disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
         )}
       </div>
 
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
+      <div className="fixed bottom-6 left-6 right-6 z-40 flex justify-end gap-3">
         <AddCardsModal
           maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
           onAddCards={handleAddCards}
@@ -368,6 +546,39 @@ export default function BinderDetailPage() {
           </span>
         </button>
       </div>
+
+      <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-left">
+            <DialogTitle>You have unsaved changes</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to leave without saving?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
+            <button
+              type="button"
+              onClick={() => setIsLeaveModalOpen(false)}
+              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              Stay
+            </button>
+            <button
+              type="button"
+              disabled={isSaving}
+              onClick={() => void saveAndContinueNavigation()}
+              className="rounded-full border border-emerald-600 bg-emerald-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500">
+              {isSaving ? "Saving..." : "Save and leave"}
+            </button>
+            <button
+              type="button"
+              onClick={continuePendingNavigation}
+              className="rounded-full border border-red-400 bg-red-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-red-400 dark:bg-red-600 dark:hover:bg-red-500">
+              Discard and leave
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
