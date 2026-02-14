@@ -48,6 +48,36 @@ type BinderPage = {
   cardOrder: (BinderCard | null)[];
 };
 
+function slotSignature(card: BinderCard | null) {
+  if (!card) return "";
+  return `${card.id}:${card.number ?? ""}`;
+}
+
+function pageSignature(cardOrder: (BinderCard | null)[]) {
+  return cardOrder.map((card) => slotSignature(card)).join("|");
+}
+
+function buildPageSignatures(pages: BinderPage[]) {
+  const signatures: Record<string, string> = {};
+  for (const page of pages) {
+    signatures[page.id] = pageSignature(page.cardOrder ?? []);
+  }
+  return signatures;
+}
+
+function computeDirtyPageIds(
+  pages: BinderPage[],
+  baselineSignatures: Record<string, string>,
+) {
+  const dirty = new Set<string>();
+  for (const page of pages) {
+    const baseline = baselineSignatures[page.id] ?? "";
+    const current = pageSignature(page.cardOrder ?? []);
+    if (baseline !== current) dirty.add(page.id);
+  }
+  return dirty;
+}
+
 function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
   const cardsToAdd: BinderCard[] = [];
 
@@ -134,6 +164,7 @@ export default function BinderDetailPage() {
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
   const hasUnsavedChangesRef = useRef(false);
+  const baselinePageSignaturesRef = useRef<Record<string, string>>({});
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -181,6 +212,7 @@ export default function BinderDetailPage() {
 
       setBinder(binderData);
       setPages(pagesData);
+      baselinePageSignaturesRef.current = buildPageSignatures(pagesData);
       setDirtyPageIds(new Set());
       setSaveError(null);
 
@@ -210,6 +242,7 @@ export default function BinderDetailPage() {
     }
 
     let didChange = false;
+    let nextPagesResult: BinderPage[] | null = null;
     setPages((prev) => {
       const page = prev.find((item) => item.id === pageId);
       if (!page) return prev;
@@ -223,20 +256,21 @@ export default function BinderDetailPage() {
       if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return prev;
       didChange = true;
 
-      return prev.map((item) => {
+      nextPagesResult = prev.map((item) => {
         if (item.id !== pageId) return item;
         return {
           ...item,
           cardOrder: arraySwap(item.cardOrder ?? [], oldIndex, newIndex),
         };
       });
+      return nextPagesResult;
     });
     if (didChange) {
-      setDirtyPageIds((prev) => {
-        const next = new Set(prev);
-        next.add(pageId);
-        return next;
-      });
+      if (nextPagesResult) {
+        setDirtyPageIds(
+          computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
+        );
+      }
       setSaveError(null);
     }
 
@@ -259,15 +293,9 @@ export default function BinderDetailPage() {
 
     const result = addCardsToLocalPages(pages, cardsToAdd);
     setPages(result.nextPages);
-    if (result.changedPageIds.length > 0) {
-      setDirtyPageIds((prev) => {
-        const next = new Set(prev);
-        for (const changedId of result.changedPageIds) {
-          next.add(changedId);
-        }
-        return next;
-      });
-    }
+    setDirtyPageIds(
+      computeDirtyPageIds(result.nextPages, baselinePageSignaturesRef.current),
+    );
     if (result.remainingCount > 0) {
       setAddCardsError(
         `Only ${result.addedCount} card(s) were added because the binder is full.`,
@@ -287,6 +315,7 @@ export default function BinderDetailPage() {
         .filter((page) => dirtyIds.has(page.id))
         .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
       await updateBinderPageCardOrders(user.uid, binderId, updates);
+      baselinePageSignaturesRef.current = buildPageSignatures(pages);
       setDirtyPageIds(new Set());
       toast.success("your binder has been updated");
       return true;
@@ -566,6 +595,12 @@ export default function BinderDetailPage() {
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-2 opacity-0"
           }`}>
+          <AddCardsModal
+            maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
+            onAddCards={handleAddCards}
+            onTriggerClick={() => setIsActionMenuOpen(false)}
+          />
+
           <button
             type="button"
             onClick={() => void handleSaveFromMenu()}
@@ -581,12 +616,6 @@ export default function BinderDetailPage() {
               {isSaving ? "Saving..." : "Save"}
             </span>
           </button>
-
-          <AddCardsModal
-            maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
-            onAddCards={handleAddCards}
-            onTriggerClick={() => setIsActionMenuOpen(false)}
-          />
 
           <button
             type="button"
@@ -614,7 +643,11 @@ export default function BinderDetailPage() {
           onClick={() => setIsActionMenuOpen((open) => !open)}
           aria-expanded={isActionMenuOpen}
           aria-label={isActionMenuOpen ? "Hide actions" : "Show actions"}
-          className="flex h-12 w-12 items-center justify-center rounded-full border border-zinc-300 bg-slate-200 text-zinc-700 shadow-lg transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+          className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+            hasUnsavedChanges
+              ? "border-red-600 bg-red-500 text-white hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+              : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+          }`}>
           <EllipsisVertical className="h-4 w-4" />
           <span className="sr-only">Actions</span>
         </button>
