@@ -197,6 +197,16 @@ export default function BinderDetailPage() {
   const hasUnsavedChanges = dirtyPageIds.size > 0;
   const isTwoByTwoLayout = layoutColumns === 2;
   const isFourByFourLayout = layoutColumns === 4;
+  const binderCapacity = useMemo(() => {
+    const totalSlots = pagesSorted.reduce((sum, page) => sum + page.slots, 0);
+    const filledSlots = pagesSorted.reduce(
+      (sum, page) =>
+        sum + page.cardOrder.filter((card): card is BinderCard => card !== null).length,
+      0,
+    );
+
+    return { totalSlots, filledSlots };
+  }, [pagesSorted]);
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges;
@@ -681,6 +691,8 @@ export default function BinderDetailPage() {
                 <InsideCover
                   colorScheme={binder?.colorScheme}
                   binderName={binder?.name}
+                  filledSlots={binderCapacity.filledSlots}
+                  totalSlots={binderCapacity.totalSlots}
                 />
               ) : (
                 <PagePanel
