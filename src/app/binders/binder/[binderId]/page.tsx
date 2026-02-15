@@ -678,7 +678,10 @@ export default function BinderDetailPage() {
                     : "mx-auto w-full max-w-[68rem] flex-none gap-4"
               }`}>
               {spreadIndex === 0 ? (
-                <InsideCover colorScheme={binder?.colorScheme} />
+                <InsideCover
+                  colorScheme={binder?.colorScheme}
+                  binderName={binder?.name}
+                />
               ) : (
                 <PagePanel
                   page={leftPage}
