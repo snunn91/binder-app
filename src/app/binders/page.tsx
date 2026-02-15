@@ -1,5 +1,6 @@
 "use client";
 
+import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
 import { useAppSelector } from "@/lib/store/storeHooks";
 import AddBinderModal from "@/modals/AddBinderModal";
 import Link from "next/link";
@@ -7,28 +8,6 @@ import Link from "next/link";
 export default function BindersPage() {
   const user = useAppSelector((state) => state.auth.user);
   const binders = useAppSelector((state) => state.binders.items);
-  const colorSchemeClasses: Record<string, { card: string; orb: string }> = {
-    default: {
-      card: "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500",
-      orb: "bg-zinc-300/35 dark:bg-zinc-700/35",
-    },
-    red: {
-      card: "bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800/50",
-      orb: "bg-red-400/35 dark:bg-red-500/35",
-    },
-    blue: {
-      card: "bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800/50",
-      orb: "bg-blue-400/35 dark:bg-blue-500/35",
-    },
-    green: {
-      card: "bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800/50",
-      orb: "bg-green-400/35 dark:bg-green-500/35",
-    },
-    yellow: {
-      card: "bg-yellow-50 border-yellow-200 dark:bg-yellow-950/30 dark:border-yellow-800/50",
-      orb: "bg-yellow-300/40 dark:bg-yellow-500/30",
-    },
-  };
 
   return (
     <div
@@ -83,14 +62,12 @@ export default function BindersPage() {
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
               className={`relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-exo font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
-                colorSchemeClasses[binder.colorScheme]?.card ??
-                colorSchemeClasses.default.card
+                getBinderColorSchemeClasses(binder.colorScheme).card
               }`}>
               <span>{binder.name}</span>
               <div
                 className={`pointer-events-none absolute -right-14 -top-14 h-52 w-52 rounded-full blur-2xl ${
-                  colorSchemeClasses[binder.colorScheme]?.orb ??
-                  colorSchemeClasses.default.orb
+                  getBinderColorSchemeClasses(binder.colorScheme).orb
                 }`}
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />

@@ -1,5 +1,7 @@
 "use client";
 
+import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
+
 type InsideCoverProps = {
   colorScheme?: string;
   binderName?: string;
@@ -14,15 +16,7 @@ export default function InsideCover({
   totalSlots = 0,
 }: InsideCoverProps) {
   const coverColorSchemeClassName =
-    {
-      default:
-        "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500",
-      red: "bg-red-950/25 border-transparent",
-      blue: "bg-blue-950/25 border-transparent",
-      green: "bg-green-950/25 border-transparent",
-      yellow: "bg-yellow-950/25 border-transparent",
-    }[colorScheme] ??
-    "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500";
+    getBinderColorSchemeClasses(colorScheme).panel;
   const safeFilledSlots = Math.max(0, filledSlots);
   const safeTotalSlots = Math.max(0, totalSlots);
   const progressPercent =
@@ -32,14 +26,16 @@ export default function InsideCover({
 
   return (
     <div
-      className={`${coverColorSchemeClassName} flex flex-col justify-center rounded-xl border p-6 shadow-lg`}>
+      className={`${coverColorSchemeClassName} flex flex-col justify-between rounded-xl border p-6 shadow-lg`}>
       <p className="text-center text-5xl font-exo font-semibold tracking-wide text-zinc-700 dark:text-slate-100">
         {binderName || "Binder"}
       </p>
       <div className="mx-auto mt-8 w-full max-w-md">
         <div className="mb-2 flex items-center justify-between text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
           <span>Binder progress</span>
-          <span>{safeFilledSlots}/{safeTotalSlots}</span>
+          <span>
+            {safeFilledSlots}/{safeTotalSlots}
+          </span>
         </div>
         <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
           <div

@@ -67,9 +67,21 @@ function layoutToSlots(layout: string) {
   return 9; // default to 3x3
 }
 
+function normalizeColorScheme(colorScheme: string | undefined) {
+  if (colorScheme === "red") return "red";
+  if (colorScheme === "blue") return "blue";
+  if (colorScheme === "green") return "green";
+  if (colorScheme === "yellow") return "yellow";
+  return "default";
+}
+
 async function createBinderDoc(userId: string, payload: BinderDraft) {
+  const normalizedColorScheme = normalizeColorScheme(payload.colorScheme);
   const docRef = await addDoc(collection(db, "users", userId, "binders"), {
     ...payload,
+    colorScheme: normalizedColorScheme,
+    // Keep legacy field in sync for older readers/migrations.
+    theme: normalizedColorScheme,
     createdAt: serverTimestamp(),
   });
 
@@ -98,7 +110,11 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     addDoc(pagesRef, pagePayload(3)),
   ]);
 
-  return { id: docRef.id, ...payload } as BinderItem;
+  return {
+    id: docRef.id,
+    ...payload,
+    colorScheme: normalizedColorScheme,
+  } as BinderItem;
 }
 
 async function fetchBindersForUser(userId: string) {
@@ -110,11 +126,12 @@ async function fetchBindersForUser(userId: string) {
 
   return snapshot.docs.map((d) => {
     const data = d.data() as BinderDraft & { theme?: string };
+    const colorScheme = normalizeColorScheme(data.colorScheme ?? data.theme);
     return {
       id: d.id,
       name: data.name,
       layout: data.layout,
-      colorScheme: data.colorScheme ?? data.theme ?? "default",
+      colorScheme,
     } as BinderItem;
   });
 }
@@ -125,11 +142,12 @@ async function fetchBinderById(userId: string, binderId: string) {
   if (!snapshot.exists()) return null;
 
   const data = snapshot.data() as BinderDraft & { theme?: string };
+  const colorScheme = normalizeColorScheme(data.colorScheme ?? data.theme);
   return {
     id: snapshot.id,
     name: data.name,
     layout: data.layout,
-    colorScheme: data.colorScheme ?? data.theme ?? "default",
+    colorScheme,
   } as BinderItem;
 }
 

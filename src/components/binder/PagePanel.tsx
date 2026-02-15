@@ -10,6 +10,7 @@ import {
 import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import DraggedSlot from "@/components/binder/DraggedSlot";
 import SlotItem from "@/components/binder/SlotItem";
+import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
 import type { BinderCard } from "@/lib/firebase/services/binderService";
 
 type BinderPage = {
@@ -82,15 +83,7 @@ export default function PagePanel({
         ? "w-[84%] justify-self-center"
         : "w-full";
   const panelColorSchemeClassName =
-    {
-      default:
-        "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500",
-      red: "bg-red-950/25 border-transparent",
-      blue: "bg-blue-950/25 border-transparent",
-      green: "bg-green-950/25 border-transparent",
-      yellow: "bg-yellow-950/25 border-transparent",
-    }[colorScheme] ??
-    "bg-gray-50 border-zinc-300 dark:bg-zinc-900/25 dark:border-zinc-500";
+    getBinderColorSchemeClasses(colorScheme).panel;
 
   return (
     <div
