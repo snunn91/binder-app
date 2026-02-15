@@ -2,7 +2,7 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { X } from "lucide-react";
+import { SearchCheck, SearchX, X } from "lucide-react";
 import type { BinderCard } from "@/lib/firebase/services/binderService";
 
 type SlotItemProps = {
@@ -13,6 +13,7 @@ type SlotItemProps = {
   sizeClassName?: string;
   onAddCard?: () => void;
   onDeleteCard?: () => void;
+  onToggleMissing?: () => void;
   isEditMode?: boolean;
 };
 
@@ -24,6 +25,7 @@ export default function SlotItem({
   sizeClassName = "w-full",
   onAddCard,
   onDeleteCard,
+  onToggleMissing,
   isEditMode = false,
 }: SlotItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -31,6 +33,7 @@ export default function SlotItem({
   const isDragging = transform !== null;
   const imageSrc = card?.image?.small ?? card?.image?.large;
   const isDraggable = Boolean(card) && !isEditMode;
+  const isMissing = (card?.collectionStatus ?? "collected") === "missing";
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -55,7 +58,7 @@ export default function SlotItem({
           <img
             src={imageSrc}
             alt={card?.name ?? label}
-            className="h-full w-full object-cover"
+            className={`h-full w-full object-cover ${isMissing ? "grayscale brightness-75" : ""}`}
             loading="lazy"
           />
         ) : (
@@ -89,6 +92,31 @@ export default function SlotItem({
           className="absolute -right-2 -top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-red-500 bg-red-500 text-white shadow-sm transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent">
           <X className="h-3 w-3" />
           <span className="sr-only">Remove card</span>
+        </button>
+      ) : null}
+      {isEditMode && card && onToggleMissing ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            onToggleMissing();
+          }}
+          title={isMissing ? "Mark as collected" : "Mark as missing"}
+          aria-label={isMissing ? "Mark as collected" : "Mark as missing"}
+          className={`absolute -right-2 top-4 z-10 flex h-5 w-5 items-center justify-center rounded-full border shadow-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent ${
+            isMissing
+              ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600"
+              : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+          }`}>
+          {isMissing ? (
+            <SearchCheck className="h-3 w-3" />
+          ) : (
+            <SearchX className="h-3 w-3" />
+          )}
+          <span className="sr-only">
+            {isMissing ? "Mark as collected" : "Mark as missing"}
+          </span>
         </button>
       ) : null}
     </div>

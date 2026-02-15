@@ -28,6 +28,7 @@ type BinderCard = {
   name: string;
   number?: string;
   rarity?: string;
+  collectionStatus?: "collected" | "missing";
   expansion?: { id?: string; name?: string };
   image?: { small?: string; large?: string };
 };
@@ -38,6 +39,23 @@ type BinderPage = {
   slots: number;
   cardOrder: (BinderCard | null)[];
 };
+
+function normalizeCollectionStatus(
+  status: BinderCard["collectionStatus"],
+): "collected" | "missing" {
+  return status === "missing" ? "missing" : "collected";
+}
+
+function normalizeWritableCardOrder(cardOrder: (BinderCard | null)[]) {
+  return cardOrder.map((card) =>
+    card
+      ? {
+          ...card,
+          collectionStatus: normalizeCollectionStatus(card.collectionStatus),
+        }
+      : null,
+  );
+}
 
 /**
  * Converts binder layout to a slot count.
@@ -152,6 +170,17 @@ function normalizeCardOrder(
 
     if (typeof entry === "object" && entry !== null && "id" in entry) {
       const candidate = entry as Partial<BinderCard>;
+      const candidateWithLegacy = candidate as Partial<BinderCard> & {
+        missing?: boolean;
+      };
+      const collectionStatus =
+        candidate.collectionStatus === "missing"
+          ? "missing"
+          : candidate.collectionStatus === "collected"
+            ? "collected"
+            : candidateWithLegacy.missing
+              ? "missing"
+              : "collected";
       return {
         id: String(candidate.id ?? ""),
         name: candidate.name ? String(candidate.name) : "Unknown card",
@@ -159,6 +188,7 @@ function normalizeCardOrder(
           candidate.number !== undefined ? String(candidate.number) : undefined,
         rarity:
           candidate.rarity !== undefined ? String(candidate.rarity) : undefined,
+        collectionStatus,
         expansion:
           candidate.expansion && typeof candidate.expansion === "object"
             ? {
@@ -311,17 +341,26 @@ async function addCardsToBinder(
     };
   });
 
+  const cardsToInsert = cards.map((card) => ({
+    ...card,
+    collectionStatus: normalizeCollectionStatus(card.collectionStatus),
+  }));
+
   let cardIndex = 0;
   const changedPages = new Set<string>();
 
   for (const page of pageDocs) {
-    for (let slotIndex = 0; slotIndex < page.cardOrder.length && cardIndex < cards.length; slotIndex += 1) {
+    for (
+      let slotIndex = 0;
+      slotIndex < page.cardOrder.length && cardIndex < cardsToInsert.length;
+      slotIndex += 1
+    ) {
       if (page.cardOrder[slotIndex] !== null) continue;
-      page.cardOrder[slotIndex] = cards[cardIndex];
+      page.cardOrder[slotIndex] = cardsToInsert[cardIndex];
       cardIndex += 1;
       changedPages.add(page.id);
     }
-    if (cardIndex >= cards.length) break;
+    if (cardIndex >= cardsToInsert.length) break;
   }
 
   if (changedPages.size > 0) {
@@ -354,7 +393,9 @@ async function updateBinderPageCardOrder(
   cardOrder: (BinderCard | null)[],
 ) {
   const pageRef = doc(db, "users", userId, "binders", binderId, "pages", pageId);
-  await writeBatch(db).update(pageRef, { cardOrder }).commit();
+  await writeBatch(db)
+    .update(pageRef, { cardOrder: normalizeWritableCardOrder(cardOrder) })
+    .commit();
 }
 
 async function updateBinderPageCardOrders(
@@ -375,7 +416,9 @@ async function updateBinderPageCardOrders(
       "pages",
       update.pageId,
     );
-    batch.update(pageRef, { cardOrder: update.cardOrder });
+    batch.update(pageRef, {
+      cardOrder: normalizeWritableCardOrder(update.cardOrder),
+    });
   }
   await batch.commit();
 }

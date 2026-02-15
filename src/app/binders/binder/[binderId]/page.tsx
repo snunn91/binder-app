@@ -13,7 +13,6 @@ import {
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
 import {
-  Check,
   ChevronLeft,
   ChevronRight,
   EllipsisVertical,
@@ -33,6 +32,7 @@ import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import { binderMessages } from "@/config/binderMessages";
 import {
   Dialog,
   DialogContent,
@@ -52,7 +52,7 @@ type BinderPage = {
 
 function slotSignature(card: BinderCard | null) {
   if (!card) return "";
-  return `${card.id}:${card.number ?? ""}`;
+  return `${card.id}:${card.number ?? ""}:${card.collectionStatus ?? "collected"}`;
 }
 
 function pageSignature(cardOrder: (BinderCard | null)[]) {
@@ -93,6 +93,7 @@ function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
         name: card.name,
         number: card.number,
         rarity: card.rarity,
+        collectionStatus: "collected",
         expansion: card.expansion,
         image: card.image,
       });
@@ -168,6 +169,7 @@ export default function BinderDetailPage() {
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
   const hasUnsavedChangesRef = useRef(false);
+  const pagesRef = useRef<BinderPage[]>([]);
   const baselinePageSignaturesRef = useRef<Record<string, string>>({});
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -201,6 +203,10 @@ export default function BinderDetailPage() {
   }, [hasUnsavedChanges]);
 
   useEffect(() => {
+    pagesRef.current = pages;
+  }, [pages]);
+
+  useEffect(() => {
     if (!user || !binderId) return;
     let mounted = true;
 
@@ -216,6 +222,7 @@ export default function BinderDetailPage() {
 
       setBinder(binderData);
       setPages(pagesData);
+      pagesRef.current = pagesData;
       baselinePageSignaturesRef.current = buildPageSignatures(pagesData);
       setDirtyPageIds(new Set());
       setSaveError(null);
@@ -284,6 +291,7 @@ export default function BinderDetailPage() {
           cardOrder: arraySwap(item.cardOrder ?? [], oldIndex, newIndex),
         };
       });
+      pagesRef.current = nextPagesResult;
       return nextPagesResult;
     });
     if (didChange) {
@@ -315,6 +323,38 @@ export default function BinderDetailPage() {
           cardOrder,
         };
       });
+      if (nextPagesResult) pagesRef.current = nextPagesResult;
+      return nextPagesResult;
+    });
+    if (nextPagesResult) {
+      setDirtyPageIds(
+        computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
+      );
+      setSaveError(null);
+    }
+  };
+
+  const handleToggleMissingForSlot = (pageId: string, slotIndex: number) => {
+    let nextPagesResult: BinderPage[] | null = null;
+    setPages((prev) => {
+      nextPagesResult = prev.map((page) => {
+        if (page.id !== pageId) return page;
+        const cardOrder = [...(page.cardOrder ?? [])];
+        const existingCard = cardOrder[slotIndex];
+        if (!existingCard) return page;
+        cardOrder[slotIndex] = {
+          ...existingCard,
+          collectionStatus:
+            (existingCard.collectionStatus ?? "collected") === "missing"
+              ? "collected"
+              : "missing",
+        };
+        return {
+          ...page,
+          cardOrder,
+        };
+      });
+      if (nextPagesResult) pagesRef.current = nextPagesResult;
       return nextPagesResult;
     });
     if (nextPagesResult) {
@@ -337,43 +377,48 @@ export default function BinderDetailPage() {
 
     const result = addCardsToLocalPages(pages, cardsToAdd);
     setPages(result.nextPages);
+    pagesRef.current = result.nextPages;
     setDirtyPageIds(
       computeDirtyPageIds(result.nextPages, baselinePageSignaturesRef.current),
     );
     if (result.remainingCount > 0) {
-      setAddCardsError(
-        `Only ${result.addedCount} card(s) were added because the binder is full.`,
-      );
+      setAddCardsError(binderMessages.errors.addCardsBinderFull(result.addedCount));
     }
   };
 
   const handleSaveChanges = useCallback(
     async (
-      successMessage = "your binder has been updated",
+      successMessage: string = binderMessages.toast.saved,
     ): Promise<boolean> => {
-      if (!user || !binderId || !hasUnsavedChanges || isSaving) return false;
+      if (!user || !binderId || isSaving) return false;
+
+      const pagesToSave = pagesRef.current;
+      const currentDirtyPageIds = computeDirtyPageIds(
+        pagesToSave,
+        baselinePageSignaturesRef.current,
+      );
+      if (currentDirtyPageIds.size === 0) return false;
 
       setIsSaving(true);
       setSaveError(null);
 
       try {
-        const dirtyIds = new Set(dirtyPageIds);
-        const updates = pages
-          .filter((page) => dirtyIds.has(page.id))
+        const updates = pagesToSave
+          .filter((page) => currentDirtyPageIds.has(page.id))
           .map((page) => ({ pageId: page.id, cardOrder: page.cardOrder }));
         await updateBinderPageCardOrders(user.uid, binderId, updates);
-        baselinePageSignaturesRef.current = buildPageSignatures(pages);
+        baselinePageSignaturesRef.current = buildPageSignatures(pagesToSave);
         setDirtyPageIds(new Set());
         toast.success(successMessage);
         return true;
       } catch {
-        setSaveError("Failed to save changes.");
+        setSaveError(binderMessages.errors.saveFailed);
         return false;
       } finally {
         setIsSaving(false);
       }
     },
-    [binderId, dirtyPageIds, hasUnsavedChanges, isSaving, pages, user],
+    [binderId, isSaving, user],
   );
 
   const openLeaveModal = useCallback((navigationAction: () => void) => {
@@ -408,16 +453,25 @@ export default function BinderDetailPage() {
       return;
     }
 
-    setIsEditMode(false);
-    if (hasUnsavedChanges) {
-      await handleSaveChanges("Your edits have been saved");
+    const hasEditChanges =
+      computeDirtyPageIds(pagesRef.current, baselinePageSignaturesRef.current)
+        .size > 0;
+
+    let didSave = true;
+    if (hasEditChanges) {
+      didSave = await handleSaveChanges(binderMessages.toast.editSaved);
     }
+    if (!didSave) {
+      setIsActionMenuOpen(true);
+      return;
+    }
+    setIsEditMode(false);
     setIsActionMenuOpen(false);
   };
 
   const handleSettingsFromMenu = () => {
     setIsActionMenuOpen(false);
-    toast("Settings coming soon");
+    toast(binderMessages.toast.settingsSoon);
   };
 
   const handleOpenAddCards = () => {
@@ -500,7 +554,7 @@ export default function BinderDetailPage() {
       <div className="flex min-h-[calc(100vh-var(--header-h))] items-center justify-center">
         <div className="w-full max-w-3xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
           <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
-            Please sign in to view this binder.
+            {binderMessages.auth.signInRequired}
           </p>
         </div>
       </div>
@@ -634,6 +688,7 @@ export default function BinderDetailPage() {
                   colorScheme={binder?.colorScheme}
                   onAddCard={handleOpenAddCards}
                   onDeleteCard={handleDeleteCardFromSlot}
+                  onToggleMissing={handleToggleMissingForSlot}
                   isEditMode={isEditMode}
                   onDragStart={handleDragStart}
                   onDragEnd={leftPage ? handleDragEnd(leftPage.id) : () => {}}
@@ -649,6 +704,7 @@ export default function BinderDetailPage() {
                 colorScheme={binder?.colorScheme}
                 onAddCard={handleOpenAddCards}
                 onDeleteCard={handleDeleteCardFromSlot}
+                onToggleMissing={handleToggleMissingForSlot}
                 isEditMode={isEditMode}
                 onDragStart={handleDragStart}
                 onDragEnd={rightPage ? handleDragEnd(rightPage.id) : () => {}}
@@ -701,12 +757,12 @@ export default function BinderDetailPage() {
                 : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
             }`}>
             {isEditMode ? (
-              <Check className="h-4 w-4 shrink-0" />
+              <Save className="h-4 w-4 shrink-0" />
             ) : (
               <Pencil className="h-4 w-4 shrink-0" />
             )}
             <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-              {isEditMode ? "Done" : "Edit"}
+              {isEditMode ? "Save" : "Edit"}
             </span>
           </button>
 
@@ -753,10 +809,8 @@ export default function BinderDetailPage() {
       <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader className="text-left">
-            <DialogTitle>You have unsaved changes</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to leave without saving?
-            </DialogDescription>
+            <DialogTitle>{binderMessages.leaveModal.title}</DialogTitle>
+            <DialogDescription>{binderMessages.leaveModal.description}</DialogDescription>
           </DialogHeader>
 
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
@@ -764,20 +818,20 @@ export default function BinderDetailPage() {
               type="button"
               onClick={() => setIsLeaveModalOpen(false)}
               className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-              Stay
+              {binderMessages.leaveModal.stay}
             </button>
             <button
               type="button"
               disabled={isSaving}
               onClick={() => void saveAndContinueNavigation()}
               className="rounded-full border border-emerald-600 bg-emerald-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500">
-              {isSaving ? "Saving..." : "Save and leave"}
+              {isSaving ? "Saving..." : binderMessages.leaveModal.saveAndLeave}
             </button>
             <button
               type="button"
               onClick={continuePendingNavigation}
               className="rounded-full border border-red-400 bg-red-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-red-400 dark:bg-red-600 dark:hover:bg-red-500">
-              Discard and leave
+              {binderMessages.leaveModal.discardAndLeave}
             </button>
           </DialogFooter>
         </DialogContent>
