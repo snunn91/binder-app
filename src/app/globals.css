@@ -1,12 +1,13 @@
-@import url("https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --default-font-family: var(--font-montserrat);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-montserrat);
+  --font-exo: var(--font-montserrat);
   --font-mono: var(--font-geist-mono);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);

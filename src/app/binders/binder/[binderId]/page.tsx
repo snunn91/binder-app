@@ -22,11 +22,14 @@ import {
   Settings,
 } from "lucide-react";
 import {
+  type BinderGoal,
   type BinderCard,
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
+  updateBinderGoals,
   updateBinderPageCardOrders,
+  updateBinderSettings,
 } from "@/lib/firebase/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
@@ -41,6 +44,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Toggle } from "@/components/ui/toggle";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 
 type BinderPage = {
@@ -49,6 +53,39 @@ type BinderPage = {
   slots: number;
   cardOrder: (BinderCard | null)[];
 };
+
+const GOAL_LIMIT = 3;
+const GOAL_CHAR_LIMIT = 150;
+const GOAL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+function parseGoalTimestamp(value: string | null | undefined) {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return null;
+  return timestamp;
+}
+
+function formatGoalCooldownRemaining(remainingMs: number) {
+  const totalMinutes = Math.max(1, Math.ceil(remainingMs / (60 * 1000)));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours <= 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
+function computeGoalSlotsUsed(goals: BinderGoal[], now: number) {
+  const activeGoals = goals.filter((goal) => !goal.completed).length;
+  const coolingCompletedGoals = goals.filter((goal) => {
+    if (!goal.completed) return false;
+    const completedAt = parseGoalTimestamp(goal.completedAt);
+    if (completedAt === null) return false;
+    return now - completedAt < GOAL_COOLDOWN_MS;
+  }).length;
+
+  return activeGoals + coolingCompletedGoals;
+}
 
 function slotSignature(card: BinderCard | null) {
   if (!card) return "";
@@ -154,10 +191,15 @@ export default function BinderDetailPage() {
     name: string;
     layout: string;
     colorScheme: string;
+    showGoals?: boolean;
+    goals?: BinderGoal[];
   } | null>(null);
 
   const [pages, setPages] = useState<BinderPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [goalText, setGoalText] = useState("");
+  const [isUpdatingGoals, setIsUpdatingGoals] = useState(false);
+  const [goalClock, setGoalClock] = useState(() => Date.now());
   const [addCardsError, setAddCardsError] = useState<string | null>(null);
   const [dirtyPageIds, setDirtyPageIds] = useState<Set<string>>(new Set());
   const [isSaving, setIsSaving] = useState(false);
@@ -165,6 +207,10 @@ export default function BinderDetailPage() {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isAddCardsModalOpen, setIsAddCardsModalOpen] = useState(false);
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [settingsName, setSettingsName] = useState("");
+  const [settingsShowGoals, setSettingsShowGoals] = useState(true);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
@@ -207,6 +253,41 @@ export default function BinderDetailPage() {
 
     return { totalSlots, filledSlots };
   }, [pagesSorted]);
+  const goals = useMemo(() => binder?.goals ?? [], [binder?.goals]);
+  const activeGoalCount = useMemo(
+    () => goals.filter((goal) => !goal.completed).length,
+    [goals],
+  );
+  const goalSlotsUsed = useMemo(
+    () => computeGoalSlotsUsed(goals, goalClock),
+    [goals, goalClock],
+  );
+  const canAddGoal = goalSlotsUsed < GOAL_LIMIT;
+  const nextGoalAvailableAt = useMemo(() => {
+    if (canAddGoal) return null;
+
+    const readyTimes = goals
+      .filter((goal) => goal.completed)
+      .map((goal) => parseGoalTimestamp(goal.completedAt))
+      .filter((value): value is number => value !== null)
+      .map((completedAt) => completedAt + GOAL_COOLDOWN_MS)
+      .filter((readyAt) => readyAt > goalClock)
+      .sort((left, right) => left - right);
+
+    if (readyTimes.length === 0) return null;
+    return readyTimes[0];
+  }, [canAddGoal, goalClock, goals]);
+  const goalCooldownRemainingMs = useMemo(() => {
+    if (!nextGoalAvailableAt) return 0;
+    return Math.max(0, nextGoalAvailableAt - goalClock);
+  }, [goalClock, nextGoalAvailableAt]);
+  const goalInputDisabledReason = useMemo(() => {
+    if (canAddGoal) return null;
+    if (nextGoalAvailableAt) {
+      return `Goal limit reached. New goal available in ${formatGoalCooldownRemaining(goalCooldownRemainingMs)}.`;
+    }
+    return binderMessages.errors.goalLimitReached;
+  }, [canAddGoal, goalCooldownRemainingMs, nextGoalAvailableAt]);
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges;
@@ -215,6 +296,16 @@ export default function BinderDetailPage() {
   useEffect(() => {
     pagesRef.current = pages;
   }, [pages]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setGoalClock(Date.now());
+    }, 60 * 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user || !binderId) return;
@@ -232,6 +323,8 @@ export default function BinderDetailPage() {
 
       setBinder(binderData);
       setPages(pagesData);
+      setGoalText("");
+      setGoalClock(Date.now());
       pagesRef.current = pagesData;
       baselinePageSignaturesRef.current = buildPageSignatures(pagesData);
       setDirtyPageIds(new Set());
@@ -396,6 +489,89 @@ export default function BinderDetailPage() {
     }
   };
 
+  const handleAddGoal = async () => {
+    if (!user || !binderId || !binder || isUpdatingGoals) return;
+
+    const sanitizedText = goalText.trim().slice(0, GOAL_CHAR_LIMIT);
+    if (!sanitizedText) return;
+
+    const currentGoals = binder.goals ?? [];
+    if (computeGoalSlotsUsed(currentGoals, Date.now()) >= GOAL_LIMIT) {
+      toast.error(goalInputDisabledReason ?? binderMessages.errors.goalLimitReached);
+      return;
+    }
+
+    const nextGoal: BinderGoal = {
+      id:
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      text: sanitizedText,
+      completed: false,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+    };
+    const nextGoals = [...currentGoals, nextGoal];
+
+    setIsUpdatingGoals(true);
+    try {
+      await updateBinderGoals(user.uid, binderId, nextGoals);
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              goals: nextGoals,
+            }
+          : prev,
+      );
+      setGoalText("");
+      setGoalClock(Date.now());
+      toast.success(binderMessages.toast.goalAdded);
+    } catch {
+      toast.error(binderMessages.errors.goalSaveFailed);
+    } finally {
+      setIsUpdatingGoals(false);
+    }
+  };
+
+  const handleCompleteGoal = async (goalId: string) => {
+    if (!user || !binderId || !binder || isUpdatingGoals) return;
+
+    const currentGoals = binder.goals ?? [];
+    const goalToUpdate = currentGoals.find((goal) => goal.id === goalId);
+    if (!goalToUpdate || goalToUpdate.completed) return;
+
+    const completedAt = new Date().toISOString();
+    const nextGoals = currentGoals.map((goal) =>
+      goal.id === goalId
+        ? {
+            ...goal,
+            completed: true,
+            completedAt,
+          }
+        : goal,
+    );
+
+    setIsUpdatingGoals(true);
+    try {
+      await updateBinderGoals(user.uid, binderId, nextGoals);
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              goals: nextGoals,
+            }
+          : prev,
+      );
+      setGoalClock(Date.now());
+      toast.success(binderMessages.toast.goalCompleted);
+    } catch {
+      toast.error(binderMessages.errors.goalSaveFailed);
+    } finally {
+      setIsUpdatingGoals(false);
+    }
+  };
+
   const handleSaveChanges = useCallback(
     async (
       successMessage: string = binderMessages.toast.saved,
@@ -481,7 +657,42 @@ export default function BinderDetailPage() {
 
   const handleSettingsFromMenu = () => {
     setIsActionMenuOpen(false);
-    toast(binderMessages.toast.settingsSoon);
+    setSettingsName(binder?.name ?? "");
+    setSettingsShowGoals(binder?.showGoals ?? true);
+    setIsSettingsModalOpen(true);
+  };
+
+  const handleSaveSettings = async () => {
+    if (!user || !binderId || !binder || isSavingSettings) return;
+
+    const nextName = settingsName.trim();
+    if (!nextName) {
+      toast.error("Binder title is required.");
+      return;
+    }
+
+    setIsSavingSettings(true);
+    try {
+      await updateBinderSettings(user.uid, binderId, {
+        name: nextName,
+        showGoals: settingsShowGoals,
+      });
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: nextName,
+              showGoals: settingsShowGoals,
+            }
+          : prev,
+      );
+      setIsSettingsModalOpen(false);
+      toast.success(binderMessages.toast.settingsSaved);
+    } catch {
+      toast.error(binderMessages.errors.saveFailed);
+    } finally {
+      setIsSavingSettings(false);
+    }
   };
 
   const handleOpenAddCards = () => {
@@ -693,6 +904,23 @@ export default function BinderDetailPage() {
                   binderName={binder?.name}
                   filledSlots={binderCapacity.filledSlots}
                   totalSlots={binderCapacity.totalSlots}
+                  showGoals={binder?.showGoals}
+                  goals={goals}
+                  goalText={goalText}
+                  goalCharLimit={GOAL_CHAR_LIMIT}
+                  goalLimit={GOAL_LIMIT}
+                  goalInputDisabled={!canAddGoal || isUpdatingGoals}
+                  goalSubmitDisabled={
+                    !canAddGoal || isUpdatingGoals || goalText.trim().length === 0
+                  }
+                  goalInputDisabledReason={goalInputDisabledReason}
+                  activeGoalCount={activeGoalCount}
+                  isUpdatingGoals={isUpdatingGoals}
+                  onGoalTextChange={(value) =>
+                    setGoalText(value.slice(0, GOAL_CHAR_LIMIT))
+                  }
+                  onAddGoal={() => void handleAddGoal()}
+                  onCompleteGoal={(goalId) => void handleCompleteGoal(goalId)}
                 />
               ) : (
                 <PagePanel
@@ -847,6 +1075,68 @@ export default function BinderDetailPage() {
               onClick={continuePendingNavigation}
               className="rounded-full border border-red-400 bg-red-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-red-400 dark:bg-red-600 dark:hover:bg-red-500">
               {binderMessages.leaveModal.discardAndLeave}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader className="text-left">
+            <DialogTitle>Binder Settings</DialogTitle>
+            <DialogDescription>
+              Update your binder title and goal visibility.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="binder-title"
+                className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+                Binder title
+              </label>
+              <input
+                id="binder-title"
+                type="text"
+                value={settingsName}
+                maxLength={80}
+                onChange={(event) => setSettingsName(event.target.value)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-exo text-zinc-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-zinc-300/70 bg-slate-50 px-3 py-3 dark:border-zinc-600/70 dark:bg-zinc-900/35">
+              <div>
+                <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+                  Show goals
+                </p>
+                <p className="text-xs font-exo text-zinc-600 dark:text-slate-300">
+                  Toggle goals panel visibility on the inside cover.
+                </p>
+              </div>
+              <Toggle
+                variant="outline"
+                pressed={settingsShowGoals}
+                onPressedChange={setSettingsShowGoals}>
+                {settingsShowGoals ? "On" : "Off"}
+              </Toggle>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
+            <button
+              type="button"
+              onClick={() => setIsSettingsModalOpen(false)}
+              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={isSavingSettings}
+              onClick={() => void handleSaveSettings()}
+              className="rounded-full border border-emerald-600 bg-emerald-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500">
+              {isSavingSettings ? "Saving..." : "Save"}
             </button>
           </DialogFooter>
         </DialogContent>

@@ -9,14 +9,25 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  updateDoc,
   writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+
+type BinderGoal = {
+  id: string;
+  text: string;
+  completed: boolean;
+  createdAt: string;
+  completedAt?: string | null;
+};
 
 type BinderDraft = {
   name: string;
   layout: string; // "2x2" | "3x3" | "4x4"
   colorScheme: string;
+  goals?: BinderGoal[];
+  showGoals?: boolean;
 };
 
 type BinderItem = BinderDraft & {
@@ -39,6 +50,45 @@ type BinderPage = {
   slots: number;
   cardOrder: (BinderCard | null)[];
 };
+
+function normalizeGoalTimestamp(value: unknown) {
+  if (typeof value !== "string") return new Date().toISOString();
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return new Date().toISOString();
+  return new Date(timestamp).toISOString();
+}
+
+function normalizeGoalCompletionTimestamp(value: unknown) {
+  if (typeof value !== "string") return null;
+  const timestamp = Date.parse(value);
+  if (Number.isNaN(timestamp)) return null;
+  return new Date(timestamp).toISOString();
+}
+
+function normalizeGoals(input: unknown): BinderGoal[] {
+  if (!Array.isArray(input)) return [];
+
+  return input
+    .map((goal, index) => {
+      if (!goal || typeof goal !== "object") return null;
+      const candidate = goal as Partial<BinderGoal>;
+      const rawText = candidate.text ? String(candidate.text).trim() : "";
+      if (!rawText) return null;
+
+      const completed = candidate.completed === true;
+
+      return {
+        id: candidate.id ? String(candidate.id) : `goal-${index}`,
+        text: rawText.slice(0, 150),
+        completed,
+        createdAt: normalizeGoalTimestamp(candidate.createdAt),
+        completedAt: completed
+          ? normalizeGoalCompletionTimestamp(candidate.completedAt)
+          : null,
+      } as BinderGoal;
+    })
+    .filter((goal): goal is BinderGoal => goal !== null);
+}
 
 function normalizeCollectionStatus(
   status: BinderCard["collectionStatus"],
@@ -75,11 +125,17 @@ function normalizeColorScheme(colorScheme: string | undefined) {
   return "default";
 }
 
+function normalizeShowGoals(value: unknown) {
+  return value !== false;
+}
+
 async function createBinderDoc(userId: string, payload: BinderDraft) {
   const normalizedColorScheme = normalizeColorScheme(payload.colorScheme);
   const docRef = await addDoc(collection(db, "users", userId, "binders"), {
     ...payload,
     colorScheme: normalizedColorScheme,
+    goals: [],
+    showGoals: true,
     // Keep legacy field in sync for older readers/migrations.
     theme: normalizedColorScheme,
     createdAt: serverTimestamp(),
@@ -114,6 +170,8 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     id: docRef.id,
     ...payload,
     colorScheme: normalizedColorScheme,
+    goals: [],
+    showGoals: true,
   } as BinderItem;
 }
 
@@ -148,6 +206,8 @@ async function fetchBinderById(userId: string, binderId: string) {
     name: data.name,
     layout: data.layout,
     colorScheme,
+    goals: normalizeGoals(data.goals),
+    showGoals: normalizeShowGoals(data.showGoals),
   } as BinderItem;
 }
 
@@ -441,15 +501,52 @@ async function updateBinderPageCardOrders(
   await batch.commit();
 }
 
-export type { BinderDraft, BinderItem, BinderPage, BinderCard };
+async function updateBinderGoals(
+  userId: string,
+  binderId: string,
+  goals: BinderGoal[],
+) {
+  const binderRef = doc(db, "users", userId, "binders", binderId);
+  await updateDoc(binderRef, {
+    goals: normalizeGoals(goals),
+    goalsUpdatedAt: serverTimestamp(),
+  });
+}
+
+async function updateBinderSettings(
+  userId: string,
+  binderId: string,
+  settings: {
+    name?: string;
+    showGoals?: boolean;
+  },
+) {
+  const updates: { name?: string; showGoals?: boolean } = {};
+
+  if (typeof settings.name === "string") {
+    updates.name = settings.name.trim();
+  }
+  if (typeof settings.showGoals === "boolean") {
+    updates.showGoals = settings.showGoals;
+  }
+
+  if (Object.keys(updates).length === 0) return;
+
+  const binderRef = doc(db, "users", userId, "binders", binderId);
+  await updateDoc(binderRef, updates);
+}
+
+export type { BinderDraft, BinderItem, BinderPage, BinderCard, BinderGoal };
 export {
   addCardsToBinder,
   createBinderDoc,
   fetchBindersForUser,
   fetchBinderById,
+  updateBinderGoals,
   fetchBinderPages,
   layoutToSlots,
   updateBinderPageCardOrder,
   updateBinderPageCardOrders,
   updateBinderLayout,
+  updateBinderSettings,
 };
