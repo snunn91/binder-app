@@ -32,9 +32,9 @@ export const binderColorSchemeClasses: Record<
     orb: "bg-green-500/40 dark:bg-emerald-500/30",
   },
   yellow: {
-    panel: "bg-amber-100 border-amber-200 dark:bg-amber-900/25 dark:border-amber-700/40",
-    card: "bg-amber-100 border-amber-200 dark:bg-amber-900/25 dark:border-amber-700/40",
-    orb: "bg-amber-300/45 dark:bg-amber-500/30",
+    panel: "bg-yellow-200 border-yellow-300 dark:bg-yellow-700/25 dark:border-yellow-500/40",
+    card: "bg-yellow-200 border-yellow-300 dark:bg-yellow-700/25 dark:border-yellow-500/40",
+    orb: "bg-yellow-500/60 dark:bg-yellow-400/30",
   },
 };
 
