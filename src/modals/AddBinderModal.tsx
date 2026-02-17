@@ -15,17 +15,27 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  BINDER_LIMIT_REACHED_MESSAGE,
+  MAX_BINDERS,
+} from "@/config/binderLimits";
 
 export default function AddBinderModal() {
   const user = useAppSelector((state) => state.auth.user);
   const creating = useAppSelector((state) => state.binders.creating);
+  const binders = useAppSelector((state) => state.binders.items);
+  const createError = useAppSelector((state) => state.binders.error);
   const dispatch = useAppDispatch();
   const [open, setOpen] = useState(false);
+  const isBinderLimitReached = binders.length >= MAX_BINDERS;
+  const disableCreate = !user || isBinderLimitReached;
 
   const handleSubmit = async (
     values: typeof AddBinderInitialValues,
     { resetForm }: { resetForm: () => void }
   ) => {
+    if (isBinderLimitReached) return;
+
     try {
       await dispatch(createBinder(values)).unwrap();
       resetForm();
@@ -40,7 +50,7 @@ export default function AddBinderModal() {
       <DialogTrigger asChild>
         <button
           type="button"
-          disabled={!user}
+          disabled={disableCreate}
           className="relative flex items-center gap-2 overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
           <span className="relative z-10 flex items-center gap-2">
             <Plus className="h-4 w-4" />
@@ -48,11 +58,18 @@ export default function AddBinderModal() {
           </span>
         </button>
       </DialogTrigger>
+      {isBinderLimitReached ? (
+        <p className="mt-2 text-sm font-exo font-medium text-red-600">
+          {BINDER_LIMIT_REACHED_MESSAGE}
+        </p>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create a Binder</DialogTitle>
           <DialogDescription>
-            Name your binder and choose its layout and color scheme.
+            {isBinderLimitReached
+              ? `You can have up to ${MAX_BINDERS} binders.`
+              : "Name your binder and choose its layout and color scheme."}
           </DialogDescription>
         </DialogHeader>
 
@@ -131,13 +148,16 @@ export default function AddBinderModal() {
               <div className="flex justify-end">
                 <button
                   type="submit"
-                  disabled={creating || !dirty || !isValid}
+                  disabled={creating || !dirty || !isValid || isBinderLimitReached}
                   className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-6 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
                   <span className="relative z-10">
                     {creating ? "Creating..." : "Create Binder"}
                   </span>
                 </button>
               </div>
+              {createError ? (
+                <p className="text-sm font-exo font-medium text-red-600">{createError}</p>
+              ) : null}
             </Form>
           )}
         </Formik>

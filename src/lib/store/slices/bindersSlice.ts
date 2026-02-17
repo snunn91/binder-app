@@ -46,7 +46,15 @@ export const createBinder = createAsyncThunk<
     return rejectWithValue("User not authenticated");
   }
 
-  return createBinderDoc(userId, payload);
+  try {
+    return await createBinderDoc(userId, payload);
+  } catch (error) {
+    if (error instanceof Error && error.message) {
+      return rejectWithValue(error.message);
+    }
+
+    return rejectWithValue("Failed to create binder");
+  }
 });
 
 const bindersSlice = createSlice({

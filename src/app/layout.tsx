@@ -23,8 +23,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${montserrat.variable} bg-slate-50 dark:bg-zinc-800`}>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className={`${montserrat.variable} bg-slate-50 dark:bg-zinc-800`}>
         <Providers>
           <Toaster position="top-center" />
           <Header />

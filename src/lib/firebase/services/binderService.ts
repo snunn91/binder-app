@@ -13,6 +13,10 @@ import {
   writeBatch,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
+import {
+  BINDER_LIMIT_REACHED_MESSAGE,
+  MAX_BINDERS,
+} from "@/config/binderLimits";
 
 type BinderGoal = {
   id: string;
@@ -33,6 +37,9 @@ type BinderDraft = {
 
 type BinderItem = BinderDraft & {
   id: string;
+  createdAt?: string | null;
+  filledCards?: number;
+  totalSlots?: number;
 };
 
 type BinderCard = {
@@ -137,7 +144,33 @@ function normalizeShowGoals(value: unknown) {
   return value !== false;
 }
 
+function normalizeBinderCreatedAt(value: unknown): string | null {
+  if (typeof value === "string") {
+    const timestamp = Date.parse(value);
+    if (!Number.isNaN(timestamp)) return new Date(timestamp).toISOString();
+  }
+
+  if (
+    value &&
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate?: unknown }).toDate === "function"
+  ) {
+    const date = (value as { toDate: () => Date }).toDate();
+    if (date instanceof Date && !Number.isNaN(date.getTime())) {
+      return date.toISOString();
+    }
+  }
+
+  return null;
+}
+
 async function createBinderDoc(userId: string, payload: BinderDraft) {
+  const bindersSnapshot = await getDocs(collection(db, "users", userId, "binders"));
+  if (bindersSnapshot.size >= MAX_BINDERS) {
+    throw new Error(BINDER_LIMIT_REACHED_MESSAGE);
+  }
+
   const normalizedColorScheme = normalizeColorScheme(payload.colorScheme);
   const docRef = await addDoc(collection(db, "users", userId, "binders"), {
     ...payload,
@@ -182,6 +215,9 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     goals: [],
     goalCooldowns: [],
     showGoals: true,
+    createdAt: new Date().toISOString(),
+    filledCards: 0,
+    totalSlots: slots * 3,
   } as BinderItem;
 }
 
@@ -191,17 +227,49 @@ async function fetchBindersForUser(userId: string) {
     orderBy("createdAt", "desc")
   );
   const snapshot = await getDocs(bindersQuery);
+  const binders = await Promise.all(
+    snapshot.docs.map(async (d) => {
+      const data = d.data() as BinderDraft & {
+        theme?: string;
+        createdAt?: unknown;
+      };
+      const colorScheme = normalizeColorScheme(data.colorScheme ?? data.theme);
+      const createdAt = normalizeBinderCreatedAt(data.createdAt);
 
-  return snapshot.docs.map((d) => {
-    const data = d.data() as BinderDraft & { theme?: string };
-    const colorScheme = normalizeColorScheme(data.colorScheme ?? data.theme);
-    return {
-      id: d.id,
-      name: data.name,
-      layout: data.layout,
-      colorScheme,
-    } as BinderItem;
-  });
+      const pagesSnapshot = await getDocs(
+        collection(db, "users", userId, "binders", d.id, "pages"),
+      );
+
+      const capacity = pagesSnapshot.docs.reduce(
+        (acc, pageDoc) => {
+          const pageData = pageDoc.data() as { slots?: number; cardOrder?: unknown[] };
+          const slots = pageData.slots ?? pageData.cardOrder?.length ?? 0;
+          const cardOrder = normalizeCardOrder(pageData.cardOrder, slots);
+          const filledCards = cardOrder.filter(
+            (card): card is BinderCard => card !== null,
+          ).length;
+
+          return {
+            totalSlots: acc.totalSlots + slots,
+            filledCards: acc.filledCards + filledCards,
+          };
+        },
+        { totalSlots: 0, filledCards: 0 },
+      );
+
+      return {
+        id: d.id,
+        name: data.name,
+        layout: data.layout,
+        colorScheme,
+        createdAt,
+        filledCards: capacity.filledCards,
+        totalSlots: capacity.totalSlots,
+      } as BinderItem;
+    }),
+  );
+
+  return binders;
 }
 
 async function fetchBinderById(userId: string, binderId: string) {
