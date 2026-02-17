@@ -88,6 +88,33 @@
 }
 
 @layer components {
+  @keyframes goal-check-pop {
+    0% {
+      transform: scale(0.9);
+    }
+    60% {
+      transform: scale(1.14);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes goal-complete {
+    0% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+    45% {
+      transform: translateX(1px) scale(0.985);
+      opacity: 0.9;
+    }
+    100% {
+      transform: translateX(6px) scale(0.96);
+      opacity: 0;
+    }
+  }
+
   /* .bg-dark-card-gradient {
     background: linear-gradient(to bottom, #605c3c, #3c3b3f);
   } */

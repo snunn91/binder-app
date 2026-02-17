@@ -22,7 +22,7 @@ type InsideCoverProps = {
   isUpdatingGoals: boolean;
   onGoalTextChange: (value: string) => void;
   onAddGoal: () => void;
-  onCompleteGoal: (goalId: string) => void;
+  onCompleteGoal: (goalId: string) => Promise<void>;
 };
 
 export default function InsideCover({

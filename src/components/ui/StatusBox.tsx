@@ -39,7 +39,7 @@ export default function StatusBox({
       role="status"
       className={`mt-2 flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] font-exo font-medium ${statusStyles[type]} ${className}`}>
       {icon ?? getDefaultIcon(type)}
-      <span className="leading-[1.35]">{children ?? text}</span>
+      <span className="leading-4 mb-0">{children ?? text}</span>
     </div>
   );
 }

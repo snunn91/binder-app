@@ -27,6 +27,7 @@ type BinderDraft = {
   layout: string; // "2x2" | "3x3" | "4x4"
   colorScheme: string;
   goals?: BinderGoal[];
+  goalCooldowns?: string[];
   showGoals?: boolean;
 };
 
@@ -63,6 +64,13 @@ function normalizeGoalCompletionTimestamp(value: unknown) {
   const timestamp = Date.parse(value);
   if (Number.isNaN(timestamp)) return null;
   return new Date(timestamp).toISOString();
+}
+
+function normalizeGoalCooldowns(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  return input
+    .map((value) => normalizeGoalCompletionTimestamp(value))
+    .filter((value): value is string => value !== null);
 }
 
 function normalizeGoals(input: unknown): BinderGoal[] {
@@ -135,6 +143,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     ...payload,
     colorScheme: normalizedColorScheme,
     goals: [],
+    goalCooldowns: [],
     showGoals: true,
     // Keep legacy field in sync for older readers/migrations.
     theme: normalizedColorScheme,
@@ -171,6 +180,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     ...payload,
     colorScheme: normalizedColorScheme,
     goals: [],
+    goalCooldowns: [],
     showGoals: true,
   } as BinderItem;
 }
@@ -207,6 +217,7 @@ async function fetchBinderById(userId: string, binderId: string) {
     layout: data.layout,
     colorScheme,
     goals: normalizeGoals(data.goals),
+    goalCooldowns: normalizeGoalCooldowns(data.goalCooldowns),
     showGoals: normalizeShowGoals(data.showGoals),
   } as BinderItem;
 }
@@ -505,10 +516,12 @@ async function updateBinderGoals(
   userId: string,
   binderId: string,
   goals: BinderGoal[],
+  goalCooldowns: string[],
 ) {
   const binderRef = doc(db, "users", userId, "binders", binderId);
   await updateDoc(binderRef, {
     goals: normalizeGoals(goals),
+    goalCooldowns: normalizeGoalCooldowns(goalCooldowns),
     goalsUpdatedAt: serverTimestamp(),
   });
 }

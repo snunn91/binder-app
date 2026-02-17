@@ -61,17 +61,17 @@ export default function BindersPage() {
             <Link
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
-              className={`relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-exo font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
+              className={`group relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-exo font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
                 getBinderColorSchemeClasses(binder.colorScheme).card
               }`}>
-              <span>{binder.name}</span>
+              <span className="relative z-10">{binder.name}</span>
               <div
                 className={`pointer-events-none absolute -right-14 -top-14 h-52 w-52 rounded-full blur-2xl ${
                   getBinderColorSchemeClasses(binder.colorScheme).orb
                 }`}
               />
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />
-              <div className="absolute bottom-4 right-4 rounded-full border border-zinc-300/60 bg-white/60 px-2 py-0.5 text-xs capitalize dark:border-zinc-600/60 dark:bg-zinc-900/50">
+              <div className="absolute bottom-4 right-4 z-10 rounded-full border border-zinc-300/60 bg-white/60 px-2 py-0.5 text-xs capitalize dark:border-zinc-600/60 dark:bg-zinc-900/50">
                 {binder.colorScheme ?? "default"}
               </div>
             </Link>

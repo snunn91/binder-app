@@ -5,9 +5,5 @@ export default function BinderLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <div className="w-[calc(100vw-0px)] max-w-none -mx-[calc((100vw-100%)/2)] px-4">
-      {children}
-    </div>
-  );
+  return <div className="w-full max-w-none px-4">{children}</div>;
 }

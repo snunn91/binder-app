@@ -57,6 +57,7 @@ type BinderPage = {
 const GOAL_LIMIT = 3;
 const GOAL_CHAR_LIMIT = 150;
 const GOAL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+const GOAL_COOLDOWN_ENABLED = true;
 
 function parseGoalTimestamp(value: string | null | undefined) {
   if (!value) return null;
@@ -75,16 +76,12 @@ function formatGoalCooldownRemaining(remainingMs: number) {
   return `${hours}h ${minutes}m`;
 }
 
-function computeGoalSlotsUsed(goals: BinderGoal[], now: number) {
-  const activeGoals = goals.filter((goal) => !goal.completed).length;
-  const coolingCompletedGoals = goals.filter((goal) => {
-    if (!goal.completed) return false;
-    const completedAt = parseGoalTimestamp(goal.completedAt);
-    if (completedAt === null) return false;
-    return now - completedAt < GOAL_COOLDOWN_MS;
-  }).length;
-
-  return activeGoals + coolingCompletedGoals;
+function getActiveGoalCooldowns(goalCooldowns: string[], now: number) {
+  return goalCooldowns.filter((value) => {
+    const timestamp = parseGoalTimestamp(value);
+    if (timestamp === null) return false;
+    return now - timestamp < GOAL_COOLDOWN_MS;
+  });
 }
 
 function slotSignature(card: BinderCard | null) {
@@ -193,6 +190,7 @@ export default function BinderDetailPage() {
     colorScheme: string;
     showGoals?: boolean;
     goals?: BinderGoal[];
+    goalCooldowns?: string[];
   } | null>(null);
 
   const [pages, setPages] = useState<BinderPage[]>([]);
@@ -253,22 +251,37 @@ export default function BinderDetailPage() {
 
     return { totalSlots, filledSlots };
   }, [pagesSorted]);
-  const goals = useMemo(() => binder?.goals ?? [], [binder?.goals]);
-  const activeGoalCount = useMemo(
-    () => goals.filter((goal) => !goal.completed).length,
-    [goals],
+  const rawGoals = useMemo(() => binder?.goals ?? [], [binder?.goals]);
+  const goals = useMemo(
+    () => rawGoals.filter((goal) => !goal.completed),
+    [rawGoals],
   );
-  const goalSlotsUsed = useMemo(
-    () => computeGoalSlotsUsed(goals, goalClock),
-    [goals, goalClock],
+  const legacyGoalCooldowns = useMemo(
+    () =>
+      rawGoals
+        .filter((goal) => goal.completed)
+        .map((goal) => goal.completedAt)
+        .filter((value): value is string => typeof value === "string"),
+    [rawGoals],
   );
+  const goalCooldowns = useMemo(
+    () =>
+      getActiveGoalCooldowns(
+        [...(binder?.goalCooldowns ?? []), ...legacyGoalCooldowns],
+        goalClock,
+      ),
+    [binder?.goalCooldowns, goalClock, legacyGoalCooldowns],
+  );
+  const activeGoalCount = goals.length;
+  const goalSlotsUsed =
+    activeGoalCount + (GOAL_COOLDOWN_ENABLED ? goalCooldowns.length : 0);
   const canAddGoal = goalSlotsUsed < GOAL_LIMIT;
   const nextGoalAvailableAt = useMemo(() => {
+    if (!GOAL_COOLDOWN_ENABLED) return null;
     if (canAddGoal) return null;
 
-    const readyTimes = goals
-      .filter((goal) => goal.completed)
-      .map((goal) => parseGoalTimestamp(goal.completedAt))
+    const readyTimes = goalCooldowns
+      .map((value) => parseGoalTimestamp(value))
       .filter((value): value is number => value !== null)
       .map((completedAt) => completedAt + GOAL_COOLDOWN_MS)
       .filter((readyAt) => readyAt > goalClock)
@@ -276,7 +289,7 @@ export default function BinderDetailPage() {
 
     if (readyTimes.length === 0) return null;
     return readyTimes[0];
-  }, [canAddGoal, goalClock, goals]);
+  }, [canAddGoal, goalClock, goalCooldowns]);
   const goalCooldownRemainingMs = useMemo(() => {
     if (!nextGoalAvailableAt) return 0;
     return Math.max(0, nextGoalAvailableAt - goalClock);
@@ -495,8 +508,19 @@ export default function BinderDetailPage() {
     const sanitizedText = goalText.trim().slice(0, GOAL_CHAR_LIMIT);
     if (!sanitizedText) return;
 
-    const currentGoals = binder.goals ?? [];
-    if (computeGoalSlotsUsed(currentGoals, Date.now()) >= GOAL_LIMIT) {
+    const currentGoals = (binder.goals ?? []).filter((goal) => !goal.completed);
+    const now = Date.now();
+    const legacyCooldowns = (binder.goals ?? [])
+      .filter((goal) => goal.completed && typeof goal.completedAt === "string")
+      .map((goal) => goal.completedAt as string);
+    const currentCooldowns = getActiveGoalCooldowns(
+      [...(binder.goalCooldowns ?? []), ...legacyCooldowns],
+      now,
+    );
+    const slotUsage =
+      currentGoals.length +
+      (GOAL_COOLDOWN_ENABLED ? currentCooldowns.length : 0);
+    if (slotUsage >= GOAL_LIMIT) {
       toast.error(goalInputDisabledReason ?? binderMessages.errors.goalLimitReached);
       return;
     }
@@ -515,12 +539,13 @@ export default function BinderDetailPage() {
 
     setIsUpdatingGoals(true);
     try {
-      await updateBinderGoals(user.uid, binderId, nextGoals);
+      await updateBinderGoals(user.uid, binderId, nextGoals, currentCooldowns);
       setBinder((prev) =>
         prev
           ? {
               ...prev,
               goals: nextGoals,
+              goalCooldowns: currentCooldowns,
             }
           : prev,
       );
@@ -534,32 +559,36 @@ export default function BinderDetailPage() {
     }
   };
 
-  const handleCompleteGoal = async (goalId: string) => {
+  const handleCompleteGoal = async (goalId: string): Promise<void> => {
     if (!user || !binderId || !binder || isUpdatingGoals) return;
 
-    const currentGoals = binder.goals ?? [];
-    const goalToUpdate = currentGoals.find((goal) => goal.id === goalId);
-    if (!goalToUpdate || goalToUpdate.completed) return;
+    const currentGoals = (binder.goals ?? []).filter((goal) => !goal.completed);
+    const goalToRemove = currentGoals.find((goal) => goal.id === goalId);
+    if (!goalToRemove) return;
 
-    const completedAt = new Date().toISOString();
-    const nextGoals = currentGoals.map((goal) =>
-      goal.id === goalId
-        ? {
-            ...goal,
-            completed: true,
-            completedAt,
-          }
-        : goal,
+    const completionTimestamp = new Date().toISOString();
+    const now = Date.now();
+    const legacyCooldowns = (binder.goals ?? [])
+      .filter((goal) => goal.completed && typeof goal.completedAt === "string")
+      .map((goal) => goal.completedAt as string);
+    const nextGoals = currentGoals.filter((goal) => goal.id !== goalId);
+    const nextCooldowns = getActiveGoalCooldowns(
+      [...(binder.goalCooldowns ?? []), ...legacyCooldowns],
+      now,
     );
+    const cooldownsToSave = GOAL_COOLDOWN_ENABLED
+      ? nextCooldowns.concat(completionTimestamp)
+      : nextCooldowns;
 
     setIsUpdatingGoals(true);
     try {
-      await updateBinderGoals(user.uid, binderId, nextGoals);
+      await updateBinderGoals(user.uid, binderId, nextGoals, cooldownsToSave);
       setBinder((prev) =>
         prev
           ? {
               ...prev,
               goals: nextGoals,
+              goalCooldowns: cooldownsToSave,
             }
           : prev,
       );
@@ -920,7 +949,7 @@ export default function BinderDetailPage() {
                     setGoalText(value.slice(0, GOAL_CHAR_LIMIT))
                   }
                   onAddGoal={() => void handleAddGoal()}
-                  onCompleteGoal={(goalId) => void handleCompleteGoal(goalId)}
+                  onCompleteGoal={handleCompleteGoal}
                 />
               ) : (
                 <PagePanel
