@@ -2,13 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import { Provider } from "react-redux";
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
 import { setAuthState } from "@/lib/store/slices/authSlice";
 import { fetchBinders, resetBinders } from "@/lib/store/slices/bindersSlice";
 import { logOut } from "@/lib/firebase/auth";
 import { store } from "@/lib/store/store";
 import { useAppDispatch } from "@/lib/store/storeHooks";
+import { supabase } from "@/lib/supabase/client";
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
 
@@ -19,21 +18,68 @@ function AuthListener({ children }: { children: React.ReactNode }) {
   const resetTimerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (nextUser) => {
+    const syncSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const nextUser = session?.user ?? null;
+
       dispatch(
         setAuthState(
           nextUser
             ? {
-                uid: nextUser.uid,
-                email: nextUser.email,
-                displayName: nextUser.displayName,
-                photoURL: nextUser.photoURL,
+                uid: nextUser.id,
+                email: nextUser.email ?? null,
+                displayName:
+                  nextUser.user_metadata?.full_name ??
+                  nextUser.user_metadata?.name ??
+                  null,
+                photoURL: nextUser.user_metadata?.avatar_url ?? null,
               }
             : null
         )
       );
 
-      lastUserId.current = nextUser?.uid ?? null;
+      lastUserId.current = nextUser?.id ?? null;
+      if (nextUser) {
+        dispatch(fetchBinders());
+      } else {
+        dispatch(resetBinders());
+      }
+
+      if (!nextUser && inactivityTimer.current) {
+        clearTimeout(inactivityTimer.current);
+        inactivityTimer.current = null;
+      }
+
+      if (nextUser && resetTimerRef.current) {
+        resetTimerRef.current();
+      }
+    };
+
+    void syncSession();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) => {
+      const nextUser = session?.user ?? null;
+      dispatch(
+        setAuthState(
+          nextUser
+            ? {
+                uid: nextUser.id,
+                email: nextUser.email ?? null,
+                displayName:
+                  nextUser.user_metadata?.full_name ??
+                  nextUser.user_metadata?.name ??
+                  null,
+                photoURL: nextUser.user_metadata?.avatar_url ?? null,
+              }
+            : null
+        )
+      );
+
+      lastUserId.current = nextUser?.id ?? null;
       if (nextUser) {
         dispatch(fetchBinders());
       } else {
@@ -50,7 +96,7 @@ function AuthListener({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsubscribe();
+    return () => subscription.unsubscribe();
   }, [dispatch]);
 
   useEffect(() => {

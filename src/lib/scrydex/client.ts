@@ -1,3 +1,5 @@
+import { assertScrydexEnabled } from "@/lib/catalog/sourceGate";
+
 const BASE_URL = process.env.SCRYDEX_BASE_URL || "https://api.scrydex.com";
 
 function requiredEnv(name: string): string {
@@ -6,23 +8,22 @@ function requiredEnv(name: string): string {
   return v;
 }
 
-const SCRYDEX = {
-  apiKey: requiredEnv("SCRYDEX_API_KEY"),
-  teamId: requiredEnv("SCRYDEX_TEAM_ID"),
-} as const;
-
 export async function scrydexFetch<T>(
   endpoint: string,
   params?: Record<string, string>
 ): Promise<T> {
+  assertScrydexEnabled(`scrydexFetch(${endpoint})`);
+
+  const apiKey = requiredEnv("SCRYDEX_API_KEY");
+  const teamId = requiredEnv("SCRYDEX_TEAM_ID");
   const url = new URL(`${BASE_URL}${endpoint}`);
   if (params)
     for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
   const res = await fetch(url.toString(), {
     headers: {
-      "X-Api-Key": SCRYDEX.apiKey,
-      "X-Team-ID": SCRYDEX.teamId,
+      "X-Api-Key": apiKey,
+      "X-Team-ID": teamId,
     },
     cache: "no-store",
   });

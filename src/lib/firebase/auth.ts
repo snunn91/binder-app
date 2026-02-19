@@ -1,27 +1,41 @@
-import { auth } from "./client";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithPopup,
-} from "firebase/auth";
+import { supabase } from "@/lib/supabase/client";
 
 export function signUp(email: string, password: string) {
-  return createUserWithEmailAndPassword(auth, email, password);
+  void email;
+  void password;
+  throw new Error(
+    "Email/password sign-up is temporarily disabled during migration. Use Google sign-in."
+  );
 }
 
 export function signIn(email: string, password: string) {
-  return signInWithEmailAndPassword(auth, email, password);
+  void email;
+  void password;
+  throw new Error(
+    "Email/password sign-in is temporarily disabled during migration. Use Google sign-in."
+  );
 }
 
-export function logOut() {
-  return signOut(auth);
+export async function logOut() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw new Error(error.message);
 }
 
-export function signInWithGoogle() {
-  const provider = new GoogleAuthProvider();
-  // Optionally you can set custom parameters
-  // provider.setCustomParameters({ prompt: 'select_account' });
-  return signInWithPopup(auth, provider);
+export async function signInWithGoogle() {
+  const redirectTo =
+    typeof window === "undefined"
+      ? undefined
+      : `${window.location.origin}/signin`;
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo,
+      queryParams: {
+        prompt: "select_account",
+      },
+    },
+  });
+
+  if (error) throw new Error(error.message);
 }

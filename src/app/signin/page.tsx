@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
@@ -16,10 +16,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAppSelector } from "@/lib/store/storeHooks";
 
 export default function SignInPage() {
   const router = useRouter();
+  const user = useAppSelector((state) => state.auth.user);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    router.push("/binders");
+  }, [router, user]);
 
   const formik = useFormik({
     initialValues: SignInInitialValues,
@@ -47,8 +54,6 @@ export default function SignInPage() {
     setGoogleLoading(true);
     try {
       await signInWithGoogle();
-      toast.success("Signed in successfully");
-      router.push("/binders");
     } catch (e) {
       const message = (e as Error)?.message ?? "Google sign-in failed";
       setError(message);
