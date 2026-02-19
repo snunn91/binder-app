@@ -68,11 +68,28 @@ type DbCardRow = {
   image_large: string | null;
 };
 
+type DbExpansionRow = {
+  id: string;
+  name: string;
+  series: string | null;
+  total: number | null;
+  release_date: string | null;
+  logo: string | null;
+  symbol: string | null;
+};
+
 type CardQueryOrderable = {
   order: (
     column: string,
     options?: { ascending?: boolean; nullsFirst?: boolean },
   ) => CardQueryOrderable;
+};
+
+type SetQueryOrderable = {
+  order: (
+    column: string,
+    options?: { ascending?: boolean; nullsFirst?: boolean },
+  ) => SetQueryOrderable;
 };
 
 function normalizeQuery(q: string) {
@@ -111,6 +128,25 @@ function applyCardSort(query: CardQueryOrderable, sort: CardSortOption) {
     .order("expansion_release_date", { ascending: false, nullsFirst: false })
     .order("expansion_sort_order", { ascending: false, nullsFirst: false })
     .order("id", { ascending: true });
+}
+
+function applySetSort(
+  query: SetQueryOrderable,
+  sort: ReturnType<typeof sanitizeSetSort>,
+) {
+  if (sort === "Oldest") {
+    return query.order("release_date", { ascending: true, nullsFirst: false });
+  }
+
+  if (sort === "Name A-Z") {
+    return query.order("name", { ascending: true });
+  }
+
+  if (sort === "Name Z-A") {
+    return query.order("name", { ascending: false });
+  }
+
+  return query.order("release_date", { ascending: false, nullsFirst: false });
 }
 
 async function searchCardsFromDb(params: {
@@ -192,6 +228,62 @@ async function searchCardsFromDb(params: {
         }
       : {}),
   }));
+
+  return {
+    results,
+    totalCount: count ?? undefined,
+  };
+}
+
+async function searchSetsFromDb(params: {
+  qNorm: string;
+  mode: string | null;
+  setSort: ReturnType<typeof sanitizeSetSort>;
+  page: number;
+  pageSize: number;
+}) {
+  const { qNorm, mode, setSort, page, pageSize } = params;
+  const supabase = getSupabaseServerClient();
+
+  let query = supabase
+    .from("expansions")
+    .select("id, name, series, total, release_date, logo, symbol", {
+      count: "exact",
+    })
+    .eq("is_online_only", false);
+
+  if (mode !== "recent" && qNorm.length >= 2) {
+    query = query.ilike("name", `%${qNorm}%`);
+  }
+
+  query = applySetSort(query, setSort);
+
+  const rangeStart = (page - 1) * pageSize;
+  const rangeEnd = rangeStart + pageSize - 1;
+  const { data, count, error } = await query.range(rangeStart, rangeEnd);
+
+  if (error) {
+    throw new Error(`DB set search failed: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as DbExpansionRow[];
+  const results: SetSearchPreview[] = rows.map((row) => {
+    const releaseYear =
+      row.release_date && row.release_date.length >= 4
+        ? Number(row.release_date.slice(0, 4))
+        : undefined;
+
+    return {
+      id: row.id,
+      name: row.name,
+      ...(row.series ? { series: row.series } : {}),
+      ...(row.total !== null ? { total: row.total } : {}),
+      ...(row.release_date ? { releaseDate: row.release_date } : {}),
+      ...(Number.isFinite(releaseYear) ? { releaseYear } : {}),
+      ...(row.logo ? { logo: row.logo } : {}),
+      ...(row.symbol ? { symbol: row.symbol } : {}),
+    };
+  });
 
   return {
     results,
@@ -369,12 +461,20 @@ export async function GET(req: Request) {
 
     if (getCardSource() === "DB") {
       if (type === "sets") {
+        const { results, totalCount } = await searchSetsFromDb({
+          qNorm,
+          mode,
+          setSort,
+          page,
+          pageSize,
+        });
+
         const out: ApiResponse = {
-          results: [],
+          results,
           cached: false,
           page,
           pageSize,
-          totalCount: 0,
+          totalCount,
         };
         return NextResponse.json(out);
       }

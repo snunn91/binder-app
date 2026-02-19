@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-hot-toast";
-import { signIn, signInWithGoogle } from "@/lib/firebase/auth";
+import { signIn, signInWithGoogle } from "@/lib/auth/auth";
 import { ErrorMessage, Field, FormikProvider, useFormik } from "formik";
 import { SignInValidationSchema } from "@/lib/validationSchemas/SignInValidationSchema";
 import { SignInInitialValues } from "@/lib/initialValues/SignInInitialValues";

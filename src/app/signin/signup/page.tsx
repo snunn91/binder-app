@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signUp } from "@/lib/firebase/auth";
+import { signUp } from "@/lib/auth/auth";
 import { Formik, Form, Field, ErrorMessage } from "formik";
 import { Check, X } from "lucide-react";
 import {

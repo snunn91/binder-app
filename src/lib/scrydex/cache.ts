@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import { adminDb } from "@/lib/firebase/admin";
 
 export type CardSearchPreview = {
   id: string;
@@ -31,7 +30,17 @@ type CacheDoc = {
   results: SearchPreview[];
 };
 
-const COLLECTION = "scrydexSearchCache";
+const globalCache = globalThis as typeof globalThis & {
+  __scrydexSearchCache?: Map<string, CacheDoc>;
+};
+
+function getCacheStore(): Map<string, CacheDoc> {
+  if (!globalCache.__scrydexSearchCache) {
+    globalCache.__scrydexSearchCache = new Map<string, CacheDoc>();
+  }
+
+  return globalCache.__scrydexSearchCache;
+}
 
 // Normalize so "Pikachu", " pikachu ", "PIKACHU" hit the same cache key.
 export function normalizeQuery(q: string) {
@@ -47,13 +56,15 @@ export async function getCachedSearch<T extends SearchPreview = SearchPreview>(
   q: string,
 ): Promise<T[] | null> {
   const queryKey = makeQueryKey(q);
-  const ref = adminDb.collection(COLLECTION).doc(queryKey);
-  const snap = await ref.get();
+  const cache = getCacheStore();
+  const data = cache.get(queryKey);
 
-  if (!snap.exists) return null;
+  if (!data) return null;
 
-  const data = snap.data() as CacheDoc;
-  if (!data?.expiresAt || Date.now() > data.expiresAt) return null;
+  if (!data.expiresAt || Date.now() > data.expiresAt) {
+    cache.delete(queryKey);
+    return null;
+  }
 
   return (data.results || []) as T[];
 }
@@ -64,7 +75,7 @@ export async function setCachedSearch(
   ttlMs: number,
 ) {
   const queryKey = makeQueryKey(q);
-  const ref = adminDb.collection(COLLECTION).doc(queryKey);
+  const cache = getCacheStore();
 
   const now = Date.now();
   const doc: CacheDoc = {
@@ -75,5 +86,5 @@ export async function setCachedSearch(
     results,
   };
 
-  await ref.set(doc, { merge: true });
+  cache.set(queryKey, doc);
 }

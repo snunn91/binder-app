@@ -52,10 +52,11 @@ export default function useCardSearch(
   const [totalCount, setTotalCount] = React.useState<number | undefined>(
     undefined,
   );
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   const abortRef = React.useRef<AbortController | null>(null);
+  const hasLoadedDefaultRef = React.useRef(false);
   const normalizedRarities = React.useMemo(
     () => sanitizeRarityFilters(rarityFilters),
     [rarityFilters],
@@ -67,6 +68,54 @@ export default function useCardSearch(
   const rarityKey = normalizedRarities.join("|");
   const typeKey = normalizedTypes.join("|");
   const normalizedSort = sanitizeCardSort(sortBy);
+
+  const runDefault = React.useCallback(
+    async (nextPage: number) => {
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setLoading(true);
+      setError(null);
+      await waitForNextPaint();
+      if (controller.signal.aborted) return;
+
+      try {
+        const params = new URLSearchParams({
+          mode: "recent",
+          page: String(nextPage),
+          page_size: String(pageSize),
+          sort: normalizedSort,
+        });
+        normalizedRarities.forEach((rarity) => params.append("rarity", rarity));
+        normalizedTypes.forEach((type) => params.append("type", type));
+
+        const res = await fetch(`/api/cards/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+
+        const json = (await res.json()) as ApiResponse;
+        if (!res.ok) throw new Error(json?.error || "Search failed");
+
+        setResults(json.results ?? []);
+        setTotalCount(json.totalCount);
+        setQuery("");
+      } catch (err: unknown) {
+        const name =
+          typeof err === "object" && err !== null && "name" in err
+            ? String((err as { name?: unknown }).name)
+            : "";
+        if (name !== "AbortError") {
+          setError(getErrorMessage(err));
+          setResults([]);
+          setTotalCount(undefined);
+        }
+      } finally {
+        setLoading(false);
+      }
+    },
+    [normalizedRarities, normalizedSort, normalizedTypes, pageSize],
+  );
 
   const runSearch = React.useCallback(
     async (nextQuery: string, nextPage: number) => {
@@ -131,10 +180,7 @@ export default function useCardSearch(
 
     if (q.length < 2) {
       setQuery("");
-      setResults([]);
-      setTotalCount(undefined);
-      setError(q.length === 0 ? null : "Type at least 2 characters.");
-      setLoading(false);
+      void runDefault(1);
       return;
     }
 
@@ -143,17 +189,17 @@ export default function useCardSearch(
   }
 
   function onPrev() {
-    if (query.trim().length < 2) return;
     const nextPage = Math.max(1, page - 1);
     setPage(nextPage);
-    void runSearch(query, nextPage);
+    if (query.trim().length < 2) void runDefault(nextPage);
+    else void runSearch(query, nextPage);
   }
 
   function onNext() {
-    if (query.trim().length < 2) return;
     const nextPage = page + 1;
     setPage(nextPage);
-    void runSearch(query, nextPage);
+    if (query.trim().length < 2) void runDefault(nextPage);
+    else void runSearch(query, nextPage);
   }
 
   const reset = React.useCallback(() => {
@@ -164,21 +210,21 @@ export default function useCardSearch(
     setError(null);
     setResults([]);
     setTotalCount(undefined);
-    setLoading(false);
-  }, []);
+    void runDefault(1);
+  }, [runDefault]);
 
   React.useEffect(() => {
-    if (query.trim().length < 2) {
-      setResults([]);
-      setTotalCount(undefined);
-      setError(null);
-      setLoading(false);
-      return;
-    }
+    if (hasLoadedDefaultRef.current) return;
+    hasLoadedDefaultRef.current = true;
+    void runDefault(1);
+  }, [runDefault]);
 
+  React.useEffect(() => {
+    if (!hasLoadedDefaultRef.current) return;
     setPage(1);
-    void runSearch(query, 1);
-  }, [normalizedSort, query, rarityKey, typeKey, runSearch]);
+    if (query.trim().length < 2) void runDefault(1);
+    else void runSearch(query, 1);
+  }, [normalizedSort, query, rarityKey, typeKey, runDefault, runSearch]);
 
   return {
     input,
@@ -194,6 +240,7 @@ export default function useCardSearch(
     onNext,
     pageSize,
     runSearch,
+    runDefault,
     reset,
   };
 }

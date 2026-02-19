@@ -6,7 +6,7 @@ import {
   fetchBindersForUser,
   type BinderDraft,
   type BinderItem,
-} from "@/lib/firebase/services/binderService";
+} from "@/lib/services/binderService";
 import type { RootState } from "@/lib/store/store";
 
 type BindersState = {

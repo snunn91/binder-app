@@ -3,7 +3,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SearchCheck, SearchX, X } from "lucide-react";
-import type { BinderCard } from "@/lib/firebase/services/binderService";
+import type { BinderCard } from "@/lib/services/binderService";
 
 type SlotItemProps = {
   id: string;

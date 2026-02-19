@@ -1,7 +1,7 @@
 "use client";
 
 import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
-import type { BinderGoal } from "@/lib/firebase/services/binderService";
+import type { BinderGoal } from "@/lib/services/binderService";
 import GoalsPanel from "@/components/binder/GoalsPanel";
 import BinderProgress from "@/components/binder/BinderProgress";
 

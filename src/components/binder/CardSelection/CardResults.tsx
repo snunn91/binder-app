@@ -84,7 +84,7 @@ export default function CardResults({
 
       <>
         {loading ? (
-          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden pr-1 mb-1">
+          <div className="max-h-[calc(100vh-265px)] overflow-y-auto overflow-x-hidden pr-1 mb-1">
             <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
               {skeletons.map((key) => (
                 <div
@@ -107,31 +107,31 @@ export default function CardResults({
 
         {!loading && results.length > 0 ? (
           <>
-            <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
+            <div className="max-h-[calc(100vh-265px)] overflow-y-auto overflow-x-hidden mb-1">
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 pr-4">
                 {results.map((card) => {
                   const isSelected = selectedCardIds.has(card.id);
                   const isDisabled = selectionLocked && !isSelected;
                   return (
-                  <Tilt
-                    key={card.id}
-                    tiltMaxAngleX={8}
-                    tiltMaxAngleY={8}
-                    glareEnable
-                    glareMaxOpacity={0.2}
-                    className="w-full">
-                    <button
-                      type="button"
-                      disabled={isDisabled}
-                      onClick={() => onSelectCard(card)}
-                      className={`w-full overflow-hidden rounded-lg bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-2 active:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 ${
-                        isSelected
-                          ? "border-[3px] border-accent"
-                          : "border border-zinc-200 dark:border-zinc-700"
-                      }`}>
-                      <CardItem card={card} />
-                    </button>
-                  </Tilt>
+                    <Tilt
+                      key={card.id}
+                      tiltMaxAngleX={8}
+                      tiltMaxAngleY={8}
+                      glareEnable
+                      glareMaxOpacity={0.2}
+                      className="w-full">
+                      <button
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => onSelectCard(card)}
+                        className={`w-full overflow-hidden rounded-lg bg-white text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-2 active:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 ${
+                          isSelected
+                            ? "border-[3px] border-accent"
+                            : "border border-zinc-200 dark:border-zinc-700"
+                        }`}>
+                        <CardItem card={card} />
+                      </button>
+                    </Tilt>
                   );
                 })}
               </div>

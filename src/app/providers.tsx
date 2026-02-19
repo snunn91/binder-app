@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { Provider } from "react-redux";
 import { setAuthState } from "@/lib/store/slices/authSlice";
 import { fetchBinders, resetBinders } from "@/lib/store/slices/bindersSlice";
-import { logOut } from "@/lib/firebase/auth";
+import { logOut } from "@/lib/auth/auth";
 import { store } from "@/lib/store/store";
 import { useAppDispatch } from "@/lib/store/storeHooks";
 import { supabase } from "@/lib/supabase/client";

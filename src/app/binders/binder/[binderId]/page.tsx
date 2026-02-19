@@ -30,7 +30,7 @@ import {
   updateBinderGoals,
   updateBinderPageCardOrders,
   updateBinderSettings,
-} from "@/lib/firebase/services/binderService";
+} from "@/lib/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";

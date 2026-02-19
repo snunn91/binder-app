@@ -11,7 +11,7 @@ import { SortableContext, rectSortingStrategy } from "@dnd-kit/sortable";
 import DraggedSlot from "@/components/binder/DraggedSlot";
 import SlotItem from "@/components/binder/SlotItem";
 import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
-import type { BinderCard } from "@/lib/firebase/services/binderService";
+import type { BinderCard } from "@/lib/services/binderService";
 
 type BinderPage = {
   id: string;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
-import type { BinderGoal } from "@/lib/firebase/services/binderService";
+import type { BinderGoal } from "@/lib/services/binderService";
 import StatusBox from "@/components/ui/StatusBox";
 
 type GoalsPanelProps = {

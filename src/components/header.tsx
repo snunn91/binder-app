@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
-import { logOut } from "@/lib/firebase/auth";
+import { logOut } from "@/lib/auth/auth";
 import { useAppSelector } from "@/lib/store/storeHooks";
 import ThemeToggle from "@/components/theme/ThemeToggle";
 

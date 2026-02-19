@@ -1,6 +1,6 @@
 "use client";
 
-import type { BinderCard } from "@/lib/firebase/services/binderService";
+import type { BinderCard } from "@/lib/services/binderService";
 
 type DraggedSlotProps = {
   label: string;

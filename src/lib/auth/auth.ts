@@ -1,19 +1,21 @@
 import { supabase } from "@/lib/supabase/client";
 
-export function signUp(email: string, password: string) {
-  void email;
-  void password;
-  throw new Error(
-    "Email/password sign-up is temporarily disabled during migration. Use Google sign-in."
-  );
+export async function signUp(email: string, password: string) {
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
-export function signIn(email: string, password: string) {
-  void email;
-  void password;
-  throw new Error(
-    "Email/password sign-in is temporarily disabled during migration. Use Google sign-in."
-  );
+export async function signIn(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export async function logOut() {
