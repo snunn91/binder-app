@@ -15,6 +15,7 @@ import {
 type AddCardsModalProps = {
   maxCardsInPile?: number;
   onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
+  onAddToBulkBox?: (items: CardPileEntry[]) => void | Promise<void>;
   triggerVariant?: "pill" | "icon";
   onTriggerClick?: () => void;
   hideTrigger?: boolean;
@@ -25,6 +26,7 @@ type AddCardsModalProps = {
 export default function AddCardsModal({
   maxCardsInPile,
   onAddCards,
+  onAddToBulkBox,
   triggerVariant = "pill",
   onTriggerClick,
   hideTrigger = false,
@@ -53,6 +55,13 @@ export default function AddCardsModal({
   const handleAddCards = async (items: CardPileEntry[]) => {
     if (!onAddCards || items.length === 0) return;
     await onAddCards(items);
+    setOpenState(false);
+    setSelectionKey((prev) => prev + 1);
+  };
+
+  const handleAddToBulkBox = async (items: CardPileEntry[]) => {
+    if (!onAddToBulkBox || items.length === 0) return;
+    await onAddToBulkBox(items);
     setOpenState(false);
     setSelectionKey((prev) => prev + 1);
   };
@@ -92,6 +101,7 @@ export default function AddCardsModal({
               key={selectionKey}
               maxCardsInPile={maxCardsInPile}
               onAddCards={handleAddCards}
+              onAddToBulkBox={handleAddToBulkBox}
             />
           </div>
         </div>

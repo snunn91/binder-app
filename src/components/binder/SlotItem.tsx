@@ -59,7 +59,7 @@ export default function SlotItem({
             src={imageSrc}
             alt={card?.name ?? label}
             className={`h-full w-full object-cover ${isMissing ? "grayscale brightness-75" : ""}`}
-            loading="lazy"
+            loading="eager"
           />
         ) : (
           <>

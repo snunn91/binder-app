@@ -26,6 +26,7 @@ import {
 type CardSelectionProps = {
   onSelect?: (card: GlobalCardPreview) => void;
   onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
+  onAddToBulkBox?: (items: CardPileEntry[]) => void | Promise<void>;
   maxCardsInPile?: number;
 };
 
@@ -37,6 +38,7 @@ export type CardPileEntry = {
 export default function CardSelection({
   onSelect,
   onAddCards,
+  onAddToBulkBox,
   maxCardsInPile,
 }: CardSelectionProps) {
   const [sortBy, setSortBy] =
@@ -267,6 +269,11 @@ export default function CardSelection({
           onDecrementCard={decrementCardInPile}
           onClearAll={() => setPileItems([])}
           onAddCards={() => void onAddCards?.(pileItems)}
+          onAddToBulkBox={
+            onAddToBulkBox
+              ? () => void onAddToBulkBox(pileItems)
+              : undefined
+          }
         />
       </div>
     </div>

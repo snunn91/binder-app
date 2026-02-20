@@ -20,6 +20,7 @@ type BinderDraft = {
   colorScheme: string;
   goals?: BinderGoal[];
   goalCooldowns?: string[];
+  bulkBoxCards?: BinderCard[];
   showGoals?: boolean;
 };
 
@@ -55,6 +56,7 @@ type BinderRow = {
   color_scheme: string;
   goals: unknown;
   goal_cooldowns: unknown;
+  bulk_box_cards: unknown;
   show_goals: boolean;
   created_at: string | null;
 };
@@ -86,6 +88,12 @@ function normalizeGoalCooldowns(input: unknown): string[] {
   return input
     .map((value) => normalizeGoalCompletionTimestamp(value))
     .filter((value): value is string => value !== null);
+}
+
+function normalizeBulkBoxCards(input: unknown, maxCards: number = 16): BinderCard[] {
+  return normalizeCardOrder(input, maxCards).filter(
+    (card): card is BinderCard => card !== null,
+  );
 }
 
 function normalizeGoals(input: unknown): BinderGoal[] {
@@ -261,12 +269,16 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
       color_scheme: normalizedColorScheme,
       goals: [],
       goal_cooldowns: [],
+      bulk_box_cards: [],
       show_goals: true,
     })
     .select("id, created_at")
     .single();
 
   assertSupabase(binderError, "Failed to create binder");
+  if (!binderRow) {
+    throw new Error("Failed to create binder: no binder row returned.");
+  }
 
   const slots = layoutToSlots(payload.layout);
 
@@ -290,6 +302,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     colorScheme: normalizedColorScheme,
     goals: [],
     goalCooldowns: [],
+    bulkBoxCards: [],
     showGoals: true,
     createdAt: normalizeBinderCreatedAt(binderRow.created_at),
     filledCards: 0,
@@ -301,7 +314,7 @@ async function fetchBindersForUser(userId: string) {
   const { data: binderRows, error: bindersError } = await supabase
     .from("binders")
     .select(
-      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, show_goals, created_at",
+      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, created_at",
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -361,7 +374,7 @@ async function fetchBinderById(userId: string, binderId: string) {
   const { data, error } = await supabase
     .from("binders")
     .select(
-      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, show_goals, created_at",
+      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, created_at",
     )
     .eq("user_id", userId)
     .eq("id", binderId)
@@ -379,6 +392,7 @@ async function fetchBinderById(userId: string, binderId: string) {
     colorScheme: normalizeColorScheme(row.color_scheme),
     goals: normalizeGoals(row.goals),
     goalCooldowns: normalizeGoalCooldowns(row.goal_cooldowns),
+    bulkBoxCards: normalizeBulkBoxCards(row.bulk_box_cards),
     showGoals: normalizeShowGoals(row.show_goals),
   } as BinderItem;
 }
@@ -623,6 +637,28 @@ async function updateBinderSettings(
   assertSupabase(error, "Failed to update binder settings");
 }
 
+async function updateBinderBulkBoxCards(
+  userId: string,
+  binderId: string,
+  bulkBoxCards: BinderCard[],
+  maxCards: number = 16,
+) {
+  const nextCards = bulkBoxCards.slice(0, maxCards).map((card) => ({
+    ...card,
+    collectionStatus: normalizeCollectionStatus(card.collectionStatus),
+  }));
+
+  const { error } = await supabase
+    .from("binders")
+    .update({
+      bulk_box_cards: nextCards,
+    })
+    .eq("user_id", userId)
+    .eq("id", binderId);
+
+  assertSupabase(error, "Failed to update bulk box cards");
+}
+
 export type { BinderDraft, BinderItem, BinderPage, BinderCard, BinderGoal };
 export {
   addCardsToBinder,
@@ -636,4 +672,5 @@ export {
   updateBinderPageCardOrders,
   updateBinderLayout,
   updateBinderSettings,
+  updateBinderBulkBoxCards,
 };

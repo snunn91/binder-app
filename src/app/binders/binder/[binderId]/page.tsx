@@ -29,6 +29,7 @@ import {
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
+  updateBinderBulkBoxCards,
   updateBinderGoals,
   updateBinderPageCardOrders,
   updateBinderSettings,
@@ -37,6 +38,7 @@ import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
+import BinderSettingsModal from "@/modals/BinderSettingsModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { binderMessages } from "@/config/binderMessages";
 import {
@@ -47,7 +49,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Toggle } from "@/components/ui/toggle";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 
 type BinderPage = {
@@ -178,6 +179,7 @@ export default function BinderDetailPage() {
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
   const user = useAppSelector((state) => state.auth.user);
+  const userId = user?.uid;
 
   const [binder, setBinder] = useState<{
     id: string;
@@ -187,6 +189,7 @@ export default function BinderDetailPage() {
     showGoals?: boolean;
     goals?: BinderGoal[];
     goalCooldowns?: string[];
+    bulkBoxCards?: BinderCard[];
   } | null>(null);
 
   const [pages, setPages] = useState<BinderPage[]>([]);
@@ -242,6 +245,10 @@ export default function BinderDetailPage() {
   const hasUnsavedChanges = dirtyPageIds.size > 0;
   const isTwoByTwoLayout = layoutColumns === 2;
   const isFourByFourLayout = layoutColumns === 4;
+  const bulkBoxLimit = useMemo(
+    () => layoutToSlots(binder?.layout ?? "3x3"),
+    [binder?.layout],
+  );
   const binderCapacity = useMemo(() => {
     const totalSlots = pagesSorted.reduce((sum, page) => sum + page.slots, 0);
     const filledSlots = pagesSorted.reduce(
@@ -254,6 +261,14 @@ export default function BinderDetailPage() {
 
     return { totalSlots, filledSlots };
   }, [pagesSorted]);
+  const bulkBoxCount = useMemo(
+    () => Math.min(bulkBoxLimit, binder?.bulkBoxCards?.length ?? 0),
+    [binder?.bulkBoxCards, bulkBoxLimit],
+  );
+  const hasFreeBinderSlot = useMemo(
+    () => binderCapacity.filledSlots < binderCapacity.totalSlots,
+    [binderCapacity.filledSlots, binderCapacity.totalSlots],
+  );
   const rawGoals = useMemo(() => binder?.goals ?? [], [binder?.goals]);
   const goals = useMemo(
     () => rawGoals.filter((goal) => !goal.completed),
@@ -317,15 +332,15 @@ export default function BinderDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (!user || !binderId) return;
+    if (!userId || !binderId) return;
     let mounted = true;
 
     const load = async () => {
       setLoading(true);
 
       const [binderData, pagesData] = await Promise.all([
-        fetchBinderById(user.uid, binderId),
-        fetchBinderPages(user.uid, binderId),
+        fetchBinderById(userId, binderId),
+        fetchBinderPages(userId, binderId),
       ]);
 
       if (!mounted) return;
@@ -351,7 +366,7 @@ export default function BinderDetailPage() {
     return () => {
       mounted = false;
     };
-  }, [binderId, user]);
+  }, [binderId, userId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = String(event.active.id);
@@ -531,6 +546,117 @@ export default function BinderDetailPage() {
       setAddCardsError(
         binderMessages.errors.addCardsBinderFull(result.addedCount),
       );
+    }
+  };
+
+  const handleAddToBulkBox = async (items: CardPileEntry[]) => {
+    if (!user || !binderId || !binder) return;
+
+    const cardsToStore = buildCardsToAddFromPile(items);
+    if (cardsToStore.length === 0) return;
+
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    const remainingCapacity = Math.max(0, bulkBoxLimit - currentBulkBoxCards.length);
+    if (remainingCapacity <= 0) {
+      toast.error(binderMessages.errors.bulkBoxFull(bulkBoxLimit));
+      return;
+    }
+
+    const cardsToAdd = cardsToStore.slice(0, remainingCapacity);
+    const nextBulkBoxCards = [...currentBulkBoxCards, ...cardsToAdd].slice(
+      0,
+      bulkBoxLimit,
+    );
+
+    try {
+      await updateBinderBulkBoxCards(
+        user.uid,
+        binderId,
+        nextBulkBoxCards,
+        bulkBoxLimit,
+      );
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              bulkBoxCards: nextBulkBoxCards,
+            }
+          : prev,
+      );
+      if (cardsToAdd.length < cardsToStore.length) {
+        toast.success(
+          binderMessages.toast.bulkBoxAddedAndFull(cardsToAdd.length, bulkBoxLimit),
+        );
+      } else {
+        toast.success(binderMessages.toast.bulkBoxAdded(cardsToAdd.length));
+      }
+    } catch {
+      toast.error(binderMessages.errors.bulkBoxSaveFailed);
+    }
+  };
+
+  const handleAddBulkBoxCardToBinder = async (cardIndex: number) => {
+    if (!user || !binderId || !binder || !hasFreeBinderSlot) return;
+
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    const cardToAdd = currentBulkBoxCards[cardIndex];
+    if (!cardToAdd) return;
+
+    const result = addCardsToLocalPages(pagesRef.current, [cardToAdd]);
+    if (result.addedCount === 0) return;
+
+    const nextBulkBoxCards = currentBulkBoxCards.filter(
+      (_, index) => index !== cardIndex,
+    );
+
+    try {
+      await updateBinderBulkBoxCards(
+        user.uid,
+        binderId,
+        nextBulkBoxCards,
+        bulkBoxLimit,
+      );
+
+      setPages(result.nextPages);
+      pagesRef.current = result.nextPages;
+      setDirtyPageIds(
+        computeDirtyPageIds(result.nextPages, baselinePageSignaturesRef.current),
+      );
+      setSaveError(null);
+      setAddCardsError(null);
+
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              bulkBoxCards: nextBulkBoxCards,
+            }
+          : prev,
+      );
+    } catch {
+      toast.error(binderMessages.errors.bulkBoxSaveFailed);
+    }
+  };
+
+  const handleEmptyBulkBox = async () => {
+    if (!user || !binderId || !binder) return;
+
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    if (currentBulkBoxCards.length === 0) return;
+
+    try {
+      await updateBinderBulkBoxCards(user.uid, binderId, [], bulkBoxLimit);
+      setBinder((prev) =>
+        prev
+          ? {
+              ...prev,
+              bulkBoxCards: [],
+            }
+          : prev,
+      );
+      toast.success(binderMessages.toast.bulkBoxEmptied);
+    } catch {
+      toast.error(binderMessages.errors.bulkBoxSaveFailed);
     }
   };
 
@@ -1082,7 +1208,10 @@ export default function BinderDetailPage() {
           <button
             type="button"
             onClick={handleBulkBoxFromMenu}
-            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+            className="group relative flex h-12 items-center rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+            <span className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-exo font-semibold leading-none text-white">
+              {bulkBoxCount}
+            </span>
             <Box className="h-4 w-4 shrink-0" />
             <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
               Bulk box
@@ -1165,6 +1294,7 @@ export default function BinderDetailPage() {
         hideTrigger
         maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
         onAddCards={handleAddCards}
+        onAddToBulkBox={handleAddToBulkBox}
       />
 
       <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
@@ -1204,69 +1334,24 @@ export default function BinderDetailPage() {
         open={isBulkBoxModalOpen}
         onOpenChange={setIsBulkBoxModalOpen}
         onAddCards={handleOpenAddCardsFromBulkBox}
+        cards={binder?.bulkBoxCards ?? []}
+        capacity={bulkBoxLimit}
+        gridColumns={layoutColumns}
+        canAddToBinder={hasFreeBinderSlot}
+        onAddCardToBinder={(index) => void handleAddBulkBoxCardToBinder(index)}
+        onEmptyBox={() => void handleEmptyBulkBox()}
       />
 
-      <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="text-left">
-            <DialogTitle>Binder Settings</DialogTitle>
-            <DialogDescription>
-              Update your binder title and goal visibility.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label
-                htmlFor="binder-title"
-                className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-                Binder title
-              </label>
-              <input
-                id="binder-title"
-                type="text"
-                value={settingsName}
-                maxLength={80}
-                onChange={(event) => setSettingsName(event.target.value)}
-                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-exo text-zinc-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100"
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-zinc-300/70 bg-slate-50 px-3 py-3 dark:border-zinc-600/70 dark:bg-zinc-900/35">
-              <div>
-                <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-                  Show goals
-                </p>
-                <p className="text-xs font-exo text-zinc-600 dark:text-slate-300">
-                  Toggle goals panel visibility on the inside cover.
-                </p>
-              </div>
-              <Toggle
-                variant="outline"
-                pressed={settingsShowGoals}
-                onPressedChange={setSettingsShowGoals}>
-                {settingsShowGoals ? "On" : "Off"}
-              </Toggle>
-            </div>
-          </div>
-
-          <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
-            <button
-              type="button"
-              onClick={() => setIsSettingsModalOpen(false)}
-              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-              Cancel
-            </button>
-            <button
-              type="button"
-              disabled={isSavingSettings}
-              onClick={() => void handleSaveSettings()}
-              className="rounded-full border border-emerald-600 bg-emerald-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500">
-              {isSavingSettings ? "Saving..." : "Save"}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BinderSettingsModal
+        open={isSettingsModalOpen}
+        onOpenChange={setIsSettingsModalOpen}
+        binderName={settingsName}
+        onBinderNameChange={setSettingsName}
+        showGoals={settingsShowGoals}
+        onShowGoalsChange={setSettingsShowGoals}
+        isSaving={isSavingSettings}
+        onSave={() => void handleSaveSettings()}
+      />
     </div>
   );
 }

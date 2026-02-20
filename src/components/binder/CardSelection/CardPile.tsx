@@ -18,6 +18,7 @@ type CardPileProps = {
   onDecrementCard: (cardId: string) => void;
   onClearAll: () => void;
   onAddCards: () => void;
+  onAddToBulkBox?: () => void;
 };
 
 export default function CardPile({
@@ -29,35 +30,30 @@ export default function CardPile({
   onDecrementCard,
   onClearAll,
   onAddCards,
+  onAddToBulkBox,
 }: CardPileProps) {
   const hasCards = totalCardsInPile > 0;
   const appButtonClassName =
-    "relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-3 py-1 text-xs font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700";
+    "relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700";
+  const pileBodyHeightClassName = "h-[calc(100vh-232px)]";
 
   return (
     <div className="w-full p-3 lg:w-80">
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
-          Card Pile
-          <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-300">
-            ({totalCardsInPile}
-            {Number.isFinite(pileLimit) ? `/${pileLimit}` : ""})
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
+      <div>
+        <div className="flex items-center justify-between">
+          <div className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+            Card Pile
+            <span className="ml-2 text-xs text-zinc-500 dark:text-zinc-300">
+              ({totalCardsInPile}
+              {Number.isFinite(pileLimit) ? `/${pileLimit}` : ""})
+            </span>
+          </div>
           <button
             type="button"
             onClick={onClearAll}
             disabled={!hasCards}
-            className={appButtonClassName}>
-            <span className="relative z-10">Clear all</span>
-          </button>
-          <button
-            type="button"
-            onClick={onAddCards}
-            disabled={!hasCards}
-            className={appButtonClassName}>
-            <span className="relative z-10">Add cards</span>
+            className="text-xs font-exo font-medium text-zinc-600 transition hover:text-zinc-800 disabled:cursor-not-allowed disabled:opacity-40 dark:text-zinc-300 dark:hover:text-slate-100">
+            Clear all
           </button>
         </div>
       </div>
@@ -69,7 +65,8 @@ export default function CardPile({
       ) : null}
 
       {items.length > 0 ? (
-        <div className="mt-4 max-h-[calc(100vh-192px)] space-y-2 overflow-y-auto pr-1">
+        <div
+          className={`mt-4 ${pileBodyHeightClassName} space-y-2 overflow-y-auto pr-1`}>
           {items.map((item) => (
             <div
               key={item.card.id}
@@ -98,10 +95,28 @@ export default function CardPile({
           ))}
         </div>
       ) : (
-        <div className="mt-4 flex h-[calc(100vh-192px)] items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50/70 dark:border-zinc-700 dark:bg-zinc-900/30">
+        <div
+          className={`mt-4 ${pileBodyHeightClassName} flex items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50/70 dark:border-zinc-700 dark:bg-zinc-900/30`}>
           <LayoutList className="h-10 w-10 text-zinc-400 dark:text-zinc-500" />
         </div>
       )}
+
+      <div className="mt-3 flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={onAddCards}
+          disabled={!hasCards}
+          className={appButtonClassName}>
+          <span className="relative z-10">Add cards</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onAddToBulkBox?.()}
+          disabled={!hasCards || !onAddToBulkBox}
+          className={appButtonClassName}>
+          <span className="relative z-10">Add to Bulk Box</span>
+        </button>
+      </div>
     </div>
   );
 }

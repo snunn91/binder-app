@@ -24,7 +24,7 @@ export default function DraggedSlot({
           src={imageSrc}
           alt={card?.name ?? label}
           className="h-full w-full object-cover"
-          loading="lazy"
+          loading="eager"
         />
       ) : (
         <span className="px-2 text-center">{card?.name ?? label}</span>
