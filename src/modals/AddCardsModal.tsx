@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import CardSelection from "@/components/binder/CardSelection";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
+import LayoutModeToggle, {
+  type LayoutMode,
+} from "@/components/binder/LayoutModeToggle";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +24,9 @@ type AddCardsModalProps = {
   hideTrigger?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  forcedLayoutMode?: LayoutMode;
+  hideLayoutToggle?: boolean;
+  showMobileBulkBoxCta?: boolean;
 };
 
 export default function AddCardsModal({
@@ -32,11 +38,16 @@ export default function AddCardsModal({
   hideTrigger = false,
   open: openProp,
   onOpenChange,
+  forcedLayoutMode,
+  hideLayoutToggle = false,
+  showMobileBulkBoxCta = false,
 }: AddCardsModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectionKey, setSelectionKey] = useState(0);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
+  const effectiveLayoutMode = forcedLayoutMode ?? layoutMode;
 
   const setOpenState = (nextOpen: boolean) => {
     if (!isControlled) {
@@ -93,15 +104,27 @@ export default function AddCardsModal({
       ) : null}
       <DialogContent className="flex h-[calc(100vh-25px)] max-h-[calc(100vh-25px)] max-w-[calc(100vw-25px)] flex-col rounded-2xl border border-zinc-200 bg-white/90 p-0 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex h-full flex-col">
-          <DialogHeader className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <DialogHeader className="relative border-b border-zinc-200 px-6 py-4 pr-24 dark:border-zinc-800">
             <DialogTitle className="text-left">Add Card</DialogTitle>
+            {!forcedLayoutMode && !hideLayoutToggle ? (
+              <LayoutModeToggle
+                value={effectiveLayoutMode}
+                onChange={setLayoutMode}
+                className="absolute right-12 top-1/2 -translate-y-1/2"
+              />
+            ) : null}
           </DialogHeader>
-          <div className="flex-1 min-h-0 p-4">
+          <div
+            className={`flex-1 min-h-0 p-4 ${
+              showMobileBulkBoxCta ? "pb-20 sm:pb-4" : ""
+            }`}>
             <CardSelection
               key={selectionKey}
               maxCardsInPile={maxCardsInPile}
               onAddCards={handleAddCards}
               onAddToBulkBox={handleAddToBulkBox}
+              layoutMode={effectiveLayoutMode}
+              showMobileBulkBoxCta={showMobileBulkBoxCta}
             />
           </div>
         </div>

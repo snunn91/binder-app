@@ -24,9 +24,9 @@ export default function BindersPage() {
 
   return (
     <div
-      className={`flex w-full ${
+      className={`flex w-full px-[10px] md:px-0 ${
         binders.length === 0
-          ? "min-h-[calc(100vh-var(--header-h))] items-center justify-center"
+          ? "min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center"
           : ""
       }`}>
       {binders.length === 0 && (
@@ -69,16 +69,18 @@ export default function BindersPage() {
         </div>
       )}
       {binders.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 w-full gap-4 my-5 text-left">
+        <div className="grid w-full grid-cols-1 gap-4 py-5 text-left [@media(max-width:767px)_and_(orientation:landscape)]:grid-cols-2 md:grid-cols-3">
           {binders.map((binder) => (
             <Link
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
-              className={`group relative min-h-52 overflow-hidden rounded-xl border p-4 font-exo text-zinc-700 shadow-lg dark:text-slate-100 ${
+              className={`group relative min-h-fit md:min-h-52 overflow-hidden rounded-xl border p-4 font-exo text-zinc-700 shadow-lg dark:text-slate-100 ${
                 getBinderColorSchemeClasses(binder.colorScheme).card
               }`}>
-              <div className="relative z-10 flex h-full min-h-44 flex-col justify-between">
-                <h2 className="text-xl font-semibold tracking-wide">{binder.name}</h2>
+              <div className="relative z-10 flex h-full min-h-fit md:min-h-44 flex-col md:justify-between">
+                <h2 className="text-xl font-semibold tracking-wide">
+                  {binder.name}
+                </h2>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-zinc-600 dark:text-slate-300">
                     Created {formatBinderCreatedAt(binder.createdAt)}
@@ -96,7 +98,7 @@ export default function BindersPage() {
               <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />
             </Link>
           ))}
-          <div className="relative min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+          <div className="relative md:min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
             <div className="flex h-full items-center justify-center">
               <AddBinderModal />
             </div>

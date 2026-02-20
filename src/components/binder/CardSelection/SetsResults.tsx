@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { LayoutMode } from "@/components/binder/LayoutModeToggle";
 import type {
   SetSearchPreview,
   CardSearchPreview,
@@ -13,7 +14,6 @@ type SetsResultsProps = {
   selectedSet: SetSearchPreview | null;
 
   results: Array<SetSearchPreview | CardSearchPreview>;
-  totalCount?: number;
   loading: boolean;
   error: string | null;
 
@@ -21,8 +21,6 @@ type SetsResultsProps = {
   pageSize: number;
   hasPrev: boolean;
   hasNext: boolean;
-  startIndex: number;
-  endIndex: number;
 
   onPrev: () => void;
   onNext: () => void;
@@ -33,20 +31,18 @@ type SetsResultsProps = {
   onSelectCard: (card: CardSearchPreview) => void;
   selectedCardIds: Set<string>;
   selectionLocked: boolean;
+  layoutMode: LayoutMode;
 };
 
 export default function SetsResults({
   view,
   selectedSet,
   results,
-  totalCount,
   loading,
   error,
   page,
   hasPrev,
   hasNext,
-  startIndex,
-  endIndex,
   onPrev,
   onNext,
   onSelectSet,
@@ -55,6 +51,7 @@ export default function SetsResults({
   pageSize,
   selectedCardIds,
   selectionLocked,
+  layoutMode,
 }: SetsResultsProps) {
   const skeletons = React.useMemo(
     () => Array.from({ length: pageSize }, (_, index) => index),
@@ -124,16 +121,34 @@ export default function SetsResults({
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+              <div
+                className={
+                  layoutMode === "grid"
+                    ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0"
+                    : "space-y-2"
+                }>
                 {skeletons.map((key) => (
                   <div
                     key={key}
-                    className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-                    <Skeleton className="aspect-[63/88] w-full" />
-                    <div className="space-y-1 p-1.5">
-                      <Skeleton className="h-3 w-3/4" />
-                      <Skeleton className="h-3 w-1/2" />
-                    </div>
+                    className={
+                      layoutMode === "grid"
+                        ? "w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                        : "w-full rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    }>
+                    {layoutMode === "grid" ? (
+                      <>
+                        <Skeleton className="aspect-[63/88] w-full" />
+                        <div className="space-y-1 p-1.5">
+                          <Skeleton className="h-3 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-2/3" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -200,11 +215,35 @@ export default function SetsResults({
                   ))}
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 mb-0">
+                <div
+                  className={
+                    layoutMode === "grid"
+                      ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 mb-0"
+                      : "space-y-2 mb-0"
+                  }>
                   {(results as CardSearchPreview[]).map((card) => {
                     const isSelected = selectedCardIds.has(card.id);
                     const isDisabled = selectionLocked && !isSelected;
-                    return (
+                    return layoutMode === "list" ? (
+                      <button
+                        key={card.id}
+                        type="button"
+                        disabled={isDisabled}
+                        onClick={() => onSelectCard(card)}
+                        className={`w-full rounded-lg bg-white p-3 text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-2 active:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 ${
+                          isSelected
+                            ? "border-2 border-accent"
+                            : "border border-zinc-200 dark:border-zinc-700"
+                        }`}>
+                        <div className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                          {card.name}
+                        </div>
+                        <div className="truncate text-xs text-zinc-500 dark:text-zinc-300">
+                          {card.expansion?.name ?? "Unknown set"}
+                          {card.number ? ` • #${card.number}` : ""}
+                        </div>
+                      </button>
+                    ) : (
                       <button
                         key={card.id}
                         type="button"

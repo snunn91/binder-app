@@ -30,7 +30,7 @@ export default function RootLayout({
         <Providers>
           <Toaster position="top-center" />
           <Header />
-          <main className="min-h-[calc(100vh-var(--header-h))] pt-[var(--header-h)]">
+          <main className="min-h-[calc(100vh-var(--header-h)-100px)] pt-[var(--header-h)]">
             <div className="container h-full mx-auto">{children}</div>
           </main>
 

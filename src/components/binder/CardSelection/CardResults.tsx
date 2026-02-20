@@ -3,6 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Tilt from "react-parallax-tilt";
 import type { CardSearchPreview } from "@/lib/scrydex/useCardSearch";
 import CardItem from "@/components/binder/CardSelection/CardItem";
+import type { LayoutMode } from "@/components/binder/LayoutModeToggle";
 
 type CardResultsProps = {
   error: string | null;
@@ -21,6 +22,7 @@ type CardResultsProps = {
   onSelectCard: (card: CardSearchPreview) => void;
   selectedCardIds: Set<string>;
   selectionLocked: boolean;
+  layoutMode: LayoutMode;
 };
 
 export default function CardResults({
@@ -40,6 +42,7 @@ export default function CardResults({
   onSelectCard,
   selectedCardIds,
   selectionLocked,
+  layoutMode,
 }: CardResultsProps) {
   const skeletons = React.useMemo(
     () => Array.from({ length: pageSize }, (_, index) => index),
@@ -85,16 +88,34 @@ export default function CardResults({
       <>
         {loading ? (
           <div className="max-h-[calc(100vh-265px)] overflow-y-auto overflow-x-hidden pr-1 mb-1">
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0">
+            <div
+              className={
+                layoutMode === "grid"
+                  ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0"
+                  : "space-y-2"
+              }>
               {skeletons.map((key) => (
                 <div
                   key={key}
-                  className="w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900">
-                  <Skeleton className="aspect-[63/88] w-full" />
-                  <div className="space-y-1 p-1.5">
-                    <Skeleton className="h-3 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
-                  </div>
+                  className={
+                    layoutMode === "grid"
+                      ? "w-full overflow-hidden rounded-lg border border-zinc-200 bg-white text-left shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                      : "w-full rounded-lg border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                  }>
+                  {layoutMode === "grid" ? (
+                    <>
+                      <Skeleton className="aspect-[63/88] w-full" />
+                      <div className="space-y-1 p-1.5">
+                        <Skeleton className="h-3 w-3/4" />
+                        <Skeleton className="h-3 w-1/2" />
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-2/3" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -108,11 +129,16 @@ export default function CardResults({
         {!loading && results.length > 0 ? (
           <>
             <div className="max-h-[calc(100vh-265px)] overflow-y-auto overflow-x-hidden mb-1">
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 pr-4">
+              <div
+                className={
+                  layoutMode === "grid"
+                    ? "grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 min-w-0 pr-4"
+                    : "space-y-2 pr-4"
+                }>
                 {results.map((card) => {
                   const isSelected = selectedCardIds.has(card.id);
                   const isDisabled = selectionLocked && !isSelected;
-                  return (
+                  return layoutMode === "grid" ? (
                     <Tilt
                       key={card.id}
                       tiltMaxAngleX={8}
@@ -132,6 +158,25 @@ export default function CardResults({
                         <CardItem card={card} />
                       </button>
                     </Tilt>
+                  ) : (
+                    <button
+                      key={card.id}
+                      type="button"
+                      disabled={isDisabled}
+                      onClick={() => onSelectCard(card)}
+                      className={`w-full rounded-lg bg-white p-2 text-left shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:ring-2 active:ring-accent/40 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-zinc-900 ${
+                        isSelected
+                          ? "border-2 border-accent"
+                          : "border border-zinc-200 dark:border-zinc-700"
+                      }`}>
+                      <div className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                        {card.name}
+                      </div>
+                      <div className="truncate text-xs text-zinc-500 dark:text-zinc-300">
+                        {card.expansion?.name ?? "Unknown set"}
+                        {card.number ? ` • #${card.number}` : ""}
+                      </div>
+                    </button>
                   );
                 })}
               </div>

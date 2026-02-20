@@ -16,6 +16,7 @@ import useSetSearch, {
 import CardResults from "@/components/binder/CardSelection/CardResults";
 import SetsResults from "@/components/binder/CardSelection/SetsResults";
 import CardPile from "@/components/binder/CardSelection/CardPile";
+import type { LayoutMode } from "@/components/binder/LayoutModeToggle";
 import {
   DEFAULT_CARD_SORT,
   sanitizeSortForScope,
@@ -28,6 +29,8 @@ type CardSelectionProps = {
   onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
   onAddToBulkBox?: (items: CardPileEntry[]) => void | Promise<void>;
   maxCardsInPile?: number;
+  layoutMode?: LayoutMode;
+  showMobileBulkBoxCta?: boolean;
 };
 
 export type CardPileEntry = {
@@ -40,6 +43,8 @@ export default function CardSelection({
   onAddCards,
   onAddToBulkBox,
   maxCardsInPile,
+  layoutMode = "grid",
+  showMobileBulkBoxCta = false,
 }: CardSelectionProps) {
   const [sortBy, setSortBy] =
     React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
@@ -87,6 +92,7 @@ export default function CardSelection({
   );
   const pileLimit = maxCardsInPile ?? Number.POSITIVE_INFINITY;
   const isPileAtLimit = totalCardsInPile >= pileLimit;
+  const hasMobileBulkBoxCta = showMobileBulkBoxCta && Boolean(onAddToBulkBox);
 
   const incrementCardInPile = React.useCallback(
     (card: GlobalCardPreview) => {
@@ -146,7 +152,7 @@ export default function CardSelection({
   }, []);
 
   return (
-    <div className="flex h-full w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
+    <div className="relative flex h-full w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white/80 shadow-sm dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="flex h-full min-w-0 flex-1 flex-col divide-y divide-zinc-200 dark:divide-zinc-800 lg:flex-row lg:divide-x lg:divide-y-0">
         <div className="flex flex-col gap-3 p-3">
           <button
@@ -217,13 +223,10 @@ export default function CardSelection({
               results={
                 setSearch.results as Array<SetSearchPreview | SetCardPreview>
               }
-              totalCount={setSearch.totalCount}
               loading={setSearch.loading}
               error={setSearch.error}
               page={setSearch.page}
               pageSize={setSearch.pageSize}
-              startIndex={startIndex}
-              endIndex={endIndex}
               hasPrev={hasPrev}
               hasNext={hasNext}
               onPrev={setSearch.onPrev}
@@ -235,6 +238,7 @@ export default function CardSelection({
               onSelectCard={(card) => {
                 toggleCardInPile(card as unknown as GlobalCardPreview);
               }}
+              layoutMode={layoutMode}
             />
           ) : (
             <CardResults
@@ -256,6 +260,7 @@ export default function CardSelection({
               onSelectCard={(card) => {
                 toggleCardInPile(card);
               }}
+              layoutMode={layoutMode}
             />
           )}
         </div>
@@ -274,8 +279,19 @@ export default function CardSelection({
               ? () => void onAddToBulkBox(pileItems)
               : undefined
           }
+          layoutMode={layoutMode}
+          hideActionsOnMobile={hasMobileBulkBoxCta}
         />
       </div>
+
+      {hasMobileBulkBoxCta && totalCardsInPile > 0 ? (
+        <button
+          type="button"
+          onClick={() => void onAddToBulkBox?.(pileItems)}
+          className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full border border-accent bg-accent px-4 py-2 text-sm font-exo font-medium text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 sm:hidden">
+          Add to Bulk Box ({totalCardsInPile})
+        </button>
+      ) : null}
     </div>
   );
 }

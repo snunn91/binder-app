@@ -50,6 +50,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
+import useIsMobile from "@/lib/hooks/useIsMobile";
 
 type BinderPage = {
   id: string;
@@ -222,6 +223,7 @@ export default function BinderDetailPage() {
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
+  const isMobile = useIsMobile();
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -317,9 +319,18 @@ export default function BinderDetailPage() {
     }
 
     setHasEditSessionChanges(
-      computeDirtyPageIds(pages, editModeBaselineSignaturesRef.current).size > 0,
+      computeDirtyPageIds(pages, editModeBaselineSignaturesRef.current).size >
+        0,
     );
   }, [isEditMode, pages]);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    setIsActionMenuOpen(false);
+    setIsEditMode(false);
+    setHasEditSessionChanges(false);
+    editModeBaselineSignaturesRef.current = null;
+  }, [isMobile]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -555,8 +566,14 @@ export default function BinderDetailPage() {
     const cardsToStore = buildCardsToAddFromPile(items);
     if (cardsToStore.length === 0) return;
 
-    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
-    const remainingCapacity = Math.max(0, bulkBoxLimit - currentBulkBoxCards.length);
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(
+      0,
+      bulkBoxLimit,
+    );
+    const remainingCapacity = Math.max(
+      0,
+      bulkBoxLimit - currentBulkBoxCards.length,
+    );
     if (remainingCapacity <= 0) {
       toast.error(binderMessages.errors.bulkBoxFull(bulkBoxLimit));
       return;
@@ -585,7 +602,10 @@ export default function BinderDetailPage() {
       );
       if (cardsToAdd.length < cardsToStore.length) {
         toast.success(
-          binderMessages.toast.bulkBoxAddedAndFull(cardsToAdd.length, bulkBoxLimit),
+          binderMessages.toast.bulkBoxAddedAndFull(
+            cardsToAdd.length,
+            bulkBoxLimit,
+          ),
         );
       } else {
         toast.success(binderMessages.toast.bulkBoxAdded(cardsToAdd.length));
@@ -596,9 +616,12 @@ export default function BinderDetailPage() {
   };
 
   const handleAddBulkBoxCardToBinder = async (cardIndex: number) => {
-    if (!user || !binderId || !binder || !hasFreeBinderSlot) return;
+    if (isMobile || !user || !binderId || !binder || !hasFreeBinderSlot) return;
 
-    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(
+      0,
+      bulkBoxLimit,
+    );
     const cardToAdd = currentBulkBoxCards[cardIndex];
     if (!cardToAdd) return;
 
@@ -620,7 +643,10 @@ export default function BinderDetailPage() {
       setPages(result.nextPages);
       pagesRef.current = result.nextPages;
       setDirtyPageIds(
-        computeDirtyPageIds(result.nextPages, baselinePageSignaturesRef.current),
+        computeDirtyPageIds(
+          result.nextPages,
+          baselinePageSignaturesRef.current,
+        ),
       );
       setSaveError(null);
       setAddCardsError(null);
@@ -641,7 +667,10 @@ export default function BinderDetailPage() {
   const handleEmptyBulkBox = async () => {
     if (!user || !binderId || !binder) return;
 
-    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(
+      0,
+      bulkBoxLimit,
+    );
     if (currentBulkBoxCards.length === 0) return;
 
     try {
@@ -830,7 +859,9 @@ export default function BinderDetailPage() {
 
   const handleEditFromMenu = async () => {
     if (!isEditMode) {
-      editModeBaselineSignaturesRef.current = buildPageSignatures(pagesRef.current);
+      editModeBaselineSignaturesRef.current = buildPageSignatures(
+        pagesRef.current,
+      );
       setHasEditSessionChanges(false);
       setIsEditMode(true);
       setIsActionMenuOpen(true);
@@ -981,7 +1012,7 @@ export default function BinderDetailPage() {
 
   if (!user) {
     return (
-      <div className="flex min-h-[calc(100vh-var(--header-h))] items-center justify-center">
+      <div className="flex min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center">
         <div className="w-full max-w-3xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
           <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
             {binderMessages.auth.signInRequired}
@@ -1004,7 +1035,41 @@ export default function BinderDetailPage() {
         </div>
       ) : null}
       <div className="flex-1 min-h-0 pt-2 pb-20">
-        {loading && (
+        {isMobile ? (
+          <div className="flex h-full items-start justify-center px-3 pt-2">
+            <div className="w-full max-w-xl rounded-xl border border-zinc-300 bg-gray-50 p-4 shadow-lg dark:border-zinc-500 dark:bg-zinc-900/25">
+              <h2 className="text-base font-exo font-semibold text-zinc-700 dark:text-slate-100">
+                Mobile Mode
+              </h2>
+              <p className="mt-1 text-xs font-exo text-zinc-600 dark:text-zinc-300">
+                Binders are hidden on mobile. You can add cards to Bulk Box in
+                list view here, then move cards into binder slots on tablet or
+                desktop.
+              </p>
+
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenAddCards}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-accent text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add card</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBulkBoxFromMenu}
+                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-slate-200 text-zinc-700 shadow-lg transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+                  <span className="absolute -right-1 -top-1 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-exo font-semibold leading-none text-white">
+                    {bulkBoxCount}
+                  </span>
+                  <Box className="h-4 w-4" />
+                  <span className="sr-only">Open Bulk Box</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+        {!isMobile && loading && (
           <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
             <div className="flex items-center justify-center gap-2">
               <button
@@ -1073,7 +1138,7 @@ export default function BinderDetailPage() {
           </div>
         )}
 
-        {!loading && (
+        {!isMobile && !loading && (
           <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
             <div className="flex items-center justify-center gap-2">
               <button
@@ -1170,7 +1235,7 @@ export default function BinderDetailPage() {
         )}
       </div>
 
-      {isEditMode ? (
+      {!isMobile && isEditMode ? (
         <div className="fixed right-6 top-[calc(var(--header-h)+2.5rem)] z-40">
           <button
             type="button"
@@ -1188,105 +1253,111 @@ export default function BinderDetailPage() {
         </div>
       ) : null}
 
-      <div className="fixed bottom-6 right-6 z-40">
-        <div
-          className={`absolute bottom-14 right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
-            isActionMenuOpen
-              ? "translate-y-0 opacity-100"
-              : "pointer-events-none translate-y-2 opacity-0"
-          }`}>
-          <button
-            type="button"
-            onClick={handleOpenAddCards}
-            className="group relative flex h-12 items-center overflow-hidden rounded-full border border-accent bg-accent px-4 text-sm font-exo font-medium text-white shadow-lg transition-all duration-300 hover:pr-5 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
-            <Plus className="relative z-10 h-4 w-4 shrink-0" />
-            <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
-              Add card
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleBulkBoxFromMenu}
-            className="group relative flex h-12 items-center rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-            <span className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-exo font-semibold leading-none text-white">
-              {bulkBoxCount}
-            </span>
-            <Box className="h-4 w-4 shrink-0" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
-              Bulk box
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => void handleSaveFromMenu()}
-            disabled={!hasUnsavedChanges || isSaving}
-            aria-label={isSaving ? "Saving changes" : "Save changes"}
-            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-              hasUnsavedChanges && !isSaving
-                ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
-                : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
+      {!isMobile ? (
+        <div className="fixed bottom-14 right-12 z-40">
+          <div
+            className={`absolute bottom-14 right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
+              isActionMenuOpen
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none translate-y-2 opacity-0"
             }`}>
-            <Save className="h-4 w-4 shrink-0" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-              {isSaving ? "Saving..." : "Save"}
-            </span>
-          </button>
+            <button
+              type="button"
+              onClick={handleOpenAddCards}
+              className="group relative flex h-12 items-center overflow-hidden rounded-full border border-accent bg-accent px-4 text-sm font-exo font-medium text-white shadow-lg transition-all duration-300 hover:pr-5 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
+              <Plus className="relative z-10 h-4 w-4 shrink-0" />
+              <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+                Add card
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleBulkBoxFromMenu}
+              className="group relative flex h-12 items-center rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              <span className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-exo font-semibold leading-none text-white">
+                {bulkBoxCount}
+              </span>
+              <Box className="h-4 w-4 shrink-0" />
+              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+                Bulk box
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleSaveFromMenu()}
+              disabled={!hasUnsavedChanges || isSaving}
+              aria-label={isSaving ? "Saving changes" : "Save changes"}
+              className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+                hasUnsavedChanges && !isSaving
+                  ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                  : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
+              }`}>
+              <Save className="h-4 w-4 shrink-0" />
+              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+                {isSaving ? "Saving..." : "Save"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => void handleEditFromMenu()}
+              className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+                isEditMode && hasEditSessionChanges
+                  ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                  : isEditMode
+                    ? "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+                    : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+              }`}>
+              {isEditMode && hasEditSessionChanges ? (
+                <Save className="h-4 w-4 shrink-0" />
+              ) : isEditMode ? (
+                <X className="h-4 w-4 shrink-0" />
+              ) : (
+                <Pencil className="h-4 w-4 shrink-0" />
+              )}
+              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+                {isEditMode
+                  ? hasEditSessionChanges
+                    ? "Save"
+                    : "Cancel"
+                  : "Edit"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSettingsFromMenu}
+              className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              <Settings className="h-4 w-4 shrink-0" />
+              <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+                Settings
+              </span>
+            </button>
+          </div>
 
           <button
             type="button"
-            onClick={() => void handleEditFromMenu()}
-            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-              isEditMode && hasEditSessionChanges
-                ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
-                : isEditMode
-                  ? "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+            onClick={() => {
+              if (isEditMode) {
+                setIsActionMenuOpen(true);
+                return;
+              }
+              setIsActionMenuOpen((open) => !open);
+            }}
+            aria-expanded={isActionMenuOpen}
+            aria-label={isActionMenuOpen ? "Hide actions" : "Show actions"}
+            className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+              hasUnsavedChanges
+                ? "border-red-600 bg-red-500 text-white hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
             }`}>
-            {isEditMode && hasEditSessionChanges ? (
-              <Save className="h-4 w-4 shrink-0" />
-            ) : isEditMode ? (
-              <X className="h-4 w-4 shrink-0" />
-            ) : (
-              <Pencil className="h-4 w-4 shrink-0" />
-            )}
-            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-              {isEditMode ? (hasEditSessionChanges ? "Save" : "Cancel") : "Edit"}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSettingsFromMenu}
-            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-            <Settings className="h-4 w-4 shrink-0" />
-            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
-              Settings
-            </span>
+            <EllipsisVertical className="h-4 w-4" />
+            <span className="sr-only">Actions</span>
           </button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => {
-            if (isEditMode) {
-              setIsActionMenuOpen(true);
-              return;
-            }
-            setIsActionMenuOpen((open) => !open);
-          }}
-          aria-expanded={isActionMenuOpen}
-          aria-label={isActionMenuOpen ? "Hide actions" : "Show actions"}
-          className={`flex h-12 w-12 items-center justify-center rounded-full border shadow-lg transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-            hasUnsavedChanges
-              ? "border-red-600 bg-red-500 text-white hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
-              : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
-          }`}>
-          <EllipsisVertical className="h-4 w-4" />
-          <span className="sr-only">Actions</span>
-        </button>
-      </div>
+      ) : null}
 
       <AddCardsModal
         open={isAddCardsModalOpen}
@@ -1295,6 +1366,9 @@ export default function BinderDetailPage() {
         maxCardsInPile={binder ? layoutToSlots(binder.layout) : undefined}
         onAddCards={handleAddCards}
         onAddToBulkBox={handleAddToBulkBox}
+        forcedLayoutMode={isMobile ? "list" : undefined}
+        hideLayoutToggle={isMobile}
+        showMobileBulkBoxCta={isMobile}
       />
 
       <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
@@ -1338,6 +1412,9 @@ export default function BinderDetailPage() {
         capacity={bulkBoxLimit}
         gridColumns={layoutColumns}
         canAddToBinder={hasFreeBinderSlot}
+        canMoveCardsToBinder={!isMobile}
+        forcedLayoutMode={isMobile ? "list" : undefined}
+        hideLayoutToggle={isMobile}
         onAddCardToBinder={(index) => void handleAddBulkBoxCardToBinder(index)}
         onEmptyBox={() => void handleEmptyBulkBox()}
       />

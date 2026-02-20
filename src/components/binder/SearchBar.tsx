@@ -40,7 +40,7 @@ export default function SearchBar({
         <Select value={mode} onValueChange={onModeChange}>
           <SelectTrigger
             aria-label="Search type"
-            className="w-auto ps-4 pe- py-1.5 text-sm font-exo font-medium">
+            className="w-auto ps-3 pe-1 py-1.5 text-sm font-exo font-medium sm:ps-4 sm:pe-3">
             <SelectValue placeholder="Cards" />
           </SelectTrigger>
           <SelectContent align="start">
@@ -55,7 +55,7 @@ export default function SearchBar({
 
         <Search
           aria-hidden="true"
-          className="h-5 w-5 text-zinc-500 dark:text-zinc-400"
+          className="h-3 w-3 shrink-0 text-zinc-500 dark:text-zinc-400"
         />
         <input
           value={value}
@@ -67,8 +67,12 @@ export default function SearchBar({
         <button
           type="submit"
           disabled={loading}
-          className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-1.5 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
-          <span className="relative z-10">Search</span>
+          className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 p-0 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700 sm:h-auto sm:w-auto sm:px-4 sm:py-1.5">
+          <Search
+            aria-hidden="true"
+            className="relative z-10 h-[14px] w-[14px] sm:hidden"
+          />
+          <span className="sr-only sm:not-sr-only sm:relative sm:z-10">Search</span>
         </button>
       </div>
     </form>

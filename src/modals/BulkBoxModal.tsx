@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { LayoutList } from "lucide-react";
+import LayoutModeToggle, {
+  type LayoutMode,
+} from "@/components/binder/LayoutModeToggle";
 import type { BinderCard } from "@/lib/services/binderService";
 import {
   Dialog,
@@ -19,6 +23,9 @@ type BulkBoxModalProps = {
   canAddToBinder: boolean;
   onAddCardToBinder: (cardIndex: number) => void;
   onEmptyBox: () => void;
+  canMoveCardsToBinder?: boolean;
+  forcedLayoutMode?: LayoutMode;
+  hideLayoutToggle?: boolean;
 };
 
 export default function BulkBoxModal({
@@ -31,7 +38,15 @@ export default function BulkBoxModal({
   canAddToBinder,
   onAddCardToBinder,
   onEmptyBox,
+  canMoveCardsToBinder = true,
+  forcedLayoutMode,
+  hideLayoutToggle = false,
 }: BulkBoxModalProps) {
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
+  const effectiveLayoutMode = forcedLayoutMode ?? layoutMode;
+  const canAddCardFromBulkBox = canMoveCardsToBinder && canAddToBinder;
+  const isMobileMode = !canMoveCardsToBinder;
+
   const visibleCards = cards.slice(0, capacity);
   const hasCards = visibleCards.length > 0;
   const cardAspectClassName =
@@ -43,10 +58,22 @@ export default function BulkBoxModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl rounded-2xl border border-zinc-200 bg-white p-0 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
+      <DialogContent
+        className={
+          isMobileMode
+            ? "w-full max-w-[calc(100vw-25px)] rounded-2xl border border-zinc-200 bg-white p-0 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+            : "max-w-xl rounded-2xl border border-zinc-200 bg-white p-0 shadow-xl dark:border-zinc-800 dark:bg-zinc-950"
+        }>
         <div className="flex flex-col">
-          <DialogHeader className="border-b border-zinc-200 px-6 py-4 dark:border-zinc-800">
+          <DialogHeader className="relative border-b border-zinc-200 px-6 py-4 pr-24 dark:border-zinc-800">
             <DialogTitle className="text-left">Bulk Box</DialogTitle>
+            {!forcedLayoutMode && !hideLayoutToggle ? (
+              <LayoutModeToggle
+                value={effectiveLayoutMode}
+                onChange={setLayoutMode}
+                className="absolute right-12 top-1/2 -translate-y-1/2"
+              />
+            ) : null}
           </DialogHeader>
 
           <div className="p-4">
@@ -65,43 +92,73 @@ export default function BulkBoxModal({
                     </p>
                   </div>
                 </div>
-                <div
-                  className="mx-auto grid w-full max-w-[420px] gap-2"
-                  style={{
-                    gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
-                  }}>
-                  {visibleCards.map((card, index) => {
-                    const imageSrc = card.image?.small ?? card.image?.large;
-                    return (
-                      <button
-                        type="button"
-                        key={`${card.id}-${index}`}
-                        disabled={!canAddToBinder}
-                        onClick={() => onAddCardToBinder(index)}
-                        className={`overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition dark:border-zinc-700 dark:bg-zinc-900 ${
-                          canAddToBinder
-                            ? "hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent"
-                            : "cursor-not-allowed opacity-55 grayscale"
-                        }`}>
-                        <div className={`${cardAspectClassName} w-full`}>
-                          {imageSrc ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={imageSrc}
-                              alt={card.name}
-                              className="h-full w-full object-cover"
-                            />
+                <div className="max-h-[calc(100vh-480px)] overflow-y-auto pr-1">
+                  <div
+                    className={
+                      effectiveLayoutMode === "grid"
+                        ? "mx-auto grid w-full max-w-[420px] gap-2"
+                        : isMobileMode
+                          ? "grid w-full grid-cols-1 gap-2"
+                          : "mx-auto grid w-full max-w-[520px] grid-cols-1 gap-2"
+                    }
+                    style={
+                      effectiveLayoutMode === "grid"
+                        ? {
+                            gridTemplateColumns: `repeat(${gridColumns}, minmax(0, 1fr))`,
+                          }
+                        : undefined
+                    }>
+                    {visibleCards.map((card, index) => {
+                      const imageSrc = card.image?.small ?? card.image?.large;
+                      return (
+                        <button
+                          type="button"
+                          key={`${card.id}-${index}`}
+                          disabled={!canAddCardFromBulkBox}
+                          onClick={() => onAddCardToBinder(index)}
+                          className={`overflow-hidden rounded-md border border-zinc-200 bg-white text-left transition dark:border-zinc-700 dark:bg-zinc-900 ${
+                            canAddCardFromBulkBox
+                              ? "hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent"
+                              : "cursor-not-allowed opacity-55 grayscale"
+                          }`}>
+                          {effectiveLayoutMode === "grid" ? (
+                            <div className={`${cardAspectClassName} w-full`}>
+                              {imageSrc ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={imageSrc}
+                                  alt={card.name}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-zinc-100 px-2 text-center text-[11px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+                                  {card.name}
+                                </div>
+                              )}
+                            </div>
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-zinc-100 px-2 text-center text-[11px] text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                              {card.name}
+                            <div className="p-3">
+                              <div className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                                {card.name}
+                              </div>
+                              <div className="truncate text-xs text-zinc-500 dark:text-zinc-300">
+                                {card.expansion?.name ?? "Unknown set"}
+                                {card.number ? ` • #${card.number}` : ""}
+                              </div>
                             </div>
                           )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                {!canAddToBinder ? (
+                {!canMoveCardsToBinder ? (
+                  <p className="text-center text-xs font-exo text-zinc-600 dark:text-slate-300">
+                    Mobile mode only supports adding cards to Bulk Box. Move
+                    cards into binder slots on tablet or desktop.
+                  </p>
+                ) : null}
+                {canMoveCardsToBinder && !canAddToBinder ? (
                   <p className="text-center text-xs font-exo text-zinc-600 dark:text-slate-300">
                     Free up binder space to add cards from Bulk Box.
                   </p>

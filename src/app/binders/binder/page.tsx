@@ -11,9 +11,9 @@ export default function BindersPage() {
 
   return (
     <div
-      className={`flex w-full ${
+      className={`flex w-full px-[10px] md:px-0 ${
         binders.length === 0
-          ? "min-h-[calc(100vh-var(--header-h))] items-center justify-center"
+          ? "min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center"
           : ""
       }`}>
       {binders.length === 0 && (
@@ -56,7 +56,7 @@ export default function BindersPage() {
         </div>
       )}
       {binders.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 w-full gap-4 my-5 text-left">
+        <div className="grid w-full grid-cols-1 gap-4 py-5 text-left [@media(max-width:767px)_and_(orientation:landscape)]:grid-cols-2 md:grid-cols-3">
           {binders.map((binder) => (
             <Link
               href={`/binders/binder/${binder.id}`}

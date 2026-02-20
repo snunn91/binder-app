@@ -2,6 +2,7 @@
 
 import { LayoutList } from "lucide-react";
 import CardItem from "@/components/binder/CardSelection/CardItem";
+import type { LayoutMode } from "@/components/binder/LayoutModeToggle";
 import type { CardSearchPreview } from "@/lib/scrydex/useCardSearch";
 
 type CardPileEntry = {
@@ -19,6 +20,8 @@ type CardPileProps = {
   onClearAll: () => void;
   onAddCards: () => void;
   onAddToBulkBox?: () => void;
+  layoutMode: LayoutMode;
+  hideActionsOnMobile?: boolean;
 };
 
 export default function CardPile({
@@ -31,6 +34,8 @@ export default function CardPile({
   onClearAll,
   onAddCards,
   onAddToBulkBox,
+  layoutMode,
+  hideActionsOnMobile = false,
 }: CardPileProps) {
   const hasCards = totalCardsInPile > 0;
   const appButtonClassName =
@@ -71,26 +76,58 @@ export default function CardPile({
             <div
               key={item.card.id}
               className="flex w-full items-start gap-2 rounded-md border border-zinc-200 bg-white p-2 text-left dark:border-zinc-700 dark:bg-zinc-900">
-              <CardItem card={item.card} imageSize="extraSmall">
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onDecrementCard(item.card.id)}
-                    className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
-                    -
-                  </button>
-                  <span className="w-6 text-center text-xs font-semibold text-zinc-700 dark:text-slate-100">
-                    {item.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => onIncrementCard(item.card)}
-                    disabled={isPileAtLimit}
-                    className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
-                    +
-                  </button>
+              {layoutMode === "grid" ? (
+                <CardItem card={item.card} imageSize="extraSmall">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onDecrementCard(item.card.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
+                      -
+                    </button>
+                    <span className="w-6 text-center text-xs font-semibold text-zinc-700 dark:text-slate-100">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onIncrementCard(item.card)}
+                      disabled={isPileAtLimit}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
+                      +
+                    </button>
+                  </div>
+                </CardItem>
+              ) : (
+                <div className="flex w-full items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-zinc-900 dark:text-white">
+                      {item.card.name}
+                    </div>
+                    <div className="truncate text-xs text-zinc-500 dark:text-zinc-300">
+                      {item.card.expansion?.name ?? "Unknown set"}
+                      {item.card.number ? ` • #${item.card.number}` : ""}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onDecrementCard(item.card.id)}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
+                      -
+                    </button>
+                    <span className="w-6 text-center text-xs font-semibold text-zinc-700 dark:text-slate-100">
+                      {item.quantity}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onIncrementCard(item.card)}
+                      disabled={isPileAtLimit}
+                      className="flex h-6 w-6 items-center justify-center rounded border border-zinc-300 bg-slate-200 text-xs font-semibold text-zinc-800 transition hover:bg-slate-300 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-600 dark:bg-zinc-800 dark:text-slate-100 dark:hover:bg-zinc-700">
+                      +
+                    </button>
+                  </div>
                 </div>
-              </CardItem>
+              )}
             </div>
           ))}
         </div>
@@ -101,7 +138,10 @@ export default function CardPile({
         </div>
       )}
 
-      <div className="mt-3 flex justify-end gap-2">
+      <div
+        className={`mt-3 justify-end gap-2 ${
+          hideActionsOnMobile ? "hidden sm:flex" : "flex"
+        }`}>
         <button
           type="button"
           onClick={onAddCards}
