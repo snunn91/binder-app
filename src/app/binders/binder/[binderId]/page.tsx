@@ -31,7 +31,7 @@ import {
 } from "@/lib/services/binderService";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
-import SettingToggle from "@/components/binder/SettingToggle";
+import BinderActionToggle from "@/components/binder/BinderActionToggle";
 import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
 import BinderSettingsModal from "@/modals/BinderSettingsModal";
@@ -1250,7 +1250,7 @@ export default function BinderDetailPage() {
       ) : null}
 
       {!isMobile ? (
-        <SettingToggle
+        <BinderActionToggle
           isActionMenuOpen={isActionMenuOpen}
           isEditMode={isEditMode}
           hasEditSessionChanges={hasEditSessionChanges}

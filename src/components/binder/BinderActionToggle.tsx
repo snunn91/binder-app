@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 
-type SettingToggleProps = {
+type BinderActionToggleProps = {
   isActionMenuOpen: boolean;
   isEditMode: boolean;
   hasEditSessionChanges: boolean;
@@ -25,7 +25,7 @@ type SettingToggleProps = {
   onToggleMenu: () => void;
 };
 
-export default function SettingToggle({
+export default function BinderActionToggle({
   isActionMenuOpen,
   isEditMode,
   hasEditSessionChanges,
@@ -38,7 +38,7 @@ export default function SettingToggle({
   onEdit,
   onOpenSettings,
   onToggleMenu,
-}: SettingToggleProps) {
+}: BinderActionToggleProps) {
   return (
     <div className="fixed bottom-14 right-12 z-40">
       <div
