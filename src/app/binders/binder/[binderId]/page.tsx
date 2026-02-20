@@ -13,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
 import {
+  Box,
   ChevronLeft,
   ChevronRight,
   EllipsisVertical,
@@ -20,6 +21,7 @@ import {
   Plus,
   Save,
   Settings,
+  X,
 } from "lucide-react";
 import {
   type BinderGoal,
@@ -34,6 +36,7 @@ import {
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import AddCardsModal from "@/modals/AddCardsModal";
+import BulkBoxModal from "@/modals/BulkBoxModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { binderMessages } from "@/config/binderMessages";
 import {
@@ -54,10 +57,10 @@ type BinderPage = {
   cardOrder: (BinderCard | null)[];
 };
 
-const GOAL_LIMIT = 3;
+const GOAL_LIMIT = 5;
 const GOAL_CHAR_LIMIT = 150;
-const GOAL_COOLDOWN_MS = 24 * 60 * 60 * 1000;
-const GOAL_COOLDOWN_ENABLED = true;
+const GOAL_DELETE_LIMIT = 10;
+const GOAL_DELETE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function parseGoalTimestamp(value: string | null | undefined) {
   if (!value) return null;
@@ -66,21 +69,14 @@ function parseGoalTimestamp(value: string | null | undefined) {
   return timestamp;
 }
 
-function formatGoalCooldownRemaining(remainingMs: number) {
-  const totalMinutes = Math.max(1, Math.ceil(remainingMs / (60 * 1000)));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours <= 0) return `${minutes}m`;
-  if (minutes === 0) return `${hours}h`;
-  return `${hours}h ${minutes}m`;
-}
-
-function getActiveGoalCooldowns(goalCooldowns: string[], now: number) {
-  return goalCooldowns.filter((value) => {
+function getRecentGoalDeleteTimestamps(
+  goalDeleteTimestamps: string[],
+  now: number,
+) {
+  return goalDeleteTimestamps.filter((value) => {
     const timestamp = parseGoalTimestamp(value);
     if (timestamp === null) return false;
-    return now - timestamp < GOAL_COOLDOWN_MS;
+    return now - timestamp < GOAL_DELETE_WINDOW_MS;
   });
 }
 
@@ -205,16 +201,21 @@ export default function BinderDetailPage() {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
   const [isAddCardsModalOpen, setIsAddCardsModalOpen] = useState(false);
+  const [isBulkBoxModalOpen, setIsBulkBoxModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsName, setSettingsName] = useState("");
   const [settingsShowGoals, setSettingsShowGoals] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [hasEditSessionChanges, setHasEditSessionChanges] = useState(false);
   const pendingNavigationRef = useRef<null | (() => void)>(null);
   const bypassUnsavedGuardRef = useRef(false);
   const hasUnsavedChangesRef = useRef(false);
   const pagesRef = useRef<BinderPage[]>([]);
   const baselinePageSignaturesRef = useRef<Record<string, string>>({});
+  const editModeBaselineSignaturesRef = useRef<Record<string, string> | null>(
+    null,
+  );
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [spreadIndex, setSpreadIndex] = useState(0);
@@ -245,7 +246,9 @@ export default function BinderDetailPage() {
     const totalSlots = pagesSorted.reduce((sum, page) => sum + page.slots, 0);
     const filledSlots = pagesSorted.reduce(
       (sum, page) =>
-        sum + page.cardOrder.filter((card): card is BinderCard => card !== null).length,
+        sum +
+        page.cardOrder.filter((card): card is BinderCard => card !== null)
+          .length,
       0,
     );
 
@@ -256,7 +259,7 @@ export default function BinderDetailPage() {
     () => rawGoals.filter((goal) => !goal.completed),
     [rawGoals],
   );
-  const legacyGoalCooldowns = useMemo(
+  const legacyGoalDeleteTimestamps = useMemo(
     () =>
       rawGoals
         .filter((goal) => goal.completed)
@@ -264,43 +267,25 @@ export default function BinderDetailPage() {
         .filter((value): value is string => typeof value === "string"),
     [rawGoals],
   );
-  const goalCooldowns = useMemo(
+  const recentGoalDeleteTimestamps = useMemo(
     () =>
-      getActiveGoalCooldowns(
-        [...(binder?.goalCooldowns ?? []), ...legacyGoalCooldowns],
+      getRecentGoalDeleteTimestamps(
+        [...(binder?.goalCooldowns ?? []), ...legacyGoalDeleteTimestamps],
         goalClock,
       ),
-    [binder?.goalCooldowns, goalClock, legacyGoalCooldowns],
+    [binder?.goalCooldowns, goalClock, legacyGoalDeleteTimestamps],
   );
   const activeGoalCount = goals.length;
-  const goalSlotsUsed =
-    activeGoalCount + (GOAL_COOLDOWN_ENABLED ? goalCooldowns.length : 0);
-  const canAddGoal = goalSlotsUsed < GOAL_LIMIT;
-  const nextGoalAvailableAt = useMemo(() => {
-    if (!GOAL_COOLDOWN_ENABLED) return null;
-    if (canAddGoal) return null;
-
-    const readyTimes = goalCooldowns
-      .map((value) => parseGoalTimestamp(value))
-      .filter((value): value is number => value !== null)
-      .map((completedAt) => completedAt + GOAL_COOLDOWN_MS)
-      .filter((readyAt) => readyAt > goalClock)
-      .sort((left, right) => left - right);
-
-    if (readyTimes.length === 0) return null;
-    return readyTimes[0];
-  }, [canAddGoal, goalClock, goalCooldowns]);
-  const goalCooldownRemainingMs = useMemo(() => {
-    if (!nextGoalAvailableAt) return 0;
-    return Math.max(0, nextGoalAvailableAt - goalClock);
-  }, [goalClock, nextGoalAvailableAt]);
+  const canAddGoal = activeGoalCount < GOAL_LIMIT;
+  const canDeleteGoal = recentGoalDeleteTimestamps.length < GOAL_DELETE_LIMIT;
   const goalInputDisabledReason = useMemo(() => {
     if (canAddGoal) return null;
-    if (nextGoalAvailableAt) {
-      return `Goal limit reached. New goal available in ${formatGoalCooldownRemaining(goalCooldownRemainingMs)}.`;
-    }
     return binderMessages.errors.goalLimitReached;
-  }, [canAddGoal, goalCooldownRemainingMs, nextGoalAvailableAt]);
+  }, [canAddGoal]);
+  const goalDeleteDisabledReason = useMemo(() => {
+    if (canDeleteGoal) return null;
+    return binderMessages.errors.goalDeleteLimitReached;
+  }, [canDeleteGoal]);
 
   useEffect(() => {
     hasUnsavedChangesRef.current = hasUnsavedChanges;
@@ -309,6 +294,17 @@ export default function BinderDetailPage() {
   useEffect(() => {
     pagesRef.current = pages;
   }, [pages]);
+
+  useEffect(() => {
+    if (!isEditMode || !editModeBaselineSignaturesRef.current) {
+      setHasEditSessionChanges(false);
+      return;
+    }
+
+    setHasEditSessionChanges(
+      computeDirtyPageIds(pages, editModeBaselineSignaturesRef.current).size > 0,
+    );
+  }, [isEditMode, pages]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -342,6 +338,9 @@ export default function BinderDetailPage() {
       baselinePageSignaturesRef.current = buildPageSignatures(pagesData);
       setDirtyPageIds(new Set());
       setSaveError(null);
+      setIsEditMode(false);
+      setHasEditSessionChanges(false);
+      editModeBaselineSignaturesRef.current = null;
 
       setSpreadIndex(0);
       setLoading(false);
@@ -413,7 +412,10 @@ export default function BinderDetailPage() {
     if (didChange) {
       if (nextPagesResult) {
         setDirtyPageIds(
-          computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
+          computeDirtyPageIds(
+            nextPagesResult,
+            baselinePageSignaturesRef.current,
+          ),
         );
       }
       setSaveError(null);
@@ -442,6 +444,34 @@ export default function BinderDetailPage() {
       if (nextPagesResult) pagesRef.current = nextPagesResult;
       return nextPagesResult;
     });
+    if (nextPagesResult) {
+      setDirtyPageIds(
+        computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
+      );
+      setSaveError(null);
+    }
+  };
+
+  const handleDeleteAllCardsFromVisiblePages = () => {
+    const pageIds = [leftPage?.id, rightPage?.id].filter(
+      (value): value is string => Boolean(value),
+    );
+    if (pageIds.length === 0) return;
+
+    let nextPagesResult: BinderPage[] | null = null;
+    setPages((prev) => {
+      nextPagesResult = prev.map((page) => {
+        if (!pageIds.includes(page.id)) return page;
+        if ((page.cardOrder ?? []).every((card) => card === null)) return page;
+        return {
+          ...page,
+          cardOrder: Array.from({ length: page.slots }, () => null),
+        };
+      });
+      if (nextPagesResult) pagesRef.current = nextPagesResult;
+      return nextPagesResult;
+    });
+
     if (nextPagesResult) {
       setDirtyPageIds(
         computeDirtyPageIds(nextPagesResult, baselinePageSignaturesRef.current),
@@ -498,7 +528,9 @@ export default function BinderDetailPage() {
       computeDirtyPageIds(result.nextPages, baselinePageSignaturesRef.current),
     );
     if (result.remainingCount > 0) {
-      setAddCardsError(binderMessages.errors.addCardsBinderFull(result.addedCount));
+      setAddCardsError(
+        binderMessages.errors.addCardsBinderFull(result.addedCount),
+      );
     }
   };
 
@@ -510,18 +542,17 @@ export default function BinderDetailPage() {
 
     const currentGoals = (binder.goals ?? []).filter((goal) => !goal.completed);
     const now = Date.now();
-    const legacyCooldowns = (binder.goals ?? [])
+    const legacyDeletes = (binder.goals ?? [])
       .filter((goal) => goal.completed && typeof goal.completedAt === "string")
       .map((goal) => goal.completedAt as string);
-    const currentCooldowns = getActiveGoalCooldowns(
-      [...(binder.goalCooldowns ?? []), ...legacyCooldowns],
+    const currentDeleteTimestamps = getRecentGoalDeleteTimestamps(
+      [...(binder.goalCooldowns ?? []), ...legacyDeletes],
       now,
     );
-    const slotUsage =
-      currentGoals.length +
-      (GOAL_COOLDOWN_ENABLED ? currentCooldowns.length : 0);
-    if (slotUsage >= GOAL_LIMIT) {
-      toast.error(goalInputDisabledReason ?? binderMessages.errors.goalLimitReached);
+    if (currentGoals.length >= GOAL_LIMIT) {
+      toast.error(
+        goalInputDisabledReason ?? binderMessages.errors.goalLimitReached,
+      );
       return;
     }
 
@@ -539,13 +570,18 @@ export default function BinderDetailPage() {
 
     setIsUpdatingGoals(true);
     try {
-      await updateBinderGoals(user.uid, binderId, nextGoals, currentCooldowns);
+      await updateBinderGoals(
+        user.uid,
+        binderId,
+        nextGoals,
+        currentDeleteTimestamps,
+      );
       setBinder((prev) =>
         prev
           ? {
               ...prev,
               goals: nextGoals,
-              goalCooldowns: currentCooldowns,
+              goalCooldowns: currentDeleteTimestamps,
             }
           : prev,
       );
@@ -568,27 +604,32 @@ export default function BinderDetailPage() {
 
     const completionTimestamp = new Date().toISOString();
     const now = Date.now();
-    const legacyCooldowns = (binder.goals ?? [])
+    const legacyDeletes = (binder.goals ?? [])
       .filter((goal) => goal.completed && typeof goal.completedAt === "string")
       .map((goal) => goal.completedAt as string);
     const nextGoals = currentGoals.filter((goal) => goal.id !== goalId);
-    const nextCooldowns = getActiveGoalCooldowns(
-      [...(binder.goalCooldowns ?? []), ...legacyCooldowns],
+    const nextDeleteTimestamps = getRecentGoalDeleteTimestamps(
+      [...(binder.goalCooldowns ?? []), ...legacyDeletes],
       now,
     );
-    const cooldownsToSave = GOAL_COOLDOWN_ENABLED
-      ? nextCooldowns.concat(completionTimestamp)
-      : nextCooldowns;
+    if (nextDeleteTimestamps.length >= GOAL_DELETE_LIMIT) {
+      toast.error(
+        goalDeleteDisabledReason ??
+          binderMessages.errors.goalDeleteLimitReached,
+      );
+      return;
+    }
+    const timestampsToSave = nextDeleteTimestamps.concat(completionTimestamp);
 
     setIsUpdatingGoals(true);
     try {
-      await updateBinderGoals(user.uid, binderId, nextGoals, cooldownsToSave);
+      await updateBinderGoals(user.uid, binderId, nextGoals, timestampsToSave);
       setBinder((prev) =>
         prev
           ? {
               ...prev,
               goals: nextGoals,
-              goalCooldowns: cooldownsToSave,
+              goalCooldowns: timestampsToSave,
             }
           : prev,
       );
@@ -663,23 +704,24 @@ export default function BinderDetailPage() {
 
   const handleEditFromMenu = async () => {
     if (!isEditMode) {
+      editModeBaselineSignaturesRef.current = buildPageSignatures(pagesRef.current);
+      setHasEditSessionChanges(false);
       setIsEditMode(true);
       setIsActionMenuOpen(true);
       return;
     }
 
-    const hasEditChanges =
-      computeDirtyPageIds(pagesRef.current, baselinePageSignaturesRef.current)
-        .size > 0;
-
     let didSave = true;
-    if (hasEditChanges) {
+    if (hasEditSessionChanges) {
       didSave = await handleSaveChanges(binderMessages.toast.editSaved);
     }
     if (!didSave) {
       setIsActionMenuOpen(true);
       return;
     }
+
+    editModeBaselineSignaturesRef.current = null;
+    setHasEditSessionChanges(false);
     setIsEditMode(false);
     setIsActionMenuOpen(false);
   };
@@ -729,6 +771,18 @@ export default function BinderDetailPage() {
       setIsActionMenuOpen(false);
     }
     setIsAddCardsModalOpen(true);
+  };
+
+  const handleBulkBoxFromMenu = () => {
+    setIsActionMenuOpen(false);
+    setIsBulkBoxModalOpen(true);
+  };
+
+  const handleOpenAddCardsFromBulkBox = () => {
+    setIsBulkBoxModalOpen(false);
+    window.setTimeout(() => {
+      setIsAddCardsModalOpen(true);
+    }, 0);
   };
 
   useEffect(() => {
@@ -918,7 +972,6 @@ export default function BinderDetailPage() {
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
-
             <div
               className={`grid min-w-0 grid-cols-2 ${
                 isTwoByTwoLayout
@@ -940,9 +993,13 @@ export default function BinderDetailPage() {
                   goalLimit={GOAL_LIMIT}
                   goalInputDisabled={!canAddGoal || isUpdatingGoals}
                   goalSubmitDisabled={
-                    !canAddGoal || isUpdatingGoals || goalText.trim().length === 0
+                    !canAddGoal ||
+                    isUpdatingGoals ||
+                    goalText.trim().length === 0
                   }
                   goalInputDisabledReason={goalInputDisabledReason}
+                  goalCompleteDisabled={!canDeleteGoal}
+                  goalCompleteDisabledReason={goalDeleteDisabledReason}
                   activeGoalCount={activeGoalCount}
                   isUpdatingGoals={isUpdatingGoals}
                   onGoalTextChange={(value) =>
@@ -987,6 +1044,24 @@ export default function BinderDetailPage() {
         )}
       </div>
 
+      {isEditMode ? (
+        <div className="fixed right-6 top-[calc(var(--header-h)+2.5rem)] z-40">
+          <button
+            type="button"
+            onClick={handleDeleteAllCardsFromVisiblePages}
+            disabled={
+              ![leftPage, rightPage]
+                .filter((page): page is BinderPage => page !== null)
+                .some((page) =>
+                  (page.cardOrder ?? []).some((card) => card !== null),
+                )
+            }
+            className="rounded-full border border-red-500 bg-red-500 px-4 py-1.5 text-xs font-exo font-semibold text-white shadow-lg transition hover:bg-red-600 disabled:cursor-not-allowed disabled:border-zinc-400 disabled:bg-zinc-400 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-700">
+            Delete all
+          </button>
+        </div>
+      ) : null}
+
       <div className="fixed bottom-6 right-6 z-40">
         <div
           className={`absolute bottom-14 right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
@@ -1001,6 +1076,16 @@ export default function BinderDetailPage() {
             <Plus className="relative z-10 h-4 w-4 shrink-0" />
             <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
               Add card
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleBulkBoxFromMenu}
+            className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+            <Box className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
+              Bulk box
             </span>
           </button>
 
@@ -1024,17 +1109,21 @@ export default function BinderDetailPage() {
             type="button"
             onClick={() => void handleEditFromMenu()}
             className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-              isEditMode
+              isEditMode && hasEditSessionChanges
                 ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
+                : isEditMode
+                  ? "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
                 : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
             }`}>
-            {isEditMode ? (
+            {isEditMode && hasEditSessionChanges ? (
               <Save className="h-4 w-4 shrink-0" />
+            ) : isEditMode ? (
+              <X className="h-4 w-4 shrink-0" />
             ) : (
               <Pencil className="h-4 w-4 shrink-0" />
             )}
             <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-              {isEditMode ? "Save" : "Edit"}
+              {isEditMode ? (hasEditSessionChanges ? "Save" : "Cancel") : "Edit"}
             </span>
           </button>
 
@@ -1082,7 +1171,9 @@ export default function BinderDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader className="text-left">
             <DialogTitle>{binderMessages.leaveModal.title}</DialogTitle>
-            <DialogDescription>{binderMessages.leaveModal.description}</DialogDescription>
+            <DialogDescription>
+              {binderMessages.leaveModal.description}
+            </DialogDescription>
           </DialogHeader>
 
           <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
@@ -1108,6 +1199,12 @@ export default function BinderDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BulkBoxModal
+        open={isBulkBoxModalOpen}
+        onOpenChange={setIsBulkBoxModalOpen}
+        onAddCards={handleOpenAddCardsFromBulkBox}
+      />
 
       <Dialog open={isSettingsModalOpen} onOpenChange={setIsSettingsModalOpen}>
         <DialogContent className="max-w-md">

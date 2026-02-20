@@ -18,6 +18,8 @@ type InsideCoverProps = {
   goalInputDisabled: boolean;
   goalSubmitDisabled: boolean;
   goalInputDisabledReason?: string | null;
+  goalCompleteDisabled: boolean;
+  goalCompleteDisabledReason?: string | null;
   activeGoalCount: number;
   isUpdatingGoals: boolean;
   onGoalTextChange: (value: string) => void;
@@ -38,6 +40,8 @@ export default function InsideCover({
   goalInputDisabled,
   goalSubmitDisabled,
   goalInputDisabledReason,
+  goalCompleteDisabled,
+  goalCompleteDisabledReason,
   activeGoalCount,
   isUpdatingGoals,
   onGoalTextChange,
@@ -63,6 +67,8 @@ export default function InsideCover({
             goalInputDisabled={goalInputDisabled}
             goalSubmitDisabled={goalSubmitDisabled}
             goalInputDisabledReason={goalInputDisabledReason}
+            goalCompleteDisabled={goalCompleteDisabled}
+            goalCompleteDisabledReason={goalCompleteDisabledReason}
             activeGoalCount={activeGoalCount}
             isUpdatingGoals={isUpdatingGoals}
             onGoalTextChange={onGoalTextChange}

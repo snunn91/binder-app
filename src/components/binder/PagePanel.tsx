@@ -88,9 +88,9 @@ export default function PagePanel({
   return (
     <div
       className={`${panelPaddingClassName} ${panelColorSchemeClassName} rounded-xl border shadow-lg`}>
-      {/* <p className="text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
+      <p className="text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
         Page {page.index}
-      </p> */}
+      </p>
 
       <DndContext
         sensors={sensors}

@@ -13,6 +13,8 @@ type GoalsPanelProps = {
   goalInputDisabled: boolean;
   goalSubmitDisabled: boolean;
   goalInputDisabledReason?: string | null;
+  goalCompleteDisabled: boolean;
+  goalCompleteDisabledReason?: string | null;
   activeGoalCount: number;
   isUpdatingGoals: boolean;
   onGoalTextChange: (value: string) => void;
@@ -28,6 +30,8 @@ export default function GoalsPanel({
   goalInputDisabled,
   goalSubmitDisabled,
   goalInputDisabledReason,
+  goalCompleteDisabled,
+  goalCompleteDisabledReason,
   activeGoalCount,
   isUpdatingGoals,
   onGoalTextChange,
@@ -97,6 +101,7 @@ export default function GoalsPanel({
                 aria-label={`Complete goal: ${goal.text}`}
                 disabled={
                   goal.completed ||
+                  goalCompleteDisabled ||
                   isUpdatingGoals ||
                   pendingCheckGoalIds.has(goal.id) ||
                   animatingGoalIds.has(goal.id)
@@ -153,6 +158,9 @@ export default function GoalsPanel({
         </div>
         {goalInputDisabledReason ? (
           <StatusBox type="info" text={goalInputDisabledReason} />
+        ) : null}
+        {goalCompleteDisabledReason ? (
+          <StatusBox type="info" text={goalCompleteDisabledReason} />
         ) : null}
       </div>
     </section>
