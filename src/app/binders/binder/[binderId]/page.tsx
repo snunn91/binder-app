@@ -13,12 +13,6 @@ import {
 } from "@dnd-kit/core";
 import { arraySwap } from "@dnd-kit/sortable";
 import {
-  Box,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-} from "lucide-react";
-import {
   type BinderGoal,
   type BinderCard,
   fetchBinderById,
@@ -29,147 +23,29 @@ import {
   updateBinderPageCardOrders,
   updateBinderSettings,
 } from "@/lib/services/binderService";
-import InsideCover from "@/components/binder/InsideCover";
-import PagePanel from "@/components/binder/PagePanel";
 import BinderActionToggle from "@/components/binder/BinderActionToggle";
+import DeleteAllBinderPageCards from "@/components/binder/DeleteAllBinderPageCards";
+import ErrorBanners from "@/components/binder/BinderErrorBanners";
+import MobileBinderPanel from "@/components/binder/BinderMobilePanel";
+import BinderSpreadContent from "@/components/binder/BinderSpreadContent";
+import LeaveBinderDialog from "@/components/binder/BinderLeaveDialog";
 import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
 import BinderSettingsModal from "@/modals/BinderSettingsModal";
-import { Skeleton } from "@/components/ui/skeleton";
 import { binderMessages } from "@/config/binderMessages";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 import useIsMobile from "@/lib/hooks/useIsMobile";
-
-type BinderPage = {
-  id: string;
-  index: number;
-  slots: number;
-  cardOrder: (BinderCard | null)[];
-};
-
-const GOAL_LIMIT = 5;
-const GOAL_CHAR_LIMIT = 150;
-const GOAL_DELETE_LIMIT = 10;
-const GOAL_DELETE_WINDOW_MS = 24 * 60 * 60 * 1000;
-
-function parseGoalTimestamp(value: string | null | undefined) {
-  if (!value) return null;
-  const timestamp = Date.parse(value);
-  if (Number.isNaN(timestamp)) return null;
-  return timestamp;
-}
-
-function getRecentGoalDeleteTimestamps(
-  goalDeleteTimestamps: string[],
-  now: number,
-) {
-  return goalDeleteTimestamps.filter((value) => {
-    const timestamp = parseGoalTimestamp(value);
-    if (timestamp === null) return false;
-    return now - timestamp < GOAL_DELETE_WINDOW_MS;
-  });
-}
-
-function slotSignature(card: BinderCard | null) {
-  if (!card) return "";
-  return `${card.id}:${card.number ?? ""}:${card.collectionStatus ?? "collected"}`;
-}
-
-function pageSignature(cardOrder: (BinderCard | null)[]) {
-  return cardOrder.map((card) => slotSignature(card)).join("|");
-}
-
-function buildPageSignatures(pages: BinderPage[]) {
-  const signatures: Record<string, string> = {};
-  for (const page of pages) {
-    signatures[page.id] = pageSignature(page.cardOrder ?? []);
-  }
-  return signatures;
-}
-
-function computeDirtyPageIds(
-  pages: BinderPage[],
-  baselineSignatures: Record<string, string>,
-) {
-  const dirty = new Set<string>();
-  for (const page of pages) {
-    const baseline = baselineSignatures[page.id] ?? "";
-    const current = pageSignature(page.cardOrder ?? []);
-    if (baseline !== current) dirty.add(page.id);
-  }
-  return dirty;
-}
-
-function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
-  const cardsToAdd: BinderCard[] = [];
-
-  for (const { card, quantity } of items) {
-    if (quantity <= 0) continue;
-
-    // Keep card pile order exact, and place duplicates consecutively.
-    for (let index = 0; index < quantity; index += 1) {
-      cardsToAdd.push({
-        id: card.id,
-        name: card.name,
-        number: card.number,
-        rarity: card.rarity,
-        collectionStatus: "collected",
-        expansion: card.expansion,
-        image: card.image,
-      });
-    }
-  }
-
-  return cardsToAdd;
-}
-
-function addCardsToLocalPages(
-  pages: BinderPage[],
-  cards: BinderCard[],
-): {
-  nextPages: BinderPage[];
-  changedPageIds: string[];
-  addedCount: number;
-  remainingCount: number;
-} {
-  const nextPages = pages.map((page) => ({
-    ...page,
-    cardOrder: [...(page.cardOrder ?? [])],
-  }));
-  const orderedPages = [...nextPages].sort((a, b) => a.index - b.index);
-  const changedPageIds = new Set<string>();
-  let cardIndex = 0;
-
-  for (const page of orderedPages) {
-    for (
-      let slotIndex = 0;
-      slotIndex < page.slots && cardIndex < cards.length;
-      slotIndex += 1
-    ) {
-      if (page.cardOrder[slotIndex] !== null) continue;
-      page.cardOrder[slotIndex] = cards[cardIndex];
-      cardIndex += 1;
-      changedPageIds.add(page.id);
-    }
-
-    if (cardIndex >= cards.length) break;
-  }
-
-  return {
-    nextPages,
-    changedPageIds: Array.from(changedPageIds),
-    addedCount: cardIndex,
-    remainingCount: cards.length - cardIndex,
-  };
-}
+import {
+  type BinderPage,
+  GOAL_CHAR_LIMIT,
+  GOAL_DELETE_LIMIT,
+  GOAL_LIMIT,
+  addCardsToLocalPages,
+  buildCardsToAddFromPile,
+  buildPageSignatures,
+  computeDirtyPageIds,
+  getRecentGoalDeleteTimestamps,
+} from "./binderPageUtils";
 
 export default function BinderDetailPage() {
   const router = useRouter();
@@ -243,6 +119,9 @@ export default function BinderDetailPage() {
   const hasUnsavedChanges = dirtyPageIds.size > 0;
   const isTwoByTwoLayout = layoutColumns === 2;
   const isFourByFourLayout = layoutColumns === 4;
+  const hasVisibleCards = [leftPage, rightPage]
+    .filter((page): page is BinderPage => page !== null)
+    .some((page) => (page.cardOrder ?? []).some((card) => card !== null));
   const bulkBoxLimit = useMemo(
     () => layoutToSlots(binder?.layout ?? "3x3"),
     [binder?.layout],
@@ -1020,233 +899,73 @@ export default function BinderDetailPage() {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
-      {addCardsError ? (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
-          {addCardsError}
-        </div>
-      ) : null}
-      {saveError ? (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
-          {saveError}
-        </div>
-      ) : null}
+      <ErrorBanners addCardsError={addCardsError} saveError={saveError} />
       <div className="flex-1 min-h-0 pt-2 pb-20">
         {isMobile ? (
-          <div className="flex h-full items-start justify-center px-3 pt-2">
-            <div className="w-full max-w-xl rounded-xl border border-zinc-300 bg-gray-50 p-4 shadow-lg dark:border-zinc-500 dark:bg-zinc-900/25">
-              <h2 className="text-base font-exo font-semibold text-zinc-700 dark:text-slate-100">
-                Mobile Mode
-              </h2>
-              <p className="mt-1 text-xs font-exo text-zinc-600 dark:text-zinc-300">
-                Binders are hidden on mobile. You can add cards to Bulk Box in
-                list view here, then move cards into binder slots on tablet or
-                desktop.
-              </p>
-
-              <div className="mt-4 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={handleOpenAddCards}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-accent bg-accent text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add card</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleBulkBoxFromMenu}
-                  className="relative flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-slate-200 text-zinc-700 shadow-lg transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-                  <span className="absolute -right-1 -top-1 z-20 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-exo font-semibold leading-none text-white">
-                    {bulkBoxCount}
-                  </span>
-                  <Box className="h-4 w-4" />
-                  <span className="sr-only">Open Bulk Box</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        ) : null}
-        {!isMobile && loading && (
-          <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
-            <div className="flex items-center justify-center gap-2">
-              <button
-                type="button"
-                disabled
-                aria-hidden="true"
-                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 opacity-50 dark:text-slate-100">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="min-w-[3.5rem] text-center text-xs font-exo font-medium text-zinc-700 opacity-60 dark:text-slate-100">
-                {currentPageIndex}/{totalPageSpreads}
-              </span>
-              <button
-                type="button"
-                disabled
-                aria-hidden="true"
-                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 opacity-50 dark:text-slate-100">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div
-              className={`grid min-w-0 grid-cols-2 ${
-                isTwoByTwoLayout
-                  ? "mx-auto w-full max-w-[68rem] flex-none gap-3"
-                  : isFourByFourLayout
-                    ? "mx-auto w-full max-w-[68rem] flex-none gap-2"
-                    : "mx-auto w-full max-w-[68rem] flex-none gap-4"
-              }`}>
-              {[0, 1].map((panelIndex) => (
-                <div
-                  key={panelIndex}
-                  className={`rounded-xl border border-zinc-300 bg-gray-50 shadow-lg dark:border-zinc-500 dark:bg-zinc-900/25 ${
-                    isFourByFourLayout ? "p-1.5" : "p-3"
-                  }`}>
-                  <Skeleton className="h-4 w-20" />
-                  <div
-                    className={`${isFourByFourLayout ? "mt-2" : "mt-4"} grid ${
-                      isTwoByTwoLayout
-                        ? "gap-x-2 gap-y-7"
-                        : isFourByFourLayout
-                          ? "gap-1"
-                          : "gap-2"
-                    }`}
-                    style={{
-                      gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))`,
-                    }}>
-                    {Array.from({ length: layoutColumns * layoutColumns }).map(
-                      (_, slotIndex) => (
-                        <Skeleton
-                          key={slotIndex}
-                          className={`${
-                            isTwoByTwoLayout
-                              ? "aspect-[73/100] w-[84%] justify-self-center"
-                              : isFourByFourLayout
-                                ? "aspect-[3/4] w-[92%] justify-self-center"
-                                : "aspect-[7/10] w-[84%] justify-self-center"
-                          } rounded-lg`}
-                        />
-                      ),
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {!isMobile && !loading && (
-          <div className="flex h-full min-w-0 flex-col items-center justify-start gap-2">
-            <div className="flex items-center justify-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
-                disabled={spreadIndex === 0}
-                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:text-slate-100">
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="min-w-[3.5rem] text-center text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
-                {currentPageIndex}/{totalPageSpreads}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setSpreadIndex((prev) =>
-                    Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
-                  )
-                }
-                disabled={pagesSorted.length <= 1 || spreadIndex === 1}
-                className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:text-slate-100">
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            <div
-              className={`grid min-w-0 grid-cols-2 ${
-                isTwoByTwoLayout
-                  ? "mx-auto w-full max-w-[68rem] flex-none gap-3"
-                  : isFourByFourLayout
-                    ? "mx-auto w-full max-w-[68rem] flex-none gap-2"
-                    : "mx-auto w-full max-w-[68rem] flex-none gap-4"
-              }`}>
-              {spreadIndex === 0 ? (
-                <InsideCover
-                  colorScheme={binder?.colorScheme}
-                  binderName={binder?.name}
-                  filledSlots={binderCapacity.filledSlots}
-                  totalSlots={binderCapacity.totalSlots}
-                  showGoals={binder?.showGoals}
-                  goals={goals}
-                  goalText={goalText}
-                  goalCharLimit={GOAL_CHAR_LIMIT}
-                  goalLimit={GOAL_LIMIT}
-                  goalInputDisabled={!canAddGoal || isUpdatingGoals}
-                  goalSubmitDisabled={
-                    !canAddGoal ||
-                    isUpdatingGoals ||
-                    goalText.trim().length === 0
-                  }
-                  goalInputDisabledReason={goalInputDisabledReason}
-                  goalCompleteDisabled={!canDeleteGoal}
-                  goalCompleteDisabledReason={goalDeleteDisabledReason}
-                  activeGoalCount={activeGoalCount}
-                  isUpdatingGoals={isUpdatingGoals}
-                  onGoalTextChange={(value) =>
-                    setGoalText(value.slice(0, GOAL_CHAR_LIMIT))
-                  }
-                  onAddGoal={() => void handleAddGoal()}
-                  onCompleteGoal={handleCompleteGoal}
-                />
-              ) : (
-                <PagePanel
-                  page={leftPage}
-                  layoutColumns={layoutColumns}
-                  sensors={sensors}
-                  activeId={activeId}
-                  colorScheme={binder?.colorScheme}
-                  onAddCard={handleOpenAddCards}
-                  onDeleteCard={handleDeleteCardFromSlot}
-                  onToggleMissing={handleToggleMissingForSlot}
-                  isEditMode={isEditMode}
-                  onDragStart={handleDragStart}
-                  onDragEnd={leftPage ? handleDragEnd(leftPage.id) : () => {}}
-                  onDragCancel={handleDragCancel}
-                />
-              )}
-
-              <PagePanel
-                page={rightPage}
-                layoutColumns={layoutColumns}
-                sensors={sensors}
-                activeId={activeId}
-                colorScheme={binder?.colorScheme}
-                onAddCard={handleOpenAddCards}
-                onDeleteCard={handleDeleteCardFromSlot}
-                onToggleMissing={handleToggleMissingForSlot}
-                isEditMode={isEditMode}
-                onDragStart={handleDragStart}
-                onDragEnd={rightPage ? handleDragEnd(rightPage.id) : () => {}}
-                onDragCancel={handleDragCancel}
-              />
-            </div>
-          </div>
+          <MobileBinderPanel
+            bulkBoxCount={bulkBoxCount}
+            onOpenAddCards={handleOpenAddCards}
+            onOpenBulkBox={handleBulkBoxFromMenu}
+          />
+        ) : (
+          <BinderSpreadContent
+            loading={loading}
+            spreadIndex={spreadIndex}
+            currentPageIndex={currentPageIndex}
+            totalPageSpreads={totalPageSpreads}
+            pagesSortedLength={pagesSorted.length}
+            layoutColumns={layoutColumns}
+            isTwoByTwoLayout={isTwoByTwoLayout}
+            isFourByFourLayout={isFourByFourLayout}
+            leftPage={leftPage}
+            rightPage={rightPage}
+            sensors={sensors}
+            activeId={activeId}
+            binderName={binder?.name}
+            colorScheme={binder?.colorScheme}
+            showGoals={binder?.showGoals}
+            filledSlots={binderCapacity.filledSlots}
+            totalSlots={binderCapacity.totalSlots}
+            goals={goals}
+            goalText={goalText}
+            goalCharLimit={GOAL_CHAR_LIMIT}
+            goalLimit={GOAL_LIMIT}
+            goalInputDisabled={!canAddGoal || isUpdatingGoals}
+            goalSubmitDisabled={
+              !canAddGoal || isUpdatingGoals || goalText.trim().length === 0
+            }
+            goalInputDisabledReason={goalInputDisabledReason}
+            goalCompleteDisabled={!canDeleteGoal}
+            goalCompleteDisabledReason={goalDeleteDisabledReason}
+            activeGoalCount={activeGoalCount}
+            isUpdatingGoals={isUpdatingGoals}
+            isEditMode={isEditMode}
+            onPrevSpread={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
+            onNextSpread={() =>
+              setSpreadIndex((prev) =>
+                Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
+              )
+            }
+            onGoalTextChange={(value) =>
+              setGoalText(value.slice(0, GOAL_CHAR_LIMIT))
+            }
+            onAddGoal={() => void handleAddGoal()}
+            onCompleteGoal={handleCompleteGoal}
+            onAddCard={handleOpenAddCards}
+            onDeleteCard={handleDeleteCardFromSlot}
+            onToggleMissing={handleToggleMissingForSlot}
+            onDragStart={handleDragStart}
+            onDragEndForPage={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          />
         )}
       </div>
 
       {!isMobile && isEditMode ? (
-        <div className="fixed right-6 top-[calc(var(--header-h)+2.5rem)] z-40">
-          <button
-            type="button"
-            onClick={handleDeleteAllCardsFromVisiblePages}
-            disabled={
-              ![leftPage, rightPage]
-                .filter((page): page is BinderPage => page !== null)
-                .some((page) =>
-                  (page.cardOrder ?? []).some((card) => card !== null),
-                )
-            }
-            className="rounded-full border border-red-500 bg-red-500 px-4 py-1.5 text-xs font-exo font-semibold text-white shadow-lg transition hover:bg-red-600 disabled:cursor-not-allowed disabled:border-zinc-400 disabled:bg-zinc-400 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-700">
-            Delete all
-          </button>
-        </div>
+        <DeleteAllBinderPageCards
+          onDeleteAll={handleDeleteAllCardsFromVisiblePages}
+          disabled={!hasVisibleCards}
+        />
       ) : null}
 
       {!isMobile ? (
@@ -1283,39 +1002,14 @@ export default function BinderDetailPage() {
         hideLayoutToggle={isMobile}
         showMobileBulkBoxCta={isMobile}
       />
-
-      <Dialog open={isLeaveModalOpen} onOpenChange={setIsLeaveModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="text-left">
-            <DialogTitle>{binderMessages.leaveModal.title}</DialogTitle>
-            <DialogDescription>
-              {binderMessages.leaveModal.description}
-            </DialogDescription>
-          </DialogHeader>
-
-          <DialogFooter className="mt-4 flex gap-2 sm:justify-end sm:space-x-0">
-            <button
-              type="button"
-              onClick={() => setIsLeaveModalOpen(false)}
-              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-              {binderMessages.leaveModal.stay}
-            </button>
-            <button
-              type="button"
-              disabled={isSaving}
-              onClick={() => void saveAndContinueNavigation()}
-              className="rounded-full border border-emerald-600 bg-emerald-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-emerald-500 dark:bg-emerald-600 dark:hover:bg-emerald-500">
-              {isSaving ? "Saving..." : binderMessages.leaveModal.saveAndLeave}
-            </button>
-            <button
-              type="button"
-              onClick={continuePendingNavigation}
-              className="rounded-full border border-red-400 bg-red-500 px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-red-400 dark:bg-red-600 dark:hover:bg-red-500">
-              {binderMessages.leaveModal.discardAndLeave}
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <LeaveBinderDialog
+        isOpen={isLeaveModalOpen}
+        isSaving={isSaving}
+        onOpenChange={setIsLeaveModalOpen}
+        onStay={() => setIsLeaveModalOpen(false)}
+        onSaveAndLeave={() => void saveAndContinueNavigation()}
+        onDiscardAndLeave={continuePendingNavigation}
+      />
 
       <BulkBoxModal
         open={isBulkBoxModalOpen}
