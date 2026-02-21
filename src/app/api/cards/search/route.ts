@@ -78,25 +78,18 @@ type DbExpansionRow = {
   symbol: string | null;
 };
 
-type CardQueryOrderable = {
+type OrderableQuery<T> = {
   order: (
     column: string,
     options?: { ascending?: boolean; nullsFirst?: boolean },
-  ) => CardQueryOrderable;
-};
-
-type SetQueryOrderable = {
-  order: (
-    column: string,
-    options?: { ascending?: boolean; nullsFirst?: boolean },
-  ) => SetQueryOrderable;
+  ) => T;
 };
 
 function normalizeQuery(q: string) {
   return q.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
-function applyCardSort(query: CardQueryOrderable, sort: CardSortOption) {
+function applyCardSort<T extends OrderableQuery<T>>(query: T, sort: CardSortOption): T {
   if (sort === "Oldest") {
     return query
       .order("expansion_release_date", { ascending: true, nullsFirst: false })
@@ -130,10 +123,10 @@ function applyCardSort(query: CardQueryOrderable, sort: CardSortOption) {
     .order("id", { ascending: true });
 }
 
-function applySetSort(
-  query: SetQueryOrderable,
+function applySetSort<T extends OrderableQuery<T>>(
+  query: T,
   sort: ReturnType<typeof sanitizeSetSort>,
-) {
+): T {
   if (sort === "Oldest") {
     return query.order("release_date", { ascending: true, nullsFirst: false });
   }
