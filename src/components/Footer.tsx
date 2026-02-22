@@ -6,10 +6,10 @@ const Footer: React.FC = () => {
       <div className="container mx-auto max-w-4xl flex flex-col items-center justify-center text-center pb-4 border-b border-zinc-300 dark:border-zinc-500 ">
         <p className="text-sm">
           This website is not produced, endorsed, supported, or affiliated with
-          Nintendo or The Pokémon Company.
+          Nintendo or The Pokemon Company.
         </p>
         <p className="text-sm mt-2">
-          &copy; {new Date().getFullYear()}{" "}
+          &copy; {new Date().getFullYear()} {" "}
           <Link
             href="https://samnunn.me"
             target="_blank"
@@ -25,14 +25,28 @@ const Footer: React.FC = () => {
             <Link
               className="underline text-slate-700 dark:text-slate-100 transition"
               href="/">
-              Cards
+              Home
             </Link>
           </li>
           <li className="inline-block">
             <Link
               className="underline text-slate-700 dark:text-slate-100 transition"
-              href="/sets">
-              Sets
+              href="/binders">
+              Binders
+            </Link>
+          </li>
+          <li className="inline-block">
+            <Link
+              className="underline text-slate-700 dark:text-slate-100 transition"
+              href="/privacy-policy">
+              Privacy Policy
+            </Link>
+          </li>
+          <li className="inline-block">
+            <Link
+              className="underline text-slate-700 dark:text-slate-100 transition"
+              href="/terms-of-service">
+              Terms of Service
             </Link>
           </li>
         </ul>
