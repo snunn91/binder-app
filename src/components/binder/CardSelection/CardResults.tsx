@@ -182,7 +182,7 @@ export default function CardResults({
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="sticky bottom-[5px] z-10 flex w-full items-center justify-between bg-white dark:bg-zinc-900">
               <button
                 type="button"
                 onClick={onPrev}
