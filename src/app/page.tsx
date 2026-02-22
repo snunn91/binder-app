@@ -3,6 +3,31 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useAppSelector } from "@/lib/store/storeHooks";
+import { motion, useReducedMotion } from "framer-motion";
+
+const easeOutExpo = [0.22, 1, 0.36, 1] as const;
+
+const revealContainer = {
+  hidden: { opacity: 0, y: 18 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.65,
+      ease: easeOutExpo,
+      staggerChildren: 0.12,
+    },
+  },
+};
+
+const revealItem = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.55, ease: easeOutExpo },
+  },
+};
 
 type ScreenshotProps = {
   title: string;
@@ -23,9 +48,17 @@ function ScreenshotCard({
   reverse = false,
   imageSizeClassName,
 }: ScreenshotProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <section className="grid items-center gap-x-8 gap-y-4 md:grid-cols-2">
-      <div
+    <motion.section
+      className="grid items-center gap-x-8 gap-y-4 md:grid-cols-2"
+      initial={shouldReduceMotion ? false : "hidden"}
+      whileInView={shouldReduceMotion ? undefined : "visible"}
+      viewport={{ once: true, amount: 0.25 }}
+      variants={shouldReduceMotion ? undefined : revealContainer}>
+      <motion.div
+        variants={shouldReduceMotion ? undefined : revealItem}
         className={`${
           reverse
             ? "md:order-2 md:justify-self-start"
@@ -54,9 +87,10 @@ function ScreenshotCard({
           <div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-slate-50/50 to-transparent dark:from-zinc-800/45" />
           <div className="pointer-events-none absolute inset-0 z-20 bg-gradient-to-br from-white/16 via-transparent to-transparent dark:from-white/8" />
         </div>
-      </div>
+      </motion.div>
 
-      <div
+      <motion.div
+        variants={shouldReduceMotion ? undefined : revealItem}
         className={`space-y-2 ${
           reverse
             ? "md:order-1 md:justify-self-end"
@@ -68,12 +102,13 @@ function ScreenshotCard({
         <p className="text-sm font-exo text-zinc-600 dark:text-zinc-300 md:max-w-xs">
           {description}
         </p>
-      </div>
-    </section>
+      </motion.div>
+    </motion.section>
   );
 }
 
 export default function Home() {
+  const shouldReduceMotion = useReducedMotion();
   const user = useAppSelector((state) => state.auth.user);
   const ctaHref = user ? "/binders" : "/signin/signup";
   const ctaLabel = user ? "Open Binders" : "Sign Up";
@@ -86,25 +121,37 @@ export default function Home() {
         <div className="absolute right-[18%] top-[-7rem] h-[19rem] w-[19rem] rounded-full bg-[radial-gradient(circle,rgba(186,230,253,0.20)_0%,transparent_70%)] blur-2xl dark:bg-[radial-gradient(circle,rgba(56,189,248,0.16)_0%,transparent_72%)]" />
       </div>
 
-      <section className="mx-auto max-w-5xl px-4 text-center">
-        <p className="text-xs font-exo font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
+      <motion.section
+        className="mx-auto max-w-5xl px-4 text-center"
+        initial={shouldReduceMotion ? false : "hidden"}
+        animate={shouldReduceMotion ? undefined : "visible"}
+        variants={shouldReduceMotion ? undefined : revealContainer}>
+        <motion.p
+          variants={shouldReduceMotion ? undefined : revealItem}
+          className="text-xs font-exo font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
           Binder App
-        </p>
-        <h1 className="mt-3 text-4xl font-exo font-bold text-zinc-800 dark:text-slate-100 md:text-5xl">
+        </motion.p>
+        <motion.h1
+          variants={shouldReduceMotion ? undefined : revealItem}
+          className="mt-3 text-4xl font-exo font-bold text-zinc-800 dark:text-slate-100 md:text-5xl">
           Build Your Pokemon Collection, Beautifully
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-sm font-exo text-zinc-600 dark:text-zinc-300">
+        </motion.h1>
+        <motion.p
+          variants={shouldReduceMotion ? undefined : revealItem}
+          className="mx-auto mt-3 max-w-2xl text-sm font-exo text-zinc-600 dark:text-zinc-300">
           Search cards in seconds, build your binder page by page, and curate
           your collection with a workflow that stays fast and intuitive.
-        </p>
-        <div className="mt-6 flex items-center justify-center gap-3">
+        </motion.p>
+        <motion.div
+          variants={shouldReduceMotion ? undefined : revealItem}
+          className="mt-6 flex items-center justify-center gap-3">
           <Link
             href={ctaHref}
             className="relative flex items-center overflow-hidden rounded-full border border-accent bg-accent px-5 py-2 text-sm font-exo font-medium text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
             {ctaLabel}
           </Link>
-        </div>
-      </section>
+        </motion.div>
+      </motion.section>
 
       <div className="mx-auto mt-20 grid max-w-8xl gap-8 px-4">
         <ScreenshotCard
