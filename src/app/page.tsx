@@ -126,11 +126,26 @@ export default function Home() {
         initial={shouldReduceMotion ? false : "hidden"}
         animate={shouldReduceMotion ? undefined : "visible"}
         variants={shouldReduceMotion ? undefined : revealContainer}>
-        <motion.p
+        <motion.div
           variants={shouldReduceMotion ? undefined : revealItem}
-          className="text-xs font-exo font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">
-          Binder App
-        </motion.p>
+          className="mx-auto mb-4 flex justify-center">
+          <Image
+            src="/assets/img/logo-light.png"
+            alt="Binder"
+            width={793}
+            height={231}
+            priority
+            className="h-10 w-auto dark:hidden md:h-12"
+          />
+          <Image
+            src="/assets/img/logo-dark.png"
+            alt="Binder"
+            width={793}
+            height={231}
+            priority
+            className="hidden h-10 w-auto dark:block md:h-12"
+          />
+        </motion.div>
         <motion.h1
           variants={shouldReduceMotion ? undefined : revealItem}
           className="mt-3 text-4xl font-exo font-bold text-zinc-800 dark:text-slate-100 md:text-5xl">

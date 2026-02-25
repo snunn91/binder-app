@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "react-hot-toast";
@@ -59,8 +60,24 @@ export default function Header() {
       <div className="list-none flex items-center justify-between w-full gap-x-2">
         <Link
           href="/"
-          className="text-lg font-exo font-semibold text-zinc-800 dark:text-zinc-100">
-          Binder
+          className="flex items-center"
+          aria-label="Binder home">
+          <Image
+            src="/assets/img/logo-light.png"
+            alt="Binder"
+            width={793}
+            height={231}
+            priority
+            className="h-7 w-auto dark:hidden"
+          />
+          <Image
+            src="/assets/img/logo-dark.png"
+            alt="Binder"
+            width={793}
+            height={231}
+            priority
+            className="hidden h-7 w-auto dark:block"
+          />
         </Link>
 
         <div className="flex items-center gap-4">
