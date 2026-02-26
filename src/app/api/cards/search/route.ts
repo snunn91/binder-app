@@ -243,7 +243,7 @@ async function searchSetsFromDb(params: {
     .select("id, name, series, total, release_date, logo, symbol", {
       count: "exact",
     })
-    .eq("is_online_only", false);
+    .not("is_online_only", "is", "true");
 
   if (mode !== "recent" && qNorm.length >= 2) {
     query = query.ilike("name", `%${qNorm}%`);

@@ -60,6 +60,10 @@ function waitForNextPaint() {
   });
 }
 
+// Must stay in sync with API max page size cap in /api/cards/search.
+const ALL_SETS_PAGE_SIZE = 50;
+const MAX_SET_PAGES = 500;
+
 export default function useSetSearch(opts?: {
   setsPageSize?: number;
   cardsPageSize?: number;
@@ -114,7 +118,7 @@ export default function useSetSearch(opts?: {
   }
 
   const runDefaultSets = React.useCallback(
-    async (nextPage: number) => {
+    async (_nextPage: number) => {
       const controller = abortAndNewController();
       setLoading(true);
       setError(null);
@@ -122,16 +126,31 @@ export default function useSetSearch(opts?: {
       if (controller.signal.aborted) return;
 
       try {
-        const res = await fetch(
-          `/api/cards/search?type=sets&mode=recent&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
-          { signal: controller.signal },
-        );
+        const allSets: SetSearchPreview[] = [];
+        let currentPage = 1;
+        let knownTotal: number | undefined = undefined;
 
-        const json = (await res.json()) as SetsApiResponse;
-        if (!res.ok) throw new Error(json?.error || "Search failed");
+        while (currentPage <= MAX_SET_PAGES) {
+          const res = await fetch(
+            `/api/cards/search?type=sets&mode=recent&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
+            { signal: controller.signal },
+          );
 
-        setResults(json.results ?? []);
-        setTotalCount(json.totalCount);
+          const json = (await res.json()) as SetsApiResponse;
+          if (!res.ok) throw new Error(json?.error || "Search failed");
+
+          const pageResults = json.results ?? [];
+          knownTotal = json.totalCount;
+          allSets.push(...pageResults);
+
+          if (pageResults.length < ALL_SETS_PAGE_SIZE) break;
+          if (knownTotal !== undefined && allSets.length >= knownTotal) break;
+          currentPage += 1;
+        }
+
+        setPage(1);
+        setResults(allSets);
+        setTotalCount(knownTotal ?? allSets.length);
       } catch (err: unknown) {
         const name =
           typeof err === "object" && err !== null && "name" in err
@@ -146,7 +165,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [normalizedSetSort, setsPageSize],
+    [normalizedSetSort],
   );
 
   const runDefaultSetCards = React.useCallback(
@@ -195,7 +214,7 @@ export default function useSetSearch(opts?: {
   );
 
   const runSearchSets = React.useCallback(
-    async (nextQuery: string, nextPage: number) => {
+    async (nextQuery: string, _nextPage: number) => {
       const q = nextQuery.trim();
       if (q.length < 2) {
         setError("Type at least 2 characters.");
@@ -211,16 +230,31 @@ export default function useSetSearch(opts?: {
       if (controller.signal.aborted) return;
 
       try {
-        const res = await fetch(
-          `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${nextPage}&page_size=${setsPageSize}&sort=${normalizedSetSort}`,
-          { signal: controller.signal },
-        );
+        const allSets: SetSearchPreview[] = [];
+        let currentPage = 1;
+        let knownTotal: number | undefined = undefined;
 
-        const json = (await res.json()) as SetsApiResponse;
-        if (!res.ok) throw new Error(json?.error || "Search failed");
+        while (currentPage <= MAX_SET_PAGES) {
+          const res = await fetch(
+            `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
+            { signal: controller.signal },
+          );
 
-        setResults(json.results ?? []);
-        setTotalCount(json.totalCount);
+          const json = (await res.json()) as SetsApiResponse;
+          if (!res.ok) throw new Error(json?.error || "Search failed");
+
+          const pageResults = json.results ?? [];
+          knownTotal = json.totalCount;
+          allSets.push(...pageResults);
+
+          if (pageResults.length < ALL_SETS_PAGE_SIZE) break;
+          if (knownTotal !== undefined && allSets.length >= knownTotal) break;
+          currentPage += 1;
+        }
+
+        setPage(1);
+        setResults(allSets);
+        setTotalCount(knownTotal ?? allSets.length);
       } catch (err: unknown) {
         const name =
           typeof err === "object" && err !== null && "name" in err
@@ -235,7 +269,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [normalizedSetSort, setsPageSize],
+    [normalizedSetSort],
   );
 
   const runSearchSetCards = React.useCallback(
@@ -328,33 +362,23 @@ export default function useSetSearch(opts?: {
   }
 
   function onPrev() {
+    if (!selectedSet) return;
+
     const nextPage = Math.max(1, page - 1);
     setPage(nextPage);
 
-    if (selectedSet) {
-      if (query.trim().length < 2)
-        void runDefaultSetCards(selectedSet.id, nextPage);
-      else void runSearchSetCards(selectedSet.id, query, nextPage);
-      return;
-    }
-
-    if (query.trim().length < 2) void runDefaultSets(nextPage);
-    else void runSearchSets(query, nextPage);
+    if (query.trim().length < 2) void runDefaultSetCards(selectedSet.id, nextPage);
+    else void runSearchSetCards(selectedSet.id, query, nextPage);
   }
 
   function onNext() {
+    if (!selectedSet) return;
+
     const nextPage = page + 1;
     setPage(nextPage);
 
-    if (selectedSet) {
-      if (query.trim().length < 2)
-        void runDefaultSetCards(selectedSet.id, nextPage);
-      else void runSearchSetCards(selectedSet.id, query, nextPage);
-      return;
-    }
-
-    if (query.trim().length < 2) void runDefaultSets(nextPage);
-    else void runSearchSets(query, nextPage);
+    if (query.trim().length < 2) void runDefaultSetCards(selectedSet.id, nextPage);
+    else void runSearchSetCards(selectedSet.id, query, nextPage);
   }
 
   function selectSet(set: SetSearchPreview) {

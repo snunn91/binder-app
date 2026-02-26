@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { useAppSelector } from "@/lib/store/storeHooks";
@@ -32,6 +33,7 @@ import LeaveBinderDialog from "@/components/binder/BinderLeaveDialog";
 import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
 import BinderSettingsModal from "@/modals/BinderSettingsModal";
+import RouteLoading from "@/components/RouteLoading";
 import { binderMessages } from "@/config/binderMessages";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
 import useIsMobile from "@/lib/hooks/useIsMobile";
@@ -52,6 +54,7 @@ export default function BinderDetailPage() {
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
   const user = useAppSelector((state) => state.auth.user);
+  const authLoading = useAppSelector((state) => state.auth.loading);
   const userId = user?.uid;
 
   const [binder, setBinder] = useState<{
@@ -885,6 +888,10 @@ export default function BinderDetailPage() {
     };
   }, [openLeaveModal]);
 
+  if (authLoading) {
+    return <RouteLoading message="Checking your session..." />;
+  }
+
   if (!user) {
     return (
       <div className="flex min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center">
@@ -892,6 +899,16 @@ export default function BinderDetailPage() {
           <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
             {binderMessages.auth.signInRequired}
           </p>
+          <div className="mt-3">
+            <Link
+              href="/signin"
+              className="text-sm font-exo font-bold text-sky-700 underline underline-offset-2">
+              sign in
+            </Link>{" "}
+            <span className="text-sm font-exo text-zinc-700 dark:text-slate-100">
+              to continue.
+            </span>
+          </div>
         </div>
       </div>
     );

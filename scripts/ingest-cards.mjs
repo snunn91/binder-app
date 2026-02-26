@@ -109,6 +109,66 @@ function toStringArray(input) {
     .filter((v) => v.length > 0);
 }
 
+function toNumberOrNull(value) {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function extractPricing(variants) {
+  if (!Array.isArray(variants)) {
+    return {
+      pricingJson: null,
+      rawDisplay: null,
+      currency: "USD",
+    };
+  }
+
+  const normalizedVariants = variants
+    .filter((variant) => variant && typeof variant === "object")
+    .map((variant) => {
+      const name = typeof variant.name === "string" ? variant.name : "unknown";
+      const prices = Array.isArray(variant.prices)
+        ? variant.prices
+            .filter((price) => price && typeof price === "object")
+            .map((price) => ({
+              ...price,
+            }))
+        : [];
+      return { name, prices };
+    });
+
+  let rawDisplay = null;
+  let currency = "USD";
+
+  for (const variant of normalizedVariants) {
+    for (const price of variant.prices) {
+      const raw = toNumberOrNull(price.raw);
+      const market = toNumberOrNull(price.market);
+      const mid = toNumberOrNull(price.mid);
+      const low = toNumberOrNull(price.low);
+      const high = toNumberOrNull(price.high);
+      const directLow = toNumberOrNull(price.direct_low);
+      const candidate = raw ?? market ?? mid ?? low ?? high ?? directLow;
+      if (candidate !== null) {
+        rawDisplay = candidate;
+        if (typeof price.currency === "string" && price.currency.trim().length > 0) {
+          currency = price.currency.trim();
+        }
+        return {
+          pricingJson: normalizedVariants,
+          rawDisplay,
+          currency,
+        };
+      }
+    }
+  }
+
+  return {
+    pricingJson: normalizedVariants.length > 0 ? normalizedVariants : null,
+    rawDisplay: null,
+    currency,
+  };
+}
+
 function pickFrontImage(images) {
   if (!Array.isArray(images)) return { small: null, large: null };
 
@@ -152,6 +212,8 @@ function toCardRow(card, expansionId, expansionName) {
     typeof card.expansion_sort_order === "number" ? card.expansion_sort_order : null;
 
   const { small: imageSmall, large: imageLarge } = pickFrontImage(card.images);
+  const { pricingJson, rawDisplay, currency } = extractPricing(card.variants);
+  const nowIso = new Date().toISOString();
 
   return {
     id,
@@ -173,7 +235,11 @@ function toCardRow(card, expansionId, expansionName) {
     language_code:
       typeof card.language_code === "string" ? card.language_code : null,
     is_online_only: false,
-    updated_at: new Date().toISOString(),
+    pricing_json: pricingJson,
+    price_raw_display: rawDisplay,
+    price_currency: currency,
+    price_updated_at: nowIso,
+    updated_at: nowIso,
   };
 }
 
@@ -183,8 +249,9 @@ async function fetchSetCardsPage({ apiKey, teamId, setId, page, pageSize }) {
   url.searchParams.set("page_size", String(pageSize));
   url.searchParams.set(
     "select",
-    "id,name,number,rarity,artist,supertype,subtypes,types,rules,images,expansion,language,language_code,expansion_sort_order",
+    "id,name,number,rarity,artist,supertype,subtypes,types,rules,images,expansion,language,language_code,expansion_sort_order,variants",
   );
+  url.searchParams.set("include", "prices");
 
   const res = await fetch(url.toString(), {
     headers: {

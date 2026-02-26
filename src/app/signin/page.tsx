@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-hot-toast";
 import { signIn, signInWithGoogle } from "@/lib/auth/auth";
+import RouteLoading from "@/components/RouteLoading";
 import { ErrorMessage, Field, FormikProvider, useFormik } from "formik";
 import { SignInValidationSchema } from "@/lib/validationSchemas/SignInValidationSchema";
 import { SignInInitialValues } from "@/lib/initialValues/SignInInitialValues";
@@ -24,6 +25,7 @@ const easeOutExpo = [0.22, 1, 0.36, 1] as const;
 export default function SignInPage() {
   const router = useRouter();
   const user = useAppSelector((state) => state.auth.user);
+  const authLoading = useAppSelector((state) => state.auth.loading);
   const shouldReduceMotion = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
 
@@ -65,6 +67,14 @@ export default function SignInPage() {
     } finally {
       setGoogleLoading(false);
     }
+  }
+
+  if (user) {
+    return <RouteLoading message="Taking you to your binders..." />;
+  }
+
+  if (authLoading) {
+    return <RouteLoading message="Checking your session..." />;
   }
 
   return (

@@ -10,6 +10,7 @@ import {
 import type { RootState } from "@/lib/store/store";
 
 type BindersState = {
+  loading: boolean;
   creating: boolean;
   error: string | null;
   lastCreatedId: string | null;
@@ -17,6 +18,7 @@ type BindersState = {
 };
 
 const initialState: BindersState = {
+  loading: false,
   creating: false,
   error: null,
   lastCreatedId: null,
@@ -62,6 +64,7 @@ const bindersSlice = createSlice({
   initialState,
   reducers: {
     resetBinders(state) {
+      state.loading = false;
       state.items = [];
       state.error = null;
       state.lastCreatedId = null;
@@ -85,12 +88,15 @@ const bindersSlice = createSlice({
         state.error = action.payload ?? "Failed to create binder";
       })
       .addCase(fetchBinders.pending, (state) => {
+        state.loading = true;
         state.error = null;
       })
       .addCase(fetchBinders.fulfilled, (state, action) => {
+        state.loading = false;
         state.items = action.payload;
       })
       .addCase(fetchBinders.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload ?? "Failed to load binders";
       });
   },

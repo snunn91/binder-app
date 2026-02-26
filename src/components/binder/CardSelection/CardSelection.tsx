@@ -50,10 +50,10 @@ export default function CardSelection({
     React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
   const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
-  const cardSearch = useCardSearch(24, selectedRarities, selectedTypes, sortBy);
+  const cardSearch = useCardSearch(30, selectedRarities, selectedTypes, sortBy);
   const setSearch = useSetSearch({
-    setsPageSize: 15,
-    cardsPageSize: 24,
+    setsPageSize: 30,
+    cardsPageSize: 30,
     rarityFilters: selectedRarities,
     typeFilters: selectedTypes,
     sortBy,
@@ -61,6 +61,9 @@ export default function CardSelection({
 
   const [searchMode, setSearchMode] = React.useState<"cards" | "sets">("cards");
   const [filtersOpen, setFiltersOpen] = React.useState(false);
+  const [quickJumpTargetSetId, setQuickJumpTargetSetId] = React.useState<
+    string | null
+  >(null);
   const handleFilterExpandedChange = React.useCallback(() => undefined, []);
 
   const [pileItems, setPileItems] = React.useState<CardPileEntry[]>([]);
@@ -93,6 +96,13 @@ export default function CardSelection({
   const pileLimit = maxCardsInPile ?? Number.POSITIVE_INFINITY;
   const isPileAtLimit = totalCardsInPile >= pileLimit;
   const hasMobileBulkBoxCta = showMobileBulkBoxCta && Boolean(onAddToBulkBox);
+  const quickJumpSets = React.useMemo(() => {
+    if (!(searchMode === "sets" && setSearch.view === "sets")) return [];
+    return (setSearch.results as SetSearchPreview[]).map((set) => ({
+      id: set.id,
+      name: set.name,
+    }));
+  }, [searchMode, setSearch.results, setSearch.view]);
 
   const incrementCardInPile = React.useCallback(
     (card: GlobalCardPreview) => {
@@ -190,6 +200,8 @@ export default function CardSelection({
                 showTypeFilter={
                   searchMode === "cards" || setSearch.view === "setCards"
                 }
+                quickJumpSets={quickJumpSets}
+                onQuickJumpSet={setQuickJumpTargetSetId}
               />
             </div>
           ) : null}
@@ -227,6 +239,7 @@ export default function CardSelection({
               error={setSearch.error}
               page={setSearch.page}
               pageSize={setSearch.pageSize}
+              totalCount={setSearch.totalCount}
               hasPrev={hasPrev}
               hasNext={hasNext}
               onPrev={setSearch.onPrev}
@@ -239,6 +252,8 @@ export default function CardSelection({
                 toggleCardInPile(card as unknown as GlobalCardPreview);
               }}
               layoutMode={layoutMode}
+              quickJumpTargetSetId={quickJumpTargetSetId}
+              onQuickJumpHandled={() => setQuickJumpTargetSetId(null)}
             />
           ) : (
             <CardResults

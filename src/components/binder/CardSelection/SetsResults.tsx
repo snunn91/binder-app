@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LayoutMode } from "@/components/binder/LayoutModeToggle";
 import type {
@@ -19,6 +20,7 @@ type SetsResultsProps = {
 
   page: number;
   pageSize: number;
+  totalCount?: number;
   hasPrev: boolean;
   hasNext: boolean;
 
@@ -32,6 +34,8 @@ type SetsResultsProps = {
   selectedCardIds: Set<string>;
   selectionLocked: boolean;
   layoutMode: LayoutMode;
+  quickJumpTargetSetId?: string | null;
+  onQuickJumpHandled?: () => void;
 };
 
 export default function SetsResults({
@@ -43,6 +47,7 @@ export default function SetsResults({
   page,
   hasPrev,
   hasNext,
+  totalCount,
   onPrev,
   onNext,
   onSelectSet,
@@ -52,6 +57,8 @@ export default function SetsResults({
   selectedCardIds,
   selectionLocked,
   layoutMode,
+  quickJumpTargetSetId,
+  onQuickJumpHandled,
 }: SetsResultsProps) {
   const skeletons = React.useMemo(
     () => Array.from({ length: pageSize }, (_, index) => index),
@@ -59,6 +66,12 @@ export default function SetsResults({
   );
   const appButtonClassName =
     "relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700";
+  const totalPages =
+    totalCount && totalCount > 0 ? Math.ceil(totalCount / pageSize) : page;
+  const setsContainerRef = React.useRef<HTMLDivElement | null>(null);
+  const setItemRefs = React.useRef<Record<string, HTMLButtonElement | null>>(
+    {},
+  );
 
   const groupedSets = React.useMemo(() => {
     if (view !== "sets") return [];
@@ -75,6 +88,28 @@ export default function SetsResults({
     return Array.from(groups.entries());
   }, [results, view]);
 
+  React.useEffect(() => {
+    if (!quickJumpTargetSetId || view !== "sets") return;
+    const container = setsContainerRef.current;
+    const target = setItemRefs.current[quickJumpTargetSetId];
+    if (!container || !target) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const nextScrollTop =
+      container.scrollTop +
+      (targetRect.top - containerRect.top) -
+      container.clientHeight / 2 +
+      target.clientHeight / 2;
+
+    container.scrollTo({
+      top: Math.max(0, nextScrollTop),
+      behavior: "smooth",
+    });
+    target.focus({ preventScroll: true });
+    onQuickJumpHandled?.();
+  }, [onQuickJumpHandled, quickJumpTargetSetId, view]);
+
   return (
     <div className="flex flex-col gap-y-2">
       {error ? (
@@ -84,22 +119,25 @@ export default function SetsResults({
       ) : null}
 
       {view === "setCards" && selectedSet ? (
-        <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-          <span>Viewing cards from {selectedSet.name}.</span>
+        <div className="flex items-center justify-start gap-3">
           <button
             type="button"
             onClick={onBackToSets}
-            className="rounded-full border border-zinc-300 bg-white px-2 py-1 text-[11px] font-medium text-zinc-600 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-zinc-800">
-            Back to sets
+            aria-label="Back to sets"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-600 transition hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-200 dark:hover:bg-zinc-800">
+            <ChevronLeft className="h-4 w-4" />
           </button>
+          <h2 className="text-lg font-exo font-semibold text-zinc-900 dark:text-slate-100 md:text-xl">
+            {selectedSet.name}
+          </h2>
         </div>
       ) : null}
 
       <>
         {loading ? (
-          <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
+          <div className="max-h-[calc(100vh-210px)] overflow-y-auto overflow-x-hidden mb-1">
             {view === "sets" ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 min-w-0">
                 {skeletons.map((key) => (
                   <div
                     key={key}
@@ -162,7 +200,9 @@ export default function SetsResults({
 
         {!loading && results.length > 0 ? (
           <>
-            <div className="max-h-[calc(100vh-268px)] overflow-y-auto overflow-x-hidden mb-1">
+            <div
+              ref={view === "sets" ? setsContainerRef : undefined}
+              className="max-h-[calc(100vh-210px)] overflow-y-auto overflow-x-hidden mb-1">
               {view === "sets" ? (
                 <div className="space-y-4 pe-4">
                   {groupedSets.map(([series, sets]) => (
@@ -170,10 +210,13 @@ export default function SetsResults({
                       <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                         {series}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 min-w-0">
                         {sets.map((set) => (
                           <button
                             key={set.id}
+                            ref={(element) => {
+                              setItemRefs.current[set.id] = element;
+                            }}
                             type="button"
                             onClick={() => onSelectSet(set)}
                             className="flex h-44 flex-col rounded-lg border border-zinc-200 bg-white p-3 text-left text-sm text-zinc-700 shadow-sm transition hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-700 dark:bg-zinc-900 dark:text-slate-100">
@@ -262,27 +305,32 @@ export default function SetsResults({
               )}
             </div>
 
-            <div className="flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={onPrev}
-                disabled={!hasPrev || loading}
-                className={appButtonClassName}>
-                <span className="relative z-10">Prev</span>
-              </button>
+            {view === "setCards" ? (
+              <div className="sticky bottom-[5px] z-10 flex w-full items-center justify-between ">
+                <button
+                  type="button"
+                  onClick={onPrev}
+                  disabled={!hasPrev || loading}
+                  className={appButtonClassName}>
+                  <span className="relative z-10">Prev</span>
+                </button>
 
-              <div className="text-sm text-zinc-600 dark:text-zinc-300">
-                Page <span className="font-medium">{page}</span>
+                <div className="text-sm text-zinc-600 dark:text-zinc-300">
+                  Page{" "}
+                  <span className="font-medium">
+                    {page} of {totalPages}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={onNext}
+                  disabled={!hasNext || loading}
+                  className={appButtonClassName}>
+                  <span className="relative z-10">Next</span>
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={onNext}
-                disabled={!hasNext || loading}
-                className={appButtonClassName}>
-                <span className="relative z-10">Next</span>
-              </button>
-            </div>
+            ) : null}
           </>
         ) : null}
       </>

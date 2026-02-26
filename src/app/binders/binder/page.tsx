@@ -1,13 +1,20 @@
 "use client";
 
 import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
+import RouteLoading from "@/components/RouteLoading";
 import { useAppSelector } from "@/lib/store/storeHooks";
 import AddBinderModal from "@/modals/AddBinderModal";
 import Link from "next/link";
 
 export default function BindersPage() {
   const user = useAppSelector((state) => state.auth.user);
+  const authLoading = useAppSelector((state) => state.auth.loading);
   const binders = useAppSelector((state) => state.binders.items);
+  const bindersLoading = useAppSelector((state) => state.binders.loading);
+
+  if (authLoading || (Boolean(user) && bindersLoading)) {
+    return <RouteLoading message="Loading your binders..." />;
+  }
 
   return (
     <div

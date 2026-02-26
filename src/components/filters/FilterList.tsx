@@ -3,6 +3,7 @@
 import SortByFilter from "@/components/filters/SortByFilter";
 import RarityFilter from "@/components/filters/RarityFilter";
 import TypeFilter from "@/components/filters/TypeFilter";
+import QuickJumpSets from "@/components/filters/QuickJumpSets";
 import type { SearchSortOption, SortScope } from "@/lib/scrydex/sort";
 
 type FilterListProps = {
@@ -19,6 +20,8 @@ type FilterListProps = {
   showRarityFilter?: boolean;
   showTypeFilter?: boolean;
   showSortFilter?: boolean;
+  quickJumpSets?: Array<{ id: string; name: string }>;
+  onQuickJumpSet?: (setId: string) => void;
 };
 
 export default function FilterList({
@@ -35,6 +38,8 @@ export default function FilterList({
   showRarityFilter = true,
   showTypeFilter = true,
   showSortFilter = true,
+  quickJumpSets = [],
+  onQuickJumpSet,
 }: FilterListProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-y-3">
@@ -47,6 +52,12 @@ export default function FilterList({
           sortBy={sortBy}
           onSortChange={onSortChange}
         />
+      ) : null}
+      {showSortFilter && quickJumpSets.length > 0 && onQuickJumpSet ? (
+        <>
+          <div className="w-full border-t border-zinc-300 dark:border-zinc-600" />
+          <QuickJumpSets sets={quickJumpSets} onJump={onQuickJumpSet} />
+        </>
       ) : null}
       {showRarityFilter ? (
         <RarityFilter
