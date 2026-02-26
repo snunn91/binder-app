@@ -135,9 +135,14 @@ export default function SetsResults({
 
       <>
         {loading ? (
-          <div className="max-h-[calc(100vh-210px)] overflow-y-auto overflow-x-hidden mb-1">
+          <div
+            className={`overflow-y-auto overflow-x-hidden mb-1 ${
+              view === "sets"
+                ? "max-h-[calc(100vh-210px)]"
+                : "max-h-[calc(100vh-304px)]"
+            }`}>
             {view === "sets" ? (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 min-w-0">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
                 {skeletons.map((key) => (
                   <div
                     key={key}
@@ -202,7 +207,11 @@ export default function SetsResults({
           <>
             <div
               ref={view === "sets" ? setsContainerRef : undefined}
-              className="max-h-[calc(100vh-210px)] overflow-y-auto overflow-x-hidden mb-1">
+              className={`overflow-y-auto overflow-x-hidden mb-1 ${
+                view === "sets"
+                  ? "max-h-[calc(100vh-210px)]"
+                  : "max-h-[calc(100vh-304px)]"
+              }`}>
               {view === "sets" ? (
                 <div className="space-y-4 pe-4">
                   {groupedSets.map(([series, sets]) => (
@@ -210,7 +219,7 @@ export default function SetsResults({
                       <div className="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                         {series}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 min-w-0">
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 min-w-0">
                         {sets.map((set) => (
                           <button
                             key={set.id}
