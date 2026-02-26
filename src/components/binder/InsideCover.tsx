@@ -53,7 +53,7 @@ export default function InsideCover({
 
   return (
     <div
-      className={`${coverColorSchemeClassName} flex flex-col justify-between rounded-xl border p-6 shadow-lg`}>
+      className={`${coverColorSchemeClassName} flex flex-col justify-between rounded-xl p-6 shadow-lg`}>
       <p className="text-center text-5xl font-exo font-semibold capitalize tracking-wide text-zinc-700 dark:text-slate-100">
         {binderName || "Binder"}
       </p>

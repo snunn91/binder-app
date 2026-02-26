@@ -87,11 +87,7 @@ export default function PagePanel({
 
   return (
     <div
-      className={`${panelPaddingClassName} ${panelColorSchemeClassName} rounded-xl border shadow-lg`}>
-      <p className="text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
-        Page {page.index}
-      </p>
-
+      className={`${panelPaddingClassName} ${panelColorSchemeClassName} rounded-xl shadow-lg`}>
       <DndContext
         sensors={sensors}
         onDragStart={onDragStart}
@@ -99,7 +95,7 @@ export default function PagePanel({
         onDragCancel={onDragCancel}>
         <SortableContext items={slotOrder} strategy={rectSortingStrategy}>
           <div
-            className={`${isFourByFourLayout ? "mt-2" : "mt-3"} grid ${gridGapClassName}`}
+            className={`grid ${gridGapClassName}`}
             style={{
               gridTemplateColumns: `repeat(${layoutColumns}, minmax(0, 1fr))`,
             }}>
