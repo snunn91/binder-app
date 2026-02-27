@@ -74,6 +74,7 @@ export function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
         name: card.name,
         number: card.number,
         rarity: card.rarity,
+        priceUsd: card.priceUsd,
         collectionStatus: "collected",
         expansion: card.expansion,
         image: card.image,

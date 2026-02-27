@@ -32,6 +32,7 @@ type CardSearchPreview = {
   name: string;
   number?: string;
   rarity?: string;
+  priceUsd?: number;
   expansion?: { id?: string; name?: string };
   image?: { small?: string; large?: string };
 };
@@ -62,6 +63,7 @@ type DbCardRow = {
   name: string;
   number: string | null;
   rarity: string | null;
+  price_raw_display: string | number | null;
   expansion_id: string | null;
   expansion_name: string | null;
   image_small: string | null;
@@ -142,6 +144,16 @@ function applySetSort<T extends OrderableQuery<T>>(
   return query.order("release_date", { ascending: false, nullsFirst: false });
 }
 
+function parsePriceRawDisplay(value: string | number | null): number | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value !== "string") return undefined;
+
+  const cleaned = value.replace(/[^0-9.-]/g, "");
+  if (!cleaned) return undefined;
+  const parsed = Number(cleaned);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
 async function searchCardsFromDb(params: {
   qNorm: string;
   mode: string | null;
@@ -167,7 +179,7 @@ async function searchCardsFromDb(params: {
   let query = supabase
     .from("cards")
     .select(
-      "id, name, number, rarity, expansion_id, expansion_name, image_small, image_large",
+      "id, name, number, rarity, price_raw_display, expansion_id, expansion_name, image_small, image_large",
       { count: "exact" },
     );
 
@@ -199,28 +211,32 @@ async function searchCardsFromDb(params: {
   }
 
   const rows = (data ?? []) as DbCardRow[];
-  const results: CardSearchPreview[] = rows.map((row) => ({
-    id: row.id,
-    name: row.name,
-    ...(row.number ? { number: row.number } : {}),
-    ...(row.rarity ? { rarity: row.rarity } : {}),
-    ...(row.expansion_id || row.expansion_name
-      ? {
-          expansion: {
-            ...(row.expansion_id ? { id: row.expansion_id } : {}),
-            ...(row.expansion_name ? { name: row.expansion_name } : {}),
-          },
-        }
-      : {}),
-    ...(row.image_small || row.image_large
-      ? {
-          image: {
-            ...(row.image_small ? { small: row.image_small } : {}),
-            ...(row.image_large ? { large: row.image_large } : {}),
-          },
-        }
-      : {}),
-  }));
+  const results: CardSearchPreview[] = rows.map((row) => {
+    const priceUsd = parsePriceRawDisplay(row.price_raw_display);
+    return {
+      id: row.id,
+      name: row.name,
+      ...(row.number ? { number: row.number } : {}),
+      ...(row.rarity ? { rarity: row.rarity } : {}),
+      ...(priceUsd !== undefined ? { priceUsd } : {}),
+      ...(row.expansion_id || row.expansion_name
+        ? {
+            expansion: {
+              ...(row.expansion_id ? { id: row.expansion_id } : {}),
+              ...(row.expansion_name ? { name: row.expansion_name } : {}),
+            },
+          }
+        : {}),
+      ...(row.image_small || row.image_large
+        ? {
+            image: {
+              ...(row.image_small ? { small: row.image_small } : {}),
+              ...(row.image_large ? { large: row.image_large } : {}),
+            },
+          }
+        : {}),
+    };
+  });
 
   return {
     results,

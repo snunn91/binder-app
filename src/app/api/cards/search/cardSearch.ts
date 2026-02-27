@@ -21,8 +21,6 @@ import {
 
 export const DEFAULT_PAGE_SIZE = 24;
 
-const SELECT_CARD_FIELDS = "id,name,number,rarity,expansion,images";
-
 function buildCardsQuery(
   q: string | undefined,
   rarityFilters: string[] | undefined,
@@ -77,7 +75,6 @@ function toCardPreview(cardUnknown: unknown): CardSearchPreview | null {
   }
 
   const image = extractImage(cardUnknown.images);
-
   return {
     id,
     name,
@@ -133,7 +130,6 @@ export async function fetchCards(params: {
         page: String(page),
         page_size: String(pageSize),
         orderBy,
-        select: SELECT_CARD_FIELDS,
         ...(query ? { q: query } : {}),
       });
     } catch {
@@ -141,7 +137,6 @@ export async function fetchCards(params: {
         page: String(page),
         page_size: String(pageSize),
         orderBy,
-        select: SELECT_CARD_FIELDS,
         ...(query ? { q: query } : {}),
       });
     }
@@ -151,7 +146,6 @@ export async function fetchCards(params: {
     page: String(page),
     page_size: String(pageSize),
     orderBy,
-    select: SELECT_CARD_FIELDS,
     ...(query ? { q: query } : {}),
   });
 }

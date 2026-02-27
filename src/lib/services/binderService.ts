@@ -22,6 +22,7 @@ type BinderDraft = {
   goalCooldowns?: string[];
   bulkBoxCards?: BinderCard[];
   showGoals?: boolean;
+  showStats?: boolean;
 };
 
 type BinderItem = BinderDraft & {
@@ -36,6 +37,7 @@ type BinderCard = {
   name: string;
   number?: string;
   rarity?: string;
+  priceUsd?: number;
   collectionStatus?: "collected" | "missing";
   expansion?: { id?: string; name?: string };
   image?: { small?: string; large?: string };
@@ -58,6 +60,7 @@ type BinderRow = {
   goal_cooldowns: unknown;
   bulk_box_cards: unknown;
   show_goals: boolean;
+  show_stats: boolean;
   created_at: string | null;
 };
 
@@ -156,6 +159,10 @@ function normalizeShowGoals(value: unknown) {
   return value !== false;
 }
 
+function normalizeShowStats(value: unknown) {
+  return value !== false;
+}
+
 function normalizeBinderCreatedAt(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const timestamp = Date.parse(value);
@@ -199,6 +206,11 @@ function normalizeCardOrder(
           candidate.number !== undefined ? String(candidate.number) : undefined,
         rarity:
           candidate.rarity !== undefined ? String(candidate.rarity) : undefined,
+        priceUsd:
+          typeof candidate.priceUsd === "number" &&
+          Number.isFinite(candidate.priceUsd)
+            ? candidate.priceUsd
+            : undefined,
         collectionStatus,
         expansion:
           candidate.expansion && typeof candidate.expansion === "object"
@@ -271,6 +283,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
       goal_cooldowns: [],
       bulk_box_cards: [],
       show_goals: true,
+      show_stats: true,
     })
     .select("id, created_at")
     .single();
@@ -304,6 +317,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     goalCooldowns: [],
     bulkBoxCards: [],
     showGoals: true,
+    showStats: true,
     createdAt: normalizeBinderCreatedAt(binderRow.created_at),
     filledCards: 0,
     totalSlots: slots * 3,
@@ -314,7 +328,7 @@ async function fetchBindersForUser(userId: string) {
   const { data: binderRows, error: bindersError } = await supabase
     .from("binders")
     .select(
-      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, created_at",
+      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, show_stats, created_at",
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -363,6 +377,7 @@ async function fetchBindersForUser(userId: string) {
       name: binder.name,
       layout: binder.layout,
       colorScheme: normalizeColorScheme(binder.color_scheme),
+      showStats: normalizeShowStats(binder.show_stats),
       createdAt: normalizeBinderCreatedAt(binder.created_at),
       filledCards: capacity.filledCards,
       totalSlots: capacity.totalSlots,
@@ -374,7 +389,7 @@ async function fetchBinderById(userId: string, binderId: string) {
   const { data, error } = await supabase
     .from("binders")
     .select(
-      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, created_at",
+      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, show_stats, created_at",
     )
     .eq("user_id", userId)
     .eq("id", binderId)
@@ -394,6 +409,7 @@ async function fetchBinderById(userId: string, binderId: string) {
     goalCooldowns: normalizeGoalCooldowns(row.goal_cooldowns),
     bulkBoxCards: normalizeBulkBoxCards(row.bulk_box_cards),
     showGoals: normalizeShowGoals(row.show_goals),
+    showStats: normalizeShowStats(row.show_stats),
   } as BinderItem;
 }
 
@@ -615,15 +631,20 @@ async function updateBinderSettings(
   settings: {
     name?: string;
     showGoals?: boolean;
+    showStats?: boolean;
   },
 ) {
-  const updates: { name?: string; show_goals?: boolean } = {};
+  const updates: { name?: string; show_goals?: boolean; show_stats?: boolean } =
+    {};
 
   if (typeof settings.name === "string") {
     updates.name = settings.name.trim();
   }
   if (typeof settings.showGoals === "boolean") {
     updates.show_goals = settings.showGoals;
+  }
+  if (typeof settings.showStats === "boolean") {
+    updates.show_stats = settings.showStats;
   }
 
   if (Object.keys(updates).length === 0) return;

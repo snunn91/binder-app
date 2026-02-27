@@ -32,8 +32,10 @@ type BinderSpreadContentProps = {
   binderName?: string;
   colorScheme?: string;
   showGoals?: boolean;
+  showStats?: boolean;
   filledSlots: number;
   totalSlots: number;
+  binderTotalUsd: number;
   goals: BinderGoal[];
   goalText: string;
   goalCharLimit: number;
@@ -75,8 +77,10 @@ export default function BinderSpreadContent({
   binderName,
   colorScheme,
   showGoals,
+  showStats,
   filledSlots,
   totalSlots,
+  binderTotalUsd,
   goals,
   goalText,
   goalCharLimit,
@@ -176,7 +180,9 @@ export default function BinderSpreadContent({
                 binderName={binderName}
                 filledSlots={filledSlots}
                 totalSlots={totalSlots}
+                binderTotalUsd={binderTotalUsd}
                 showGoals={showGoals}
+                showStats={showStats}
                 goals={goals}
                 goalText={goalText}
                 goalCharLimit={goalCharLimit}

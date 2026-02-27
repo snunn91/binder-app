@@ -4,13 +4,16 @@ import { getBinderColorSchemeClasses } from "@/config/binderColorSchemes";
 import type { BinderGoal } from "@/lib/services/binderService";
 import GoalsPanel from "@/components/binder/GoalsPanel";
 import BinderProgress from "@/components/binder/BinderProgress";
+import BinderValue from "@/components/binder/BinderValue";
 
 type InsideCoverProps = {
   colorScheme?: string;
   binderName?: string;
   filledSlots?: number;
   totalSlots?: number;
+  binderTotalUsd?: number;
   showGoals?: boolean;
+  showStats?: boolean;
   goals: BinderGoal[];
   goalText: string;
   goalCharLimit: number;
@@ -32,7 +35,9 @@ export default function InsideCover({
   binderName,
   filledSlots = 0,
   totalSlots = 0,
+  binderTotalUsd = 0,
   showGoals = true,
+  showStats = true,
   goals,
   goalText,
   goalCharLimit,
@@ -76,7 +81,12 @@ export default function InsideCover({
             onCompleteGoal={onCompleteGoal}
           />
         ) : null}
-        <BinderProgress filledSlots={filledSlots} totalSlots={totalSlots} />
+        {showStats ? (
+          <div>
+            <BinderValue binderTotalUsd={binderTotalUsd} />
+            <BinderProgress filledSlots={filledSlots} totalSlots={totalSlots} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

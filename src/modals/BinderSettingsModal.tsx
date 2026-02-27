@@ -16,6 +16,8 @@ type BinderSettingsModalProps = {
   onBinderNameChange: (value: string) => void;
   showGoals: boolean;
   onShowGoalsChange: (nextValue: boolean) => void;
+  showStats: boolean;
+  onShowStatsChange: (nextValue: boolean) => void;
   isSaving: boolean;
   onSave: () => void;
 };
@@ -27,6 +29,8 @@ export default function BinderSettingsModal({
   onBinderNameChange,
   showGoals,
   onShowGoalsChange,
+  showStats,
+  onShowStatsChange,
   isSaving,
   onSave,
 }: BinderSettingsModalProps) {
@@ -61,6 +65,19 @@ export default function BinderSettingsModal({
                   pressed={showGoals}
                   onPressedChange={onShowGoalsChange}>
                   {showGoals ? "On" : "Off"}
+                </Toggle>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-zinc-300/70 bg-slate-50 px-3 py-3 dark:border-zinc-600/70 dark:bg-zinc-900/35">
+                <div>
+                  <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+                    Show Binder Stats
+                  </p>
+                </div>
+                <Toggle
+                  variant="outline"
+                  pressed={showStats}
+                  onPressedChange={onShowStatsChange}>
+                  {showStats ? "On" : "Off"}
                 </Toggle>
               </div>
             </div>

@@ -26,6 +26,7 @@ export type CardSearchPreview = {
   name: string;
   number?: string;
   rarity?: string;
+  priceUsd?: number;
   expansion?: { id?: string; name?: string };
   image?: { small?: string; large?: string };
 };

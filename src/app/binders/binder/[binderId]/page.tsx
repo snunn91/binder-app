@@ -63,6 +63,7 @@ export default function BinderDetailPage() {
     layout: string;
     colorScheme: string;
     showGoals?: boolean;
+    showStats?: boolean;
     goals?: BinderGoal[];
     goalCooldowns?: string[];
     bulkBoxCards?: BinderCard[];
@@ -84,6 +85,7 @@ export default function BinderDetailPage() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsName, setSettingsName] = useState("");
   const [settingsShowGoals, setSettingsShowGoals] = useState(true);
+  const [settingsShowStats, setSettingsShowStats] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasEditSessionChanges, setHasEditSessionChanges] = useState(false);
@@ -140,6 +142,18 @@ export default function BinderDetailPage() {
     );
 
     return { totalSlots, filledSlots };
+  }, [pagesSorted]);
+  const binderTotalUsd = useMemo(() => {
+    return pagesSorted.reduce((total, page) => {
+      const pageTotal = page.cardOrder.reduce((sum, card) => {
+        if (!card || card.collectionStatus === "missing") return sum;
+        const price = card.priceUsd;
+        return typeof price === "number" && Number.isFinite(price)
+          ? sum + price
+          : sum;
+      }, 0);
+      return total + pageTotal;
+    }, 0);
   }, [pagesSorted]);
   const bulkBoxCount = useMemo(
     () => Math.min(bulkBoxLimit, binder?.bulkBoxCards?.length ?? 0),
@@ -765,6 +779,7 @@ export default function BinderDetailPage() {
     setIsActionMenuOpen(false);
     setSettingsName(binder?.name ?? "");
     setSettingsShowGoals(binder?.showGoals ?? true);
+    setSettingsShowStats(binder?.showStats ?? true);
     setIsSettingsModalOpen(true);
   };
 
@@ -782,6 +797,7 @@ export default function BinderDetailPage() {
       await updateBinderSettings(user.uid, binderId, {
         name: nextName,
         showGoals: settingsShowGoals,
+        showStats: settingsShowStats,
       });
       setBinder((prev) =>
         prev
@@ -789,6 +805,7 @@ export default function BinderDetailPage() {
               ...prev,
               name: nextName,
               showGoals: settingsShowGoals,
+              showStats: settingsShowStats,
             }
           : prev,
       );
@@ -941,8 +958,10 @@ export default function BinderDetailPage() {
             binderName={binder?.name}
             colorScheme={binder?.colorScheme}
             showGoals={binder?.showGoals}
+            showStats={binder?.showStats}
             filledSlots={binderCapacity.filledSlots}
             totalSlots={binderCapacity.totalSlots}
+            binderTotalUsd={binderTotalUsd}
             goals={goals}
             goalText={goalText}
             goalCharLimit={GOAL_CHAR_LIMIT}
@@ -1050,6 +1069,8 @@ export default function BinderDetailPage() {
         onBinderNameChange={setSettingsName}
         showGoals={settingsShowGoals}
         onShowGoalsChange={setSettingsShowGoals}
+        showStats={settingsShowStats}
+        onShowStatsChange={setSettingsShowStats}
         isSaving={isSavingSettings}
         onSave={() => void handleSaveSettings()}
       />
