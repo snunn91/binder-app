@@ -12,4 +12,7 @@ export const SignUpValidationSchema = Yup.object({
     .matches(/[0-9]/, "Must include a number")
     .matches(/[^A-Za-z0-9]/, "Must include a special character")
     .required("Please enter a Password"),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref("password")], "Passwords must match")
+    .required("Please confirm your Password"),
 });

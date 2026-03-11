@@ -4,4 +4,5 @@ export const SignUpInitialValues = {
   name: "",
   email: "",
   password: "",
+  confirmPassword: "",
 };
