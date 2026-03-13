@@ -66,12 +66,14 @@ const ALL_SETS_PAGE_SIZE = 50;
 const MAX_SET_PAGES = 500;
 
 export default function useSetSearch(opts?: {
+  language?: "us" | "jp";
   setsPageSize?: number;
   cardsPageSize?: number;
   rarityFilters?: string[];
   typeFilters?: string[];
   sortBy?: SearchSortOption;
 }) {
+  const language = opts?.language ?? "us";
   const setsPageSize = opts?.setsPageSize ?? 15;
   const cardsPageSize = opts?.cardsPageSize ?? 24;
   const normalizedRarities = React.useMemo(
@@ -119,7 +121,7 @@ export default function useSetSearch(opts?: {
   }
 
   const runDefaultSets = React.useCallback(
-    async (_nextPage: number) => {
+    async () => {
       const controller = abortAndNewController();
       setLoading(true);
       setError(null);
@@ -133,7 +135,7 @@ export default function useSetSearch(opts?: {
 
         while (currentPage <= MAX_SET_PAGES) {
           const res = await fetch(
-            `/api/cards/search?type=sets&mode=recent&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
+            `/api/cards/search?type=sets&language=${language}&mode=recent&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
             { signal: controller.signal },
           );
 
@@ -166,7 +168,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [normalizedSetSort],
+    [language, normalizedSetSort],
   );
 
   const runDefaultSetCards = React.useCallback(
@@ -179,6 +181,7 @@ export default function useSetSearch(opts?: {
 
       try {
         const params = new URLSearchParams({
+          language,
           mode: "recent",
           set: setId,
           page: String(nextPage),
@@ -211,11 +214,11 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
+    [language, cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
   );
 
   const runSearchSets = React.useCallback(
-    async (nextQuery: string, _nextPage: number) => {
+    async (nextQuery: string) => {
       const q = nextQuery.trim();
       if (q.length < 2) {
         setError("Type at least 2 characters.");
@@ -237,7 +240,7 @@ export default function useSetSearch(opts?: {
 
         while (currentPage <= MAX_SET_PAGES) {
           const res = await fetch(
-            `/api/cards/search?type=sets&q=${encodeURIComponent(q)}&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
+            `/api/cards/search?type=sets&language=${language}&q=${encodeURIComponent(q)}&page=${currentPage}&page_size=${ALL_SETS_PAGE_SIZE}&sort=${normalizedSetSort}`,
             { signal: controller.signal },
           );
 
@@ -270,7 +273,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [normalizedSetSort],
+    [language, normalizedSetSort],
   );
 
   const runSearchSetCards = React.useCallback(
@@ -291,6 +294,7 @@ export default function useSetSearch(opts?: {
 
       try {
         const params = new URLSearchParams({
+          language,
           q,
           set: setId,
           page: String(nextPage),
@@ -323,7 +327,7 @@ export default function useSetSearch(opts?: {
         setLoading(false);
       }
     },
-    [cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
+    [language, cardsPageSize, normalizedCardSort, normalizedRarities, normalizedTypes],
   );
 
   function clearSearchState() {
@@ -354,12 +358,12 @@ export default function useSetSearch(opts?: {
     // no selected set -> search sets
     if (q.length < 2) {
       setQuery("");
-      void runDefaultSets(1);
+      void runDefaultSets();
       return;
     }
 
     setQuery(q);
-    void runSearchSets(q, 1);
+    void runSearchSets(q);
   }
 
   function onPrev() {
@@ -391,22 +395,22 @@ export default function useSetSearch(opts?: {
   function backToSets() {
     clearSearchState();
     setSelectedSet(null);
-    void runDefaultSets(1);
+    void runDefaultSets();
   }
 
   // initial load: default sets
   React.useEffect(() => {
     if (hasLoadedDefaultRef.current) return;
     hasLoadedDefaultRef.current = true;
-    void runDefaultSets(1);
+    void runDefaultSets();
   }, [runDefaultSets]);
 
   React.useEffect(() => {
     if (!hasLoadedDefaultRef.current || selectedSet) return;
     setPage(1);
-    if (query.trim().length < 2) void runDefaultSets(1);
-    else void runSearchSets(query, 1);
-  }, [normalizedSetSort, query, runDefaultSets, runSearchSets, selectedSet]);
+    if (query.trim().length < 2) void runDefaultSets();
+    else void runSearchSets(query);
+  }, [language, normalizedSetSort, query, runDefaultSets, runSearchSets, selectedSet]);
 
   React.useEffect(() => {
     if (!hasLoadedDefaultRef.current || !selectedSet) return;
@@ -416,6 +420,7 @@ export default function useSetSearch(opts?: {
   }, [
     normalizedCardSort,
     normalizedSetSort,
+    language,
     query,
     rarityKey,
     typeKey,

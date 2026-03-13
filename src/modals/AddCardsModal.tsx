@@ -115,7 +115,11 @@ export default function AddCardsModal({
                 aria-label="Card language toggle">
                 <button
                   type="button"
-                  onClick={() => setLanguage("us")}
+                  onClick={() => {
+                    if (language === "us") return;
+                    setLanguage("us");
+                    setSelectionKey((prev) => prev + 1);
+                  }}
                   aria-pressed={language === "us"}
                   className={`flex h-8 w-8 items-center justify-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent ${
                     language === "us"
@@ -127,7 +131,11 @@ export default function AddCardsModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setLanguage("jp")}
+                  onClick={() => {
+                    if (language === "jp") return;
+                    setLanguage("jp");
+                    setSelectionKey((prev) => prev + 1);
+                  }}
                   aria-pressed={language === "jp"}
                   className={`flex h-8 w-8 items-center justify-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent ${
                     language === "jp"
@@ -150,20 +158,15 @@ export default function AddCardsModal({
             className={`flex-1 min-h-0 p-4 ${
               showMobileBulkBoxCta ? "pb-20 sm:pb-4" : ""
             }`}>
-            {language === "us" ? (
-              <CardSelection
-                key={selectionKey}
-                maxCardsInPile={maxCardsInPile}
-                onAddCards={handleAddCards}
-                onAddToBulkBox={handleAddToBulkBox}
-                layoutMode={effectiveLayoutMode}
-                showMobileBulkBoxCta={showMobileBulkBoxCta}
-              />
-            ) : (
-              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 text-sm font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-300">
-                japanese cards here
-              </div>
-            )}
+            <CardSelection
+              key={selectionKey}
+              language={language}
+              maxCardsInPile={maxCardsInPile}
+              onAddCards={handleAddCards}
+              onAddToBulkBox={handleAddToBulkBox}
+              layoutMode={effectiveLayoutMode}
+              showMobileBulkBoxCta={showMobileBulkBoxCta}
+            />
           </div>
         </div>
       </DialogContent>

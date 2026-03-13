@@ -115,12 +115,20 @@ export default function BinderDetailPage() {
     [pages],
   );
 
-  const [firstPage, secondPage, thirdPage] = pagesSorted;
-  const leftPage = spreadIndex === 0 ? null : (secondPage ?? null);
+  const pagesPerSpread = 2;
+  const totalPageSpreads = Math.max(
+    1,
+    Math.ceil((pagesSorted.length + 1) / pagesPerSpread),
+  );
+  const spreadStartPageOffset =
+    spreadIndex === 0 ? 0 : 1 + (spreadIndex - 1) * pagesPerSpread;
+  const leftPage =
+    spreadIndex === 0 ? null : (pagesSorted[spreadStartPageOffset] ?? null);
   const rightPage =
-    spreadIndex === 0 ? (firstPage ?? null) : (thirdPage ?? null);
-  const currentPageIndex = spreadIndex === 0 ? 1 : 2;
-  const totalPageSpreads = pagesSorted.length > 1 ? 2 : 1;
+    pagesSorted[
+      spreadStartPageOffset + (spreadIndex === 0 ? 0 : 1)
+    ] ?? null;
+  const currentPageIndex = spreadIndex + 1;
   const hasUnsavedChanges = dirtyPageIds.size > 0;
   const isTwoByTwoLayout = layoutColumns === 2;
   const isFourByFourLayout = layoutColumns === 4;
@@ -947,7 +955,6 @@ export default function BinderDetailPage() {
             spreadIndex={spreadIndex}
             currentPageIndex={currentPageIndex}
             totalPageSpreads={totalPageSpreads}
-            pagesSortedLength={pagesSorted.length}
             layoutColumns={layoutColumns}
             isTwoByTwoLayout={isTwoByTwoLayout}
             isFourByFourLayout={isFourByFourLayout}
@@ -979,7 +986,7 @@ export default function BinderDetailPage() {
             onPrevSpread={() => setSpreadIndex((prev) => Math.max(prev - 1, 0))}
             onNextSpread={() =>
               setSpreadIndex((prev) =>
-                Math.min(prev + 1, pagesSorted.length > 1 ? 1 : 0),
+                Math.min(prev + 1, totalPageSpreads - 1),
               )
             }
             onGoalTextChange={(value) =>

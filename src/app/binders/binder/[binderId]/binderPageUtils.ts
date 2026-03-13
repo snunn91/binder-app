@@ -8,6 +8,7 @@ export type BinderPage = {
   cardOrder: (BinderCard | null)[];
 };
 
+export const DEFAULT_BINDER_PAGE_COUNT = 5;
 export const GOAL_LIMIT = 5;
 export const GOAL_CHAR_LIMIT = 150;
 export const GOAL_DELETE_LIMIT = 10;

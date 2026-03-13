@@ -42,6 +42,7 @@ function waitForNextPaint() {
 
 export default function useCardSearch(
   pageSize = 24,
+  language: "us" | "jp" = "us",
   rarityFilters: string[] = [],
   typeFilters: string[] = [],
   sortBy: CardSortOption = DEFAULT_CARD_SORT,
@@ -83,6 +84,7 @@ export default function useCardSearch(
 
       try {
         const params = new URLSearchParams({
+          language,
           mode: "recent",
           page: String(nextPage),
           page_size: String(pageSize),
@@ -115,7 +117,7 @@ export default function useCardSearch(
         setLoading(false);
       }
     },
-    [normalizedRarities, normalizedSort, normalizedTypes, pageSize],
+    [language, normalizedRarities, normalizedSort, normalizedTypes, pageSize],
   );
 
   const runSearch = React.useCallback(
@@ -139,6 +141,7 @@ export default function useCardSearch(
 
       try {
         const params = new URLSearchParams({
+          language,
           q,
           page: String(nextPage),
           page_size: String(pageSize),
@@ -170,7 +173,7 @@ export default function useCardSearch(
         setLoading(false);
       }
     },
-    [normalizedRarities, normalizedSort, normalizedTypes, pageSize],
+    [language, normalizedRarities, normalizedSort, normalizedTypes, pageSize],
   );
 
   function onSubmit(e: React.FormEvent) {
@@ -225,7 +228,7 @@ export default function useCardSearch(
     setPage(1);
     if (query.trim().length < 2) void runDefault(1);
     else void runSearch(query, 1);
-  }, [normalizedSort, query, rarityKey, typeKey, runDefault, runSearch]);
+  }, [language, normalizedSort, query, rarityKey, typeKey, runDefault, runSearch]);
 
   return {
     input,

@@ -117,7 +117,6 @@ async function fetchExpansionsPage({ apiKey, teamId, page, pageSize }) {
   const url = new URL(`${SCRYDEX_BASE_URL}${EXPANSIONS_ENDPOINT}`);
   url.searchParams.set("page", String(page));
   url.searchParams.set("page_size", String(pageSize));
-  url.searchParams.set("q", "is_online_only:false");
   url.searchParams.set(
     "select",
     "id,name,series,total,printed_total,language,language_code,release_date,is_online_only,logo,symbol",
@@ -210,6 +209,7 @@ async function run() {
 
     const validRows = data
       .filter((row) => row && typeof row === "object" && row.id && row.name)
+      .filter((row) => row.is_online_only !== true)
       .map(toExpansionRow);
 
     collected.push(...validRows);

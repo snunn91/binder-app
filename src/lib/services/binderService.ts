@@ -6,6 +6,8 @@ import {
 } from "@/config/binderLimits";
 import { supabase } from "@/lib/supabase/client";
 
+const DEFAULT_BINDER_PAGE_COUNT = 5;
+
 type BinderGoal = {
   id: string;
   text: string;
@@ -295,7 +297,10 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
 
   const slots = layoutToSlots(payload.layout);
 
-  const starterPages = [1, 2, 3].map((index) => ({
+  const starterPages = Array.from(
+    { length: DEFAULT_BINDER_PAGE_COUNT },
+    (_, offset) => offset + 1,
+  ).map((index) => ({
     user_id: userId,
     binder_id: binderRow.id,
     page_index: index,
@@ -307,7 +312,21 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     .from("binder_pages")
     .insert(starterPages);
 
-  assertSupabase(pagesError, "Failed to create starter pages");
+  if (pagesError) {
+    const { error: cleanupError } = await supabase
+      .from("binders")
+      .delete()
+      .eq("user_id", userId)
+      .eq("id", binderRow.id);
+
+    if (cleanupError) {
+      throw new Error(
+        `Failed to create starter pages: ${pagesError.message}. Cleanup failed: ${cleanupError.message}`,
+      );
+    }
+
+    throw new Error(`Failed to create starter pages: ${pagesError.message}`);
+  }
 
   return {
     id: binderRow.id,
@@ -320,7 +339,7 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     showStats: true,
     createdAt: normalizeBinderCreatedAt(binderRow.created_at),
     filledCards: 0,
-    totalSlots: slots * 3,
+    totalSlots: slots * DEFAULT_BINDER_PAGE_COUNT,
   } as BinderItem;
 }
 
@@ -460,35 +479,81 @@ async function updateBinderLayout(userId: string, binderId: string, newLayout: s
     }
   }
 
-  const { error: binderUpdateError } = await supabase
-    .from("binders")
-    .update({ layout: newLayout })
-    .eq("user_id", userId)
-    .eq("id", binderId);
+  const nextPageStates = pages.map((page) => {
+    const oldOrder = page.cardOrder;
+    const nextOrder =
+      newSlots > oldOrder.length
+        ? oldOrder.concat(Array.from({ length: newSlots - oldOrder.length }, () => null))
+        : oldOrder.slice(0, newSlots);
 
-  assertSupabase(binderUpdateError, "Failed to update binder layout");
+    return {
+      id: page.id,
+      previousSlots: page.slots,
+      previousOrder: page.cardOrder,
+      nextOrder,
+    };
+  });
 
-  await Promise.all(
-    pages.map(async (page) => {
-      const oldOrder = page.cardOrder;
-      const nextOrder =
-        newSlots > oldOrder.length
-          ? oldOrder.concat(Array.from({ length: newSlots - oldOrder.length }, () => null))
-          : oldOrder.slice(0, newSlots);
+  const updatedPageIds: string[] = [];
 
+  try {
+    for (const page of nextPageStates) {
       const { error: updateError } = await supabase
         .from("binder_pages")
         .update({
           slots: newSlots,
-          card_order: normalizeWritableCardOrder(nextOrder),
+          card_order: normalizeWritableCardOrder(page.nextOrder),
         })
         .eq("id", page.id)
         .eq("binder_id", binderId)
         .eq("user_id", userId);
 
       assertSupabase(updateError, "Failed to update binder page layout");
-    }),
-  );
+      updatedPageIds.push(page.id);
+    }
+  } catch (error) {
+    for (const page of nextPageStates.filter((candidate) =>
+      updatedPageIds.includes(candidate.id),
+    )) {
+      const { error: rollbackError } = await supabase
+        .from("binder_pages")
+        .update({
+          slots: page.previousSlots,
+          card_order: normalizeWritableCardOrder(page.previousOrder),
+        })
+        .eq("id", page.id)
+        .eq("binder_id", binderId)
+        .eq("user_id", userId);
+
+      assertSupabase(rollbackError, "Failed to roll back binder page layout");
+    }
+
+    throw error;
+  }
+
+  const { error: binderUpdateError } = await supabase
+    .from("binders")
+    .update({ layout: newLayout })
+    .eq("user_id", userId)
+    .eq("id", binderId);
+
+  if (binderUpdateError) {
+    for (const page of nextPageStates) {
+      const { error: rollbackError } = await supabase
+        .from("binder_pages")
+        .update({
+          slots: page.previousSlots,
+          card_order: normalizeWritableCardOrder(page.previousOrder),
+        })
+        .eq("id", page.id)
+        .eq("binder_id", binderId)
+        .eq("user_id", userId);
+
+      assertSupabase(rollbackError, "Failed to roll back binder page layout");
+    }
+  }
+
+  assertSupabase(binderUpdateError, "Failed to update binder layout");
 
   return { layout: newLayout, slots: newSlots };
 }

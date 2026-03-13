@@ -25,6 +25,7 @@ import {
 } from "@/lib/scrydex/sort";
 
 type CardSelectionProps = {
+  language?: "us" | "jp";
   onSelect?: (card: GlobalCardPreview) => void;
   onAddCards?: (items: CardPileEntry[]) => void | Promise<void>;
   onAddToBulkBox?: (items: CardPileEntry[]) => void | Promise<void>;
@@ -39,6 +40,7 @@ export type CardPileEntry = {
 };
 
 export default function CardSelection({
+  language = "us",
   onSelect,
   onAddCards,
   onAddToBulkBox,
@@ -50,8 +52,15 @@ export default function CardSelection({
     React.useState<SearchSortOption>(DEFAULT_CARD_SORT);
   const [selectedRarities, setSelectedRarities] = React.useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = React.useState<string[]>([]);
-  const cardSearch = useCardSearch(30, selectedRarities, selectedTypes, sortBy);
+  const cardSearch = useCardSearch(
+    30,
+    language,
+    selectedRarities,
+    selectedTypes,
+    sortBy,
+  );
   const setSearch = useSetSearch({
+    language,
     setsPageSize: 30,
     cardsPageSize: 30,
     rarityFilters: selectedRarities,

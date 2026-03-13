@@ -21,7 +21,6 @@ type BinderSpreadContentProps = {
   spreadIndex: number;
   currentPageIndex: number;
   totalPageSpreads: number;
-  pagesSortedLength: number;
   layoutColumns: number;
   isTwoByTwoLayout: boolean;
   isFourByFourLayout: boolean;
@@ -66,7 +65,6 @@ export default function BinderSpreadContent({
   spreadIndex,
   currentPageIndex,
   totalPageSpreads,
-  pagesSortedLength,
   layoutColumns,
   isTwoByTwoLayout,
   isFourByFourLayout,
@@ -128,7 +126,7 @@ export default function BinderSpreadContent({
         <button
           type="button"
           onClick={onNextSpread}
-          disabled={loading || pagesSortedLength <= 1 || spreadIndex === 1}
+          disabled={loading || spreadIndex >= totalPageSpreads - 1}
           aria-hidden={loading}
           className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
           <ChevronRight className="h-4 w-4" />

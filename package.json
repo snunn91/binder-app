@@ -14,6 +14,8 @@
     "ingest:jpn-expansions:dry": "node scripts/ingest-jpn-expansions.mjs --dry-run --max-pages=1",
     "ingest:cards": "node scripts/ingest-cards.mjs",
     "ingest:cards:dry": "node scripts/ingest-cards.mjs --dry-run --max-pages=1",
+    "ingest:cards:expansion": "node scripts/ingest-cards-by-expansion.mjs",
+    "ingest:cards:expansion:dry": "node scripts/ingest-cards-by-expansion.mjs --dry-run --max-pages=1",
     "ingest:jpn-cards": "node scripts/ingest-jpn-cards.mjs",
     "ingest:jpn-cards:dry": "node scripts/ingest-jpn-cards.mjs --dry-run --max-pages=1"
   },

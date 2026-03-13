@@ -8,10 +8,10 @@ function requiredEnv(name: string): string {
 
 export function getSupabaseServerClient() {
   const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const supabaseServerKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const supabaseAnonKey = requiredEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
-  return createClient(supabaseUrl, supabaseServerKey, {
+  // Server-side public reads should still respect the anon role and any RLS policies.
+  return createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

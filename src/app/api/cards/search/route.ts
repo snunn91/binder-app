@@ -91,6 +91,20 @@ function normalizeQuery(q: string) {
   return q.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
+function getDbTableNames(language: string | null) {
+  if (language === "jp") {
+    return {
+      cards: "jpn_cards",
+      expansions: "jpn_expansions",
+    } as const;
+  }
+
+  return {
+    cards: "cards",
+    expansions: "expansions",
+  } as const;
+}
+
 function applyCardSort<T extends OrderableQuery<T>>(query: T, sort: CardSortOption): T {
   if (sort === "Oldest") {
     return query
@@ -155,6 +169,7 @@ function parsePriceRawDisplay(value: string | number | null): number | undefined
 }
 
 async function searchCardsFromDb(params: {
+  language: string | null;
   qNorm: string;
   mode: string | null;
   setId: string | null;
@@ -165,6 +180,7 @@ async function searchCardsFromDb(params: {
   pageSize: number;
 }) {
   const {
+    language,
     qNorm,
     mode,
     setId,
@@ -176,8 +192,9 @@ async function searchCardsFromDb(params: {
   } = params;
 
   const supabase = getSupabaseServerClient();
+  const tables = getDbTableNames(language);
   let query = supabase
-    .from("cards")
+    .from(tables.cards)
     .select(
       "id, name, number, rarity, price_raw_display, expansion_id, expansion_name, image_small, image_large",
       { count: "exact" },
@@ -245,17 +262,19 @@ async function searchCardsFromDb(params: {
 }
 
 async function searchSetsFromDb(params: {
+  language: string | null;
   qNorm: string;
   mode: string | null;
   setSort: ReturnType<typeof sanitizeSetSort>;
   page: number;
   pageSize: number;
 }) {
-  const { qNorm, mode, setSort, page, pageSize } = params;
+  const { language, qNorm, mode, setSort, page, pageSize } = params;
   const supabase = getSupabaseServerClient();
+  const tables = getDbTableNames(language);
 
   let query = supabase
-    .from("expansions")
+    .from(tables.expansions)
     .select("id, name, series, total, release_date, logo, symbol", {
       count: "exact",
     })
@@ -434,6 +453,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const type = searchParams.get("type") === "sets" ? "sets" : "cards";
+    const language = searchParams.get("language");
     const mode = searchParams.get("mode");
     const setId = searchParams.get("set");
     const rarityFilters = sanitizeRarityFilters(searchParams.getAll("rarity"));
@@ -471,6 +491,7 @@ export async function GET(req: Request) {
     if (getCardSource() === "DB") {
       if (type === "sets") {
         const { results, totalCount } = await searchSetsFromDb({
+          language,
           qNorm,
           mode,
           setSort,
@@ -489,6 +510,7 @@ export async function GET(req: Request) {
       }
 
       const { results, totalCount } = await searchCardsFromDb({
+        language,
         qNorm,
         mode,
         setId,
