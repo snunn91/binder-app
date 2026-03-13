@@ -45,6 +45,7 @@ export default function AddCardsModal({
   const [internalOpen, setInternalOpen] = useState(false);
   const [selectionKey, setSelectionKey] = useState(0);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("grid");
+  const [language, setLanguage] = useState<"us" | "jp">("us");
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : internalOpen;
   const effectiveLayoutMode = forcedLayoutMode ?? layoutMode;
@@ -60,6 +61,7 @@ export default function AddCardsModal({
     setOpenState(nextOpen);
     if (!nextOpen) {
       setSelectionKey((prev) => prev + 1);
+      setLanguage("us");
     }
   };
 
@@ -104,28 +106,64 @@ export default function AddCardsModal({
       ) : null}
       <DialogContent className="flex h-[calc(100vh-25px)] max-h-[calc(100vh-25px)] max-w-[calc(100vw-25px)] flex-col rounded-2xl border border-zinc-200 bg-white/90 p-0 shadow-xl backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex h-full flex-col">
-          <DialogHeader className="relative border-b border-zinc-200 px-6 py-4 pr-24 dark:border-zinc-800">
+          <DialogHeader className="relative border-b border-zinc-200 px-6 py-4 pr-36 dark:border-zinc-800">
             <DialogTitle className="text-left">Add Card</DialogTitle>
-            {!forcedLayoutMode && !hideLayoutToggle ? (
-              <LayoutModeToggle
-                value={effectiveLayoutMode}
-                onChange={setLayoutMode}
-                className="absolute right-12 top-1/2 -translate-y-1/2"
-              />
-            ) : null}
+            <div className="absolute right-12 top-1/2 flex -translate-y-1/2 items-center gap-2">
+              <div
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 bg-white p-1 dark:border-zinc-700 dark:bg-zinc-900"
+                role="group"
+                aria-label="Card language toggle">
+                <button
+                  type="button"
+                  onClick={() => setLanguage("us")}
+                  aria-pressed={language === "us"}
+                  className={`flex h-8 w-8 items-center justify-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent ${
+                    language === "us"
+                      ? "border-accent bg-accent text-white"
+                      : "border-transparent text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}>
+                  <span aria-hidden="true">🇺🇸</span>
+                  <span className="sr-only">English cards</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage("jp")}
+                  aria-pressed={language === "jp"}
+                  className={`flex h-8 w-8 items-center justify-center rounded-md border text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent ${
+                    language === "jp"
+                      ? "border-accent bg-accent text-white"
+                      : "border-transparent text-zinc-600 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                  }`}>
+                  <span aria-hidden="true">🇯🇵</span>
+                  <span className="sr-only">Japanese cards</span>
+                </button>
+              </div>
+              {!forcedLayoutMode && !hideLayoutToggle ? (
+                <LayoutModeToggle
+                  value={effectiveLayoutMode}
+                  onChange={setLayoutMode}
+                />
+              ) : null}
+            </div>
           </DialogHeader>
           <div
             className={`flex-1 min-h-0 p-4 ${
               showMobileBulkBoxCta ? "pb-20 sm:pb-4" : ""
             }`}>
-            <CardSelection
-              key={selectionKey}
-              maxCardsInPile={maxCardsInPile}
-              onAddCards={handleAddCards}
-              onAddToBulkBox={handleAddToBulkBox}
-              layoutMode={effectiveLayoutMode}
-              showMobileBulkBoxCta={showMobileBulkBoxCta}
-            />
+            {language === "us" ? (
+              <CardSelection
+                key={selectionKey}
+                maxCardsInPile={maxCardsInPile}
+                onAddCards={handleAddCards}
+                onAddToBulkBox={handleAddToBulkBox}
+                layoutMode={effectiveLayoutMode}
+                showMobileBulkBoxCta={showMobileBulkBoxCta}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 text-sm font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-300">
+                japanese cards here
+              </div>
+            )}
           </div>
         </div>
       </DialogContent>

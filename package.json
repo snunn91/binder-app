@@ -10,8 +10,12 @@
     "lint": "eslint",
     "ingest:expansions": "node scripts/ingest-expansions.mjs",
     "ingest:expansions:dry": "node scripts/ingest-expansions.mjs --dry-run --max-pages=1",
+    "ingest:jpn-expansions": "node scripts/ingest-jpn-expansions.mjs",
+    "ingest:jpn-expansions:dry": "node scripts/ingest-jpn-expansions.mjs --dry-run --max-pages=1",
     "ingest:cards": "node scripts/ingest-cards.mjs",
-    "ingest:cards:dry": "node scripts/ingest-cards.mjs --dry-run --max-pages=1"
+    "ingest:cards:dry": "node scripts/ingest-cards.mjs --dry-run --max-pages=1",
+    "ingest:jpn-cards": "node scripts/ingest-jpn-cards.mjs",
+    "ingest:jpn-cards:dry": "node scripts/ingest-jpn-cards.mjs --dry-run --max-pages=1"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
