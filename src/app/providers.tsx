@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Provider } from "react-redux";
 import { setAuthState } from "@/lib/store/slices/authSlice";
 import { fetchBinders, resetBinders } from "@/lib/store/slices/bindersSlice";
-import { logOut } from "@/lib/auth/auth";
 import { store } from "@/lib/store/store";
 import { useAppDispatch } from "@/lib/store/storeHooks";
 import { supabase } from "@/lib/supabase/client";
 
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
-
 function AuthListener({ children }: { children: React.ReactNode }) {
   const dispatch = useAppDispatch();
-  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastUserId = useRef<string | null>(null);
-  const resetTimerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const syncSession = async () => {
@@ -40,20 +34,10 @@ function AuthListener({ children }: { children: React.ReactNode }) {
         )
       );
 
-      lastUserId.current = nextUser?.id ?? null;
       if (nextUser) {
         dispatch(fetchBinders());
       } else {
         dispatch(resetBinders());
-      }
-
-      if (!nextUser && inactivityTimer.current) {
-        clearTimeout(inactivityTimer.current);
-        inactivityTimer.current = null;
-      }
-
-      if (nextUser && resetTimerRef.current) {
-        resetTimerRef.current();
       }
     };
 
@@ -79,53 +63,15 @@ function AuthListener({ children }: { children: React.ReactNode }) {
         )
       );
 
-      lastUserId.current = nextUser?.id ?? null;
       if (nextUser) {
         dispatch(fetchBinders());
       } else {
         dispatch(resetBinders());
       }
-
-      if (!nextUser && inactivityTimer.current) {
-        clearTimeout(inactivityTimer.current);
-        inactivityTimer.current = null;
-      }
-
-      if (nextUser && resetTimerRef.current) {
-        resetTimerRef.current();
-      }
     });
 
     return () => subscription.unsubscribe();
   }, [dispatch]);
-
-  useEffect(() => {
-    const resetTimer = () => {
-      if (!lastUserId.current) return;
-      if (inactivityTimer.current) {
-        clearTimeout(inactivityTimer.current);
-      }
-      inactivityTimer.current = setTimeout(() => {
-        logOut();
-      }, INACTIVITY_TIMEOUT_MS);
-    };
-
-    resetTimerRef.current = resetTimer;
-
-    const events = ["mousemove", "keydown", "scroll", "touchstart"];
-    events.forEach((event) => window.addEventListener(event, resetTimer));
-
-    resetTimer();
-
-    return () => {
-      resetTimerRef.current = null;
-      events.forEach((event) => window.removeEventListener(event, resetTimer));
-      if (inactivityTimer.current) {
-        clearTimeout(inactivityTimer.current);
-        inactivityTimer.current = null;
-      }
-    };
-  }, []);
 
   return children;
 }
