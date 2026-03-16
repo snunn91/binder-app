@@ -31,7 +31,7 @@ function parseArgs(argv) {
     }
   }
 
-  if (!out.expansionId) {
+  if (!out.help && !out.expansionId) {
     throw new Error("Missing required --expansion-id value");
   }
 
