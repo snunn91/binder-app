@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-hot-toast";
@@ -24,10 +24,12 @@ const easeOutExpo = [0.22, 1, 0.36, 1] as const;
 
 export default function SignInPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAppSelector((state) => state.auth.user);
   const authLoading = useAppSelector((state) => state.auth.loading);
   const shouldReduceMotion = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
+  const emailConfirmed = searchParams.get("confirmed") === "1";
 
   useEffect(() => {
     if (!user) return;
@@ -44,7 +46,11 @@ export default function SignInPage() {
         toast.success("Signed in successfully");
         router.push("/binders");
       } catch (e) {
-        const message = (e as Error)?.message ?? "Failed to sign in";
+        const rawMessage = (e as Error)?.message ?? "Failed to sign in";
+        const message =
+          rawMessage.toLowerCase().includes("email not confirmed")
+            ? "Please confirm your email before signing in."
+            : rawMessage;
         setError(message);
         toast.error(message);
       } finally {
@@ -120,6 +126,11 @@ export default function SignInPage() {
                 }
           }>
           <CardContent className="w-full">
+            {emailConfirmed ? (
+              <p className="mb-4 rounded-md border border-green-500/40 bg-green-100/70 px-3 py-2 text-center text-sm font-exo font-medium text-green-800 dark:bg-green-900/30 dark:text-green-200">
+                Email confirmed. You can sign in now.
+              </p>
+            ) : null}
             <FormikProvider value={formik}>
               <form
                 onSubmit={formik.handleSubmit}

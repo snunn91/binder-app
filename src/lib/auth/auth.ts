@@ -1,9 +1,17 @@
 import { supabase } from "@/lib/supabase/client";
 
 export async function signUp(email: string, password: string) {
+  const emailRedirectTo =
+    typeof window === "undefined"
+      ? undefined
+      : `${window.location.origin}/auth/callback?next=%2Fbinders`;
+
   const { error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      ...(emailRedirectTo ? { emailRedirectTo } : {}),
+    },
   });
 
   if (error) throw new Error(error.message);
