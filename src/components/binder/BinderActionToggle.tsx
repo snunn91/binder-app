@@ -7,6 +7,7 @@ import {
   Plus,
   Save,
   Settings,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ type BinderActionToggleProps = {
   onSave: () => void | Promise<void>;
   onEdit: () => void | Promise<void>;
   onOpenSettings: () => void;
+  onOpenAiGenerator: () => void;
   onToggleMenu: () => void;
 };
 
@@ -37,6 +39,7 @@ export default function BinderActionToggle({
   onSave,
   onEdit,
   onOpenSettings,
+  onOpenAiGenerator,
   onToggleMenu,
 }: BinderActionToggleProps) {
   return (
@@ -54,6 +57,16 @@ export default function BinderActionToggle({
           <Plus className="relative z-10 h-4 w-4 shrink-0" />
           <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
             Add card
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenAiGenerator}
+          className="group relative flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+          <Sparkles className="relative z-10 h-4 w-4 shrink-0" />
+          <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-28 group-hover:pl-2">
+            AI Generate
           </span>
         </button>
 
