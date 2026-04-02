@@ -33,6 +33,9 @@ import LeaveBinderDialog from "@/components/binder/BinderLeaveDialog";
 import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
 import BinderSettingsModal from "@/modals/BinderSettingsModal";
+import CardGeneratorModal from "@/modals/CardGeneratorModal";
+import { supabase } from "@/lib/supabase/client";
+import AiCardsConfirmationBar from "@/components/binder/AiCardsConfirmationBar";
 import RouteLoading from "@/components/RouteLoading";
 import { binderMessages } from "@/config/binderMessages";
 import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelection";
@@ -83,6 +86,11 @@ export default function BinderDetailPage() {
   const [isAddCardsModalOpen, setIsAddCardsModalOpen] = useState(false);
   const [isBulkBoxModalOpen, setIsBulkBoxModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
+  const [aiPendingSnapshot, setAiPendingSnapshot] = useState<BinderPage[] | null>(null);
+  const [aiPendingCardCount, setAiPendingCardCount] = useState(0);
+  const [aiPromptsUsed, setAiPromptsUsed] = useState(0);
+  const [aiResetAt, setAiResetAt] = useState<string | null>(null);
   const [settingsName, setSettingsName] = useState("");
   const [settingsShowGoals, setSettingsShowGoals] = useState(true);
   const [settingsShowStats, setSettingsShowStats] = useState(true);
@@ -135,6 +143,17 @@ export default function BinderDetailPage() {
   const hasVisibleCards = [leftPage, rightPage]
     .filter((page): page is BinderPage => page !== null)
     .some((page) => (page.cardOrder ?? []).some((card) => card !== null));
+  const currentSpreadEmptySlots = useMemo(
+    () =>
+      [leftPage, rightPage]
+        .filter((page): page is BinderPage => page !== null)
+        .reduce(
+          (sum, page) =>
+            sum + (page.cardOrder ?? []).filter((c) => c === null).length,
+          0,
+        ),
+    [leftPage, rightPage],
+  );
   const bulkBoxLimit = useMemo(
     () => layoutToSlots(binder?.layout ?? "3x3"),
     [binder?.layout],
@@ -278,6 +297,32 @@ export default function BinderDetailPage() {
       mounted = false;
     };
   }, [binderId, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let mounted = true;
+
+    const fetchAiUsage = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+
+      try {
+        const res = await fetch("/api/ai/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok || !mounted) return;
+        const data = (await res.json()) as { used?: number; resetAt?: string | null };
+        if (typeof data.used === "number") setAiPromptsUsed(data.used);
+        if (data.resetAt !== undefined) setAiResetAt(data.resetAt ?? null);
+      } catch {
+        // Non-critical — silently ignore
+      }
+    };
+
+    void fetchAiUsage();
+    return () => { mounted = false; };
+  }, [userId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = String(event.active.id);
@@ -853,6 +898,68 @@ export default function BinderDetailPage() {
     }
   }, [user]);
 
+  const handleOpenAiGenerator = () => {
+    setIsActionMenuOpen(false);
+    setIsAiGeneratorModalOpen(true);
+  };
+
+  const handleAiCardsGenerated = (cards: BinderCard[]) => {
+    const spreadPageIds = new Set(
+      [leftPage?.id, rightPage?.id].filter((id): id is string => Boolean(id)),
+    );
+    const spreadPages = pages.filter((page) => spreadPageIds.has(page.id));
+
+    // Snapshot spread pages BEFORE adding so the user can clear/undo
+    const snapshot = spreadPages.map((p) => ({
+      ...p,
+      cardOrder: [...(p.cardOrder ?? [])],
+    }));
+
+    const result = addCardsToLocalPages(spreadPages, cards);
+
+    const updatedById = new Map(result.nextPages.map((page) => [page.id, page]));
+    const allNextPages = pages.map((page) => updatedById.get(page.id) ?? page);
+
+    setPages(allNextPages);
+    pagesRef.current = allNextPages;
+    setDirtyPageIds(
+      computeDirtyPageIds(allNextPages, baselinePageSignaturesRef.current),
+    );
+    setAddCardsError(null);
+    setSaveError(null);
+
+    // Show the acceptance bar
+    setAiPendingSnapshot(snapshot);
+    setAiPendingCardCount(result.addedCount);
+  };
+
+  const handleAiKeep = () => {
+    setAiPendingSnapshot(null);
+    setAiPendingCardCount(0);
+  };
+
+  const handleAiClear = () => {
+    if (!aiPendingSnapshot) return;
+    const snapshotById = new Map(aiPendingSnapshot.map((p) => [p.id, p]));
+    const restoredPages = pages.map((p) => snapshotById.get(p.id) ?? p);
+    setPages(restoredPages);
+    pagesRef.current = restoredPages;
+    setDirtyPageIds(
+      computeDirtyPageIds(restoredPages, baselinePageSignaturesRef.current),
+    );
+    setAiPendingSnapshot(null);
+    setAiPendingCardCount(0);
+  };
+
+  // Auto-dismiss the confirmation bar (keep cards) when the user navigates to a different spread
+  useEffect(() => {
+    if (aiPendingSnapshot) {
+      setAiPendingSnapshot(null);
+      setAiPendingCardCount(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [spreadIndex]);
+
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges || bypassUnsavedGuardRef.current) return;
@@ -1027,11 +1134,13 @@ export default function BinderDetailPage() {
           hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
           bulkBoxCount={bulkBoxCount}
+          aiPromptsUsed={aiPromptsUsed}
           onOpenAddCards={handleOpenAddCards}
           onOpenBulkBox={handleBulkBoxFromMenu}
           onSave={handleSaveFromMenu}
           onEdit={handleEditFromMenu}
           onOpenSettings={handleSettingsFromMenu}
+          onOpenAiGenerator={handleOpenAiGenerator}
           onToggleMenu={() => {
             if (isEditMode) {
               setIsActionMenuOpen(true);
@@ -1088,6 +1197,28 @@ export default function BinderDetailPage() {
         onShowStatsChange={setSettingsShowStats}
         isSaving={isSavingSettings}
         onSave={() => void handleSaveSettings()}
+      />
+
+      {/* TODO: Lift language state to page level to support Japanese in AI generator */}
+      <CardGeneratorModal
+        open={isAiGeneratorModalOpen}
+        onOpenChange={setIsAiGeneratorModalOpen}
+        emptySlots={currentSpreadEmptySlots}
+        language="en"
+        onCardsGenerated={handleAiCardsGenerated}
+        promptsUsed={aiPromptsUsed}
+        resetAt={aiResetAt}
+        onPromptsUpdated={(used, resetAt) => {
+          setAiPromptsUsed(used);
+          setAiResetAt(resetAt);
+        }}
+      />
+
+      <AiCardsConfirmationBar
+        cardCount={aiPendingCardCount}
+        isVisible={aiPendingSnapshot !== null}
+        onKeep={handleAiKeep}
+        onClear={handleAiClear}
       />
     </div>
   );

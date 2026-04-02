@@ -7,8 +7,11 @@ import {
   Plus,
   Save,
   Settings,
+  Sparkles,
   X,
 } from "lucide-react";
+
+const AI_PROMPT_LIMIT = 5;
 
 type BinderActionToggleProps = {
   isActionMenuOpen: boolean;
@@ -17,11 +20,13 @@ type BinderActionToggleProps = {
   hasUnsavedChanges: boolean;
   isSaving: boolean;
   bulkBoxCount: number;
+  aiPromptsUsed: number;
   onOpenAddCards: () => void;
   onOpenBulkBox: () => void;
   onSave: () => void | Promise<void>;
   onEdit: () => void | Promise<void>;
   onOpenSettings: () => void;
+  onOpenAiGenerator: () => void;
   onToggleMenu: () => void;
 };
 
@@ -32,13 +37,16 @@ export default function BinderActionToggle({
   hasUnsavedChanges,
   isSaving,
   bulkBoxCount,
+  aiPromptsUsed,
   onOpenAddCards,
   onOpenBulkBox,
   onSave,
   onEdit,
   onOpenSettings,
+  onOpenAiGenerator,
   onToggleMenu,
 }: BinderActionToggleProps) {
+  const aiLimitReached = aiPromptsUsed >= AI_PROMPT_LIMIT;
   return (
     <div className="absolute bottom-14 right-12 z-40">
       <div
@@ -54,6 +62,30 @@ export default function BinderActionToggle({
           <Plus className="relative z-10 h-4 w-4 shrink-0" />
           <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
             Add card
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={aiLimitReached ? undefined : onOpenAiGenerator}
+          disabled={aiLimitReached}
+          title={aiLimitReached ? "AI prompt limit reached (5/5)" : undefined}
+          className={`group relative flex h-12 items-center rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+            aiLimitReached
+              ? "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-400 opacity-60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-500"
+              : "border-zinc-300 bg-slate-200 text-zinc-700 hover:pr-5 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
+          }`}>
+          {aiPromptsUsed > 0 && (
+            <span
+              className={`absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-exo font-semibold leading-none text-white ${
+                aiLimitReached ? "bg-red-500" : "bg-accent"
+              }`}>
+              {aiPromptsUsed}/{AI_PROMPT_LIMIT}
+            </span>
+          )}
+          <Sparkles className="relative z-10 h-4 w-4 shrink-0" />
+          <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-28 group-hover:pl-2">
+            AI Generate
           </span>
         </button>
 

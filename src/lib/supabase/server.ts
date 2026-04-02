@@ -18,3 +18,15 @@ export function getSupabaseServerClient() {
     },
   });
 }
+
+/** Service-role client — bypasses RLS. Use only in trusted server contexts. */
+export function getSupabaseServiceClient() {
+  const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+  const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
