@@ -33,7 +33,7 @@ export default function AddBinderModal() {
 
   const handleSubmit = async (
     values: typeof AddBinderInitialValues,
-    { resetForm }: { resetForm: () => void }
+    { resetForm }: { resetForm: () => void },
   ) => {
     if (isBinderLimitReached) return;
 
@@ -60,7 +60,7 @@ export default function AddBinderModal() {
         </button>
       </DialogTrigger>
       {isBinderLimitReached ? (
-        <p className="mt-2 text-sm font-exo font-medium text-red-600">
+        <p className="mt-2 text-sm font-exo font-medium text-red-400">
           {BINDER_LIMIT_REACHED_MESSAGE}
         </p>
       ) : null}
@@ -97,7 +97,7 @@ export default function AddBinderModal() {
                   <ErrorMessage
                     name="name"
                     component="p"
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-400"
                   />
                 </div>
 
@@ -119,7 +119,7 @@ export default function AddBinderModal() {
                   <ErrorMessage
                     name="layout"
                     component="p"
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-400"
                   />
                 </div>
 
@@ -143,12 +143,14 @@ export default function AddBinderModal() {
                   <ErrorMessage
                     name="colorScheme"
                     component="p"
-                    className="mt-1 text-sm text-red-600"
+                    className="mt-1 text-sm text-red-400"
                   />
                 </div>
 
                 {createError ? (
-                  <p className="text-sm font-exo font-medium text-red-600">{createError}</p>
+                  <p className="text-sm font-exo font-medium text-red-400">
+                    {createError}
+                  </p>
                 ) : null}
 
                 <DialogFooter className="border-t border-zinc-200 px-0 pt-4 sm:justify-end dark:border-zinc-800">
@@ -160,7 +162,9 @@ export default function AddBinderModal() {
                   </button>
                   <button
                     type="submit"
-                    disabled={creating || !dirty || !isValid || isBinderLimitReached}
+                    disabled={
+                      creating || !dirty || !isValid || isBinderLimitReached
+                    }
                     className="rounded-full border border-accent bg-accent px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent">
                     {creating ? "Creating..." : "Create Binder"}
                   </button>

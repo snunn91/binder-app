@@ -40,7 +40,7 @@ export default function BinderActionToggle({
   onToggleMenu,
 }: BinderActionToggleProps) {
   return (
-    <div className="fixed bottom-14 right-12 z-40">
+    <div className="absolute bottom-14 right-12 z-40">
       <div
         className={`absolute bottom-14 right-0 flex flex-col items-end gap-2 transition-all duration-300 ${
           isActionMenuOpen
@@ -70,21 +70,23 @@ export default function BinderActionToggle({
           </span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => void onSave()}
-          disabled={!hasUnsavedChanges || isSaving}
-          aria-label={isSaving ? "Saving changes" : "Save changes"}
-          className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
-            hasUnsavedChanges && !isSaving
-              ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
-              : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
-          }`}>
-          <Save className="h-4 w-4 shrink-0" />
-          <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-            {isSaving ? "Saving..." : "Save"}
-          </span>
-        </button>
+        {!isEditMode && (
+          <button
+            type="button"
+            onClick={() => void onSave()}
+            disabled={!hasUnsavedChanges || isSaving}
+            aria-label={isSaving ? "Saving changes" : "Save changes"}
+            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+              hasUnsavedChanges && !isSaving
+                ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
+                : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
+            }`}>
+            <Save className="h-4 w-4 shrink-0" />
+            <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
+              {isSaving ? "Saving..." : "Save"}
+            </span>
+          </button>
+        )}
 
         <button
           type="button"

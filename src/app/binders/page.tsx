@@ -102,11 +102,11 @@ export default function BindersPage() {
                   getBinderColorSchemeClasses(binder.colorScheme).orb
                 }`}
               />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />
+              <div className="h-full pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 to-transparent dark:from-white/5" />
             </Link>
           ))}
-          <div className="relative md:min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
-            <div className="flex h-full items-center justify-center">
+          <div className="flex items-center justify-center relative md:min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+            <div className="flex flex-col h-full items-center justify-center">
               <AddBinderModal />
             </div>
           </div>

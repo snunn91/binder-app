@@ -33,6 +33,7 @@ export default function SlotItem({
   const isDragging = transform !== null;
   const imageSrc = card?.image?.small ?? card?.image?.large;
   const isDraggable = Boolean(card) && !isEditMode;
+  const isEmpty = !card;
   const isMissing = (card?.collectionStatus ?? "collected") === "missing";
 
   const style = {
@@ -50,8 +51,8 @@ export default function SlotItem({
       {...(isDraggable ? attributes : {})}
       {...(isDraggable ? listeners : {})}
       className={`group relative flex ${aspectClassName} ${sizeClassName} ${cursorClassName} items-center justify-center overflow-visible rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
-        isDragging ? "border-dashed opacity-40" : ""
-      }`}>
+        isEmpty ? "border-dashed opacity-30 dark:opacity-100" : ""
+      } ${isDragging ? "border-dashed opacity-40" : ""}`}>
       <div className="relative h-full w-full overflow-hidden rounded-lg">
         {imageSrc ? (
           // eslint-disable-next-line @next/next/no-img-element

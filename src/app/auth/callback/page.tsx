@@ -48,9 +48,8 @@ export default function AuthCallbackPage() {
 
       try {
         if (code) {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(
-            code,
-          );
+          const { error: exchangeError } =
+            await supabase.auth.exchangeCodeForSession(code);
           if (exchangeError) {
             throw exchangeError;
           }
@@ -88,7 +87,9 @@ export default function AuthCallbackPage() {
         <h1 className="text-xl font-exo font-bold text-zinc-700 dark:text-slate-100">
           Confirmation link failed
         </h1>
-        <p className="mt-2 text-sm font-exo font-medium text-red-600">{error}</p>
+        <p className="mt-2 text-sm font-exo font-medium text-red-400">
+          {error}
+        </p>
         <p className="mt-4 text-sm font-exo text-zinc-700 dark:text-slate-100">
           Try signing in manually or request a new confirmation link.
         </p>

@@ -845,6 +845,14 @@ export default function BinderDetailPage() {
     }, 0);
   };
 
+  // If the user is signed out (e.g. inactivity timeout), drop all unsaved-change
+  // guards so they can navigate to the sign-in page without being blocked.
+  useEffect(() => {
+    if (!user) {
+      bypassUnsavedGuardRef.current = true;
+    }
+  }, [user]);
+
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!hasUnsavedChanges || bypassUnsavedGuardRef.current) return;

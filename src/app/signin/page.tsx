@@ -47,10 +47,9 @@ export default function SignInPage() {
         router.push("/binders");
       } catch (e) {
         const rawMessage = (e as Error)?.message ?? "Failed to sign in";
-        const message =
-          rawMessage.toLowerCase().includes("email not confirmed")
-            ? "Please confirm your email before signing in."
-            : rawMessage;
+        const message = rawMessage.toLowerCase().includes("email not confirmed")
+          ? "Please confirm your email before signing in."
+          : rawMessage;
         setError(message);
         toast.error(message);
       } finally {
@@ -147,7 +146,7 @@ export default function SignInPage() {
                   <ErrorMessage
                     name="email"
                     component="p"
-                    className="mt-1 text-md font-exo font-medium text-red-600"
+                    className="mt-1 text-md font-exo font-medium text-red-400"
                   />
                 </div>
 
@@ -163,7 +162,7 @@ export default function SignInPage() {
                   <ErrorMessage
                     name="password"
                     component="p"
-                    className="mt-1 text-md font-exo font-medium text-red-600"
+                    className="mt-1 text-md font-exo font-medium text-red-400"
                   />
                 </div>
 
@@ -199,7 +198,7 @@ export default function SignInPage() {
           }>
           <CardFooter className="flex w-full flex-col items-center gap-3">
             {error && (
-              <p className="w-full text-center text-md font-exo font-medium text-red-600">
+              <p className="w-full text-center text-md font-exo font-medium text-red-400">
                 {error}
               </p>
             )}

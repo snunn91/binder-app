@@ -33,7 +33,7 @@ export default function SignUpPage() {
 
   const handleSubmit = async (
     values: typeof SignUpInitialValues,
-    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void }
+    { setSubmitting }: { setSubmitting: (isSubmitting: boolean) => void },
   ) => {
     setError(null);
     setConfirmationEmail(null);
@@ -115,7 +115,7 @@ export default function SignUpPage() {
                   const hasSpecial = /[^A-Za-z0-9]/.test(values.password);
 
                   const requirementClass = (met: boolean) =>
-                    met ? "text-green-600" : "text-red-600";
+                    met ? "text-green-600" : "text-red-400";
 
                   const RequirementIcon = ({ met }: { met: boolean }) =>
                     met ? (
@@ -138,7 +138,7 @@ export default function SignUpPage() {
                         <ErrorMessage
                           name="name"
                           component="p"
-                          className="mt-1 text-sm text-red-600"
+                          className="mt-1 text-sm text-red-400"
                         />
                       </div>
 
@@ -154,7 +154,7 @@ export default function SignUpPage() {
                         <ErrorMessage
                           name="email"
                           component="p"
-                          className="mt-1 text-sm text-red-600"
+                          className="mt-1 text-sm text-red-400"
                         />
                       </div>
 
@@ -170,7 +170,7 @@ export default function SignUpPage() {
                         <ErrorMessage
                           name="password"
                           component="p"
-                          className="mt-1 text-sm text-red-600"
+                          className="mt-1 text-sm text-red-400"
                         />
                         <div className="mt-2 space-y-1 text-sm font-exo">
                           <p
@@ -209,11 +209,11 @@ export default function SignUpPage() {
                         <ErrorMessage
                           name="confirmPassword"
                           component="p"
-                          className="mt-1 text-sm text-red-600"
+                          className="mt-1 text-sm text-red-400"
                         />
                       </div>
 
-                      {error && <p className="text-sm text-red-600">{error}</p>}
+                      {error && <p className="text-sm text-red-400">{error}</p>}
 
                       <div className="flex items-center justify-center">
                         <button

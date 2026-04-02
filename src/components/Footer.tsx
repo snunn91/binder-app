@@ -2,14 +2,14 @@ import Link from "next/link";
 
 const Footer: React.FC = () => {
   return (
-    <footer className="w-full bg-zinc-300 text-slate-700 dark:bg-zinc-800 dark:text-slate-100 py-6 px-4 relative overflow-hidden">
+    <footer className="w-full bg-zinc-300 text-slate-700 dark:bg-zinc-900 dark:text-slate-100 py-6 px-4 relative overflow-hidden">
       <div className="container mx-auto max-w-4xl flex flex-col items-center justify-center text-center pb-4 border-b border-zinc-300 dark:border-zinc-500 ">
         <p className="text-sm">
           This website is not produced, endorsed, supported, or affiliated with
           Nintendo or The Pokemon Company.
         </p>
         <p className="text-sm mt-2">
-          &copy; {new Date().getFullYear()} {" "}
+          &copy; {new Date().getFullYear()}{" "}
           <Link
             href="https://samnunn.me"
             target="_blank"
