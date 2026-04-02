@@ -2,14 +2,71 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { getSupabaseServerClient } from "@/lib/supabase/server";
+import { getSupabaseServerClient, getSupabaseServiceClient } from "@/lib/supabase/server";
 import { RARITY_FILTER_OPTIONS } from "@/lib/scrydex/rarity";
 import { CARD_TYPE_FILTER_OPTIONS } from "@/lib/scrydex/type";
 import type { BinderCard } from "@/lib/services/binderService";
 
-// TODO: Rate limiting — limit to 5 AI prompts per user per 24 hours.
-// Implementation should use the authenticated user's ID (from Supabase session cookie)
-// and a rate-limit store (e.g. a Supabase table or Upstash Redis).
+const AI_PROMPT_LIMIT = 5;
+const COOLDOWN_MS = 24 * 60 * 60 * 1000;
+
+type RateLimitResult =
+  | { allowed: true; used: number; resetAt: string | null }
+  | { allowed: false; used: number; resetAt: string };
+
+async function checkAndIncrementRateLimit(userId: string): Promise<RateLimitResult> {
+  const serviceClient = getSupabaseServiceClient();
+
+  const { data } = await serviceClient
+    .from("ai_prompt_usage")
+    .select("prompt_count, cooldown_started_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const now = Date.now();
+
+  if (!data) {
+    // First ever prompt
+    await serviceClient
+      .from("ai_prompt_usage")
+      .insert({ user_id: userId, prompt_count: 1, cooldown_started_at: null });
+    return { allowed: true, used: 1, resetAt: null };
+  }
+
+  const { prompt_count, cooldown_started_at } = data as {
+    prompt_count: number;
+    cooldown_started_at: string | null;
+  };
+
+  if (cooldown_started_at) {
+    const elapsed = now - new Date(cooldown_started_at).getTime();
+    if (elapsed < COOLDOWN_MS) {
+      const resetAt = new Date(new Date(cooldown_started_at).getTime() + COOLDOWN_MS).toISOString();
+      return { allowed: false, used: AI_PROMPT_LIMIT, resetAt };
+    }
+    // Cooldown expired — reset and allow
+    await serviceClient
+      .from("ai_prompt_usage")
+      .update({ prompt_count: 1, cooldown_started_at: null })
+      .eq("user_id", userId);
+    return { allowed: true, used: 1, resetAt: null };
+  }
+
+  const newCount = prompt_count + 1;
+  const hitLimit = newCount >= AI_PROMPT_LIMIT;
+  const newCooldownStart = hitLimit ? new Date(now).toISOString() : null;
+
+  await serviceClient
+    .from("ai_prompt_usage")
+    .update({ prompt_count: newCount, cooldown_started_at: newCooldownStart })
+    .eq("user_id", userId);
+
+  return {
+    allowed: true,
+    used: newCount,
+    resetAt: hitLimit ? new Date(now + COOLDOWN_MS).toISOString() : null,
+  };
+}
 
 type GenerateCardsRequest = {
   prompt: string;
@@ -18,9 +75,10 @@ type GenerateCardsRequest = {
 };
 
 type AiCardParams = {
-  nameLike?: string;
+  nameLike?: string[];
   rarities?: string[];
   types?: string[];
+  supertype?: "Pokémon" | "Trainer" | "Energy";
   series?: string[];           // broad era → all expansions in that series
   expansionNames?: string[];  // specific set names, resolved via ilike on expansions.name
   releaseDateBefore?: string;
@@ -32,6 +90,7 @@ type DbCardRow = {
   name: string;
   number: string | null;
   rarity: string | null;
+  supertype: string | null;
   price_raw_display: number | string | null;
   expansion_id: string | null;
   expansion_name: string | null;
@@ -41,9 +100,10 @@ type DbCardRow = {
 
 function hasAnyFilter(params: AiCardParams): boolean {
   return !!(
-    params.nameLike ||
+    (params.nameLike && params.nameLike.length > 0) ||
     (params.rarities && params.rarities.length > 0) ||
     (params.types && params.types.length > 0) ||
+    params.supertype ||
     (params.series && params.series.length > 0) ||
     (params.expansionNames && params.expansionNames.length > 0) ||
     params.releaseDateBefore ||
@@ -86,13 +146,25 @@ ${types}
 VALID SERIES/ERAS (use exact strings only):
 ${series}
 
+VALID SUPERTYPES (use exact strings only):
+Pokémon, Trainer, Energy
+
+SUPERTYPE RULES:
+- "trainer", "trainers", "supporter", "item", "stadium" → supertype: "Trainer"
+- "pokemon", "pokémon" → supertype: "Pokémon"
+- "energy", "energies" → supertype: "Energy"
+- "Full Art trainers" → supertype: "Trainer" AND rarities: ["Ultra Rare", "Illustration Rare", "Special Illustration Rare", "Hyper Rare", "Rare Rainbow", "Rare Gold", "Rare Full Art", "Rare Holo GX", "Rare Secret", "Rare Holo V"]
+- "SIR trainers" → supertype: "Trainer" AND rarities: ["Special Illustration Rare"]
+- "IR trainers" → supertype: "Trainer" AND rarities: ["Illustration Rare"]
+- "Ultra Rare trainers" → supertype: "Trainer" AND rarities: ["Ultra Rare"]
+
 RARITY ALIAS RULES:
 - "SIR" → rarities: ["Special Illustration Rare"]
 - "IR" → rarities: ["Illustration Rare"]
-- "Full Art" → rarities: ["Rare Full Art", "Illustration Rare", "Special Illustration Rare"]
+- "Full Art" → rarities: ["Ultra Rare", "Illustration Rare", "Special Illustration Rare", "Hyper Rare", "Rare Rainbow", "Rare Gold", "Rare Full Art", "Rare Holo GX", "Rare Secret", "Rare Holo V"]
 - "Secret Rare" → rarities: ["Rare Secret"]
 - "Rainbow Rare" or "Rainbow" → rarities: ["Rare Rainbow"]
-- "Gold Rare" or "Gold" → rarities: ["Rare Gold"]
+- "Gold Rare" or "Gold" → rarities: ["Rare Gold", "Hyper Rare"]
 - "Holo Rare" or "Holo" → rarities: ["Rare Holo"]
 
 SET vs ERA — this distinction is critical:
@@ -108,11 +180,16 @@ DATE RULES:
 - "post YYYY" or "after YYYY" → releaseDateAfter: "YYYY-12-31"
 - "YYYY era" or "YYYY period" → set both releaseDateAfter and releaseDateBefore to cover that decade
 
+NAME RULES:
+- If one or more Pokémon names are mentioned, return ALL of them as an array in "nameLike"
+- e.g. "Dialga, Palkia and Arceus" → nameLike: ["Dialga", "Palkia", "Arceus"]
+
 Return ONLY valid JSON with this exact structure (omit keys that don't apply):
 {
-  "nameLike": "pokemon name if specified, else omit",
+  "nameLike": ["array of pokemon names if specified, else omit"],
   "rarities": ["array of exact rarity strings, else omit"],
   "types": ["array of exact type strings, else omit"],
+  "supertype": "Pokémon or Trainer or Energy, else omit",
   "series": ["array of exact series strings from the VALID SERIES list above, for broad era queries only, else omit"],
   "expansionNames": ["specific expansion/set names expanded from abbreviations, for specific set queries, else omit"],
   "releaseDateBefore": "YYYY-MM-DD or omit",
@@ -133,10 +210,15 @@ function parseAiResponse(raw: string): AiCardParams {
   const validRarities = new Set<string>(RARITY_FILTER_OPTIONS);
   const validTypes = new Set<string>(CARD_TYPE_FILTER_OPTIONS);
 
+  const VALID_SUPERTYPES = new Set(["Pokémon", "Trainer", "Energy"]);
+
   return {
-    nameLike:
-      typeof obj.nameLike === "string" && obj.nameLike.trim()
-        ? obj.nameLike.trim()
+    nameLike: Array.isArray(obj.nameLike)
+      ? (obj.nameLike as unknown[]).filter(
+          (n): n is string => typeof n === "string" && n.trim().length > 0,
+        ).map((n) => n.trim())
+      : typeof obj.nameLike === "string" && obj.nameLike.trim()
+        ? [obj.nameLike.trim()]
         : undefined,
     rarities: Array.isArray(obj.rarities)
       ? (obj.rarities as unknown[]).filter(
@@ -148,6 +230,10 @@ function parseAiResponse(raw: string): AiCardParams {
           (t): t is string => typeof t === "string" && validTypes.has(t),
         )
       : undefined,
+    supertype:
+      typeof obj.supertype === "string" && VALID_SUPERTYPES.has(obj.supertype)
+        ? (obj.supertype as "Pokémon" | "Trainer" | "Energy")
+        : undefined,
     series: Array.isArray(obj.series)
       ? (obj.series as unknown[]).filter(
           (s): s is string => typeof s === "string" && s.trim().length > 0,
@@ -236,15 +322,21 @@ async function fetchMatchingCards(
   let query = supabase
     .from(cardsTable)
     .select(
-      "id, name, number, rarity, price_raw_display, expansion_id, expansion_name, image_small, image_large",
+      "id, name, number, rarity, supertype, price_raw_display, expansion_id, expansion_name, image_small, image_large",
     );
 
-  if (params.nameLike) {
-    query = query.ilike("name", `%${params.nameLike}%`);
+  if (params.nameLike && params.nameLike.length > 0) {
+    query = query.or(
+      params.nameLike.map((n) => `name.ilike.%${n}%`).join(","),
+    );
   }
 
   if (params.rarities && params.rarities.length > 0) {
     query = query.in("rarity", params.rarities);
+  }
+
+  if (params.supertype) {
+    query = query.eq("supertype", params.supertype);
   }
 
   if (params.types && params.types.length > 0) {
@@ -339,6 +431,41 @@ function toBinderCard(row: DbCardRow): BinderCard {
 
 export async function POST(req: Request) {
   try {
+    // Auth — require a valid session token
+    const token = req.headers.get("Authorization")?.replace("Bearer ", "");
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const serviceClient = getSupabaseServiceClient();
+    const { data: userData, error: authError } =
+      await serviceClient.auth.getUser(token);
+    if (authError || !userData?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = userData.user.id;
+
+    // Rate limiting — enforce before parsing the prompt
+    const exemptUsers = (process.env.AI_RATE_LIMIT_EXEMPT_USERS ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const isExempt = exemptUsers.includes(userId);
+
+    const rateLimit = isExempt
+      ? { allowed: true as const, used: 0, resetAt: null }
+      : await checkAndIncrementRateLimit(userId);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "You've used all 5 AI prompts. Your limit will reset in 24 hours.",
+          resetAt: rateLimit.resetAt,
+        },
+        { status: 429 },
+      );
+    }
+
     const body = (await req.json()) as GenerateCardsRequest;
 
     const prompt =
@@ -369,6 +496,8 @@ export async function POST(req: Request) {
         {
           error:
             "Could not understand your request. Try being more specific — for example: \"SIR cards from Scarlet and Violet era\" or \"Charizard cards pre 2010\".",
+          used: rateLimit.used,
+          resetAt: rateLimit.resetAt,
         },
         { status: 400 },
       );
@@ -384,7 +513,7 @@ export async function POST(req: Request) {
     const sampled = sampleCards(matchingCards, emptySlots);
     const cards: BinderCard[] = sampled.map(toBinderCard);
 
-    return NextResponse.json({ cards });
+    return NextResponse.json({ cards, used: rateLimit.used, resetAt: rateLimit.resetAt });
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : "AI generation failed";

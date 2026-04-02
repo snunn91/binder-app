@@ -34,6 +34,7 @@ import AddCardsModal from "@/modals/AddCardsModal";
 import BulkBoxModal from "@/modals/BulkBoxModal";
 import BinderSettingsModal from "@/modals/BinderSettingsModal";
 import CardGeneratorModal from "@/modals/CardGeneratorModal";
+import { supabase } from "@/lib/supabase/client";
 import AiCardsConfirmationBar from "@/components/binder/AiCardsConfirmationBar";
 import RouteLoading from "@/components/RouteLoading";
 import { binderMessages } from "@/config/binderMessages";
@@ -88,6 +89,8 @@ export default function BinderDetailPage() {
   const [isAiGeneratorModalOpen, setIsAiGeneratorModalOpen] = useState(false);
   const [aiPendingSnapshot, setAiPendingSnapshot] = useState<BinderPage[] | null>(null);
   const [aiPendingCardCount, setAiPendingCardCount] = useState(0);
+  const [aiPromptsUsed, setAiPromptsUsed] = useState(0);
+  const [aiResetAt, setAiResetAt] = useState<string | null>(null);
   const [settingsName, setSettingsName] = useState("");
   const [settingsShowGoals, setSettingsShowGoals] = useState(true);
   const [settingsShowStats, setSettingsShowStats] = useState(true);
@@ -294,6 +297,32 @@ export default function BinderDetailPage() {
       mounted = false;
     };
   }, [binderId, userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    let mounted = true;
+
+    const fetchAiUsage = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) return;
+
+      try {
+        const res = await fetch("/api/ai/usage", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok || !mounted) return;
+        const data = (await res.json()) as { used?: number; resetAt?: string | null };
+        if (typeof data.used === "number") setAiPromptsUsed(data.used);
+        if (data.resetAt !== undefined) setAiResetAt(data.resetAt ?? null);
+      } catch {
+        // Non-critical — silently ignore
+      }
+    };
+
+    void fetchAiUsage();
+    return () => { mounted = false; };
+  }, [userId]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const activeId = String(event.active.id);
@@ -1097,6 +1126,7 @@ export default function BinderDetailPage() {
           hasUnsavedChanges={hasUnsavedChanges}
           isSaving={isSaving}
           bulkBoxCount={bulkBoxCount}
+          aiPromptsUsed={aiPromptsUsed}
           onOpenAddCards={handleOpenAddCards}
           onOpenBulkBox={handleBulkBoxFromMenu}
           onSave={handleSaveFromMenu}
@@ -1168,6 +1198,12 @@ export default function BinderDetailPage() {
         emptySlots={currentSpreadEmptySlots}
         language="en"
         onCardsGenerated={handleAiCardsGenerated}
+        promptsUsed={aiPromptsUsed}
+        resetAt={aiResetAt}
+        onPromptsUpdated={(used, resetAt) => {
+          setAiPromptsUsed(used);
+          setAiResetAt(resetAt);
+        }}
       />
 
       <AiCardsConfirmationBar
