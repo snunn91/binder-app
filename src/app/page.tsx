@@ -154,8 +154,8 @@ export default function Home() {
         <motion.p
           variants={shouldReduceMotion ? undefined : revealItem}
           className="mx-auto mt-3 max-w-2xl text-sm font-exo text-zinc-600 dark:text-zinc-300">
-          Search cards in seconds, build your binder page by page, and curate
-          your collection with a workflow that stays fast and intuitive.
+          Less bulk box, more Bangers. Built for collectors who want to create
+          that perfect Binder.
         </motion.p>
         <motion.div
           variants={shouldReduceMotion ? undefined : revealItem}

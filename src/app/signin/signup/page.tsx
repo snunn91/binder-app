@@ -18,6 +18,16 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const easeOutExpo = [0.22, 1, 0.36, 1] as const;
 
+function getFriendlySignUpError(rawMessage: string): string {
+  const msg = rawMessage.toLowerCase();
+  if (msg.includes("user already registered") || msg.includes("already registered") || msg.includes("already exists")) {
+    return "An account with this email already exists. Please sign in instead.";
+  }
+  if (msg.includes("invalid email")) return "Please enter a valid email address.";
+  if (msg.includes("rate limit") || msg.includes("too many requests")) return "Too many attempts. Please try again later.";
+  return "Failed to create account. Please try again.";
+}
+
 export default function SignUpPage() {
   const shouldReduceMotion = useReducedMotion();
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +51,7 @@ export default function SignUpPage() {
       await signUp(values.email, values.password);
       setConfirmationEmail(values.email);
     } catch (e) {
-      setError((e as Error)?.message ?? "Failed to sign up");
+      setError(getFriendlySignUpError((e as Error)?.message ?? ""));
     } finally {
       setSubmitting(false);
     }
@@ -72,7 +82,7 @@ export default function SignUpPage() {
                 }
           }>
           <CardHeader className="items-center">
-            <CardTitle className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">
+            <CardTitle className="text-2xl font-exo font-bold text-zinc-700 dark:text-slate-100">
               Create account
             </CardTitle>
           </CardHeader>
@@ -133,12 +143,12 @@ export default function SignUpPage() {
                           name="name"
                           type="text"
                           placeholder="Name"
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="name"
                           component="p"
-                          className="mt-1 text-sm text-red-400"
+                          className="mt-1 text-md font-exo font-medium text-red-400"
                         />
                       </div>
 
@@ -149,12 +159,12 @@ export default function SignUpPage() {
                           name="email"
                           type="email"
                           placeholder="you@example.com"
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="email"
                           component="p"
-                          className="mt-1 text-sm text-red-400"
+                          className="mt-1 text-md font-exo font-medium text-red-400"
                         />
                       </div>
 
@@ -165,12 +175,12 @@ export default function SignUpPage() {
                           name="password"
                           type="password"
                           placeholder="Password"
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="password"
                           component="p"
-                          className="mt-1 text-sm text-red-400"
+                          className="mt-1 text-md font-exo font-medium text-red-400"
                         />
                         <div className="mt-2 space-y-1 text-sm font-exo">
                           <p
@@ -204,16 +214,16 @@ export default function SignUpPage() {
                           name="confirmPassword"
                           type="password"
                           placeholder="Confirm Password"
-                          className="w-full rounded-md border px-3 py-2"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="confirmPassword"
                           component="p"
-                          className="mt-1 text-sm text-red-400"
+                          className="mt-1 text-md font-exo font-medium text-red-400"
                         />
                       </div>
 
-                      {error && <p className="text-sm text-red-400">{error}</p>}
+                      {error && <p className="text-md font-exo font-medium text-red-400">{error}</p>}
 
                       <div className="flex items-center justify-center">
                         <button

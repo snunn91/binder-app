@@ -22,6 +22,14 @@ import { motion, useReducedMotion } from "framer-motion";
 
 const easeOutExpo = [0.22, 1, 0.36, 1] as const;
 
+function getFriendlySignInError(rawMessage: string): string {
+  const msg = rawMessage.toLowerCase();
+  if (msg.includes("email not confirmed")) return "Please confirm your email before signing in.";
+  if (msg.includes("invalid login credentials") || msg.includes("invalid email or password")) return "Incorrect email or password.";
+  if (msg.includes("too many requests") || msg.includes("rate limit")) return "Too many sign-in attempts. Please try again later.";
+  return "Failed to sign in. Please try again.";
+}
+
 export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,10 +54,7 @@ export default function SignInPage() {
         toast.success("Signed in successfully");
         router.push("/binders");
       } catch (e) {
-        const rawMessage = (e as Error)?.message ?? "Failed to sign in";
-        const message = rawMessage.toLowerCase().includes("email not confirmed")
-          ? "Please confirm your email before signing in."
-          : rawMessage;
+        const message = getFriendlySignInError((e as Error)?.message ?? "");
         setError(message);
         toast.error(message);
       } finally {
@@ -66,7 +71,10 @@ export default function SignInPage() {
     try {
       await signInWithGoogle();
     } catch (e) {
-      const message = (e as Error)?.message ?? "Google sign-in failed";
+      const raw = (e as Error)?.message ?? "";
+      const message = raw.toLowerCase().includes("rate limit") || raw.toLowerCase().includes("too many requests")
+        ? "Too many sign-in attempts. Please try again later."
+        : "Google sign-in failed. Please try again.";
       setError(message);
       toast.error(message);
     } finally {

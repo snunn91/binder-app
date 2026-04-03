@@ -7,9 +7,16 @@ import RouteLoading from "@/components/RouteLoading";
 import { supabase } from "@/lib/supabase/client";
 
 function normalizeNextPath(rawNext: string | null): string {
-  if (!rawNext || !rawNext.startsWith("/")) return "/binders";
-  if (rawNext.startsWith("//")) return "/binders";
-  return rawNext;
+  if (!rawNext) return "/binders";
+  try {
+    const url = new URL(rawNext, "https://dummy.invalid");
+    if (url.origin !== "https://dummy.invalid") return "/binders";
+    const path = url.pathname;
+    if (!path.startsWith("/") || path.startsWith("//")) return "/binders";
+    return path;
+  } catch {
+    return "/binders";
+  }
 }
 
 function parseErrorMessage(rawError: string | null) {
@@ -53,6 +60,7 @@ export default function AuthCallbackPage() {
           if (exchangeError) {
             throw exchangeError;
           }
+          if (!mounted) return;
         }
 
         const { data } = await supabase.auth.getSession();

@@ -5,6 +5,18 @@ import { CSS } from "@dnd-kit/utilities";
 import { SearchCheck, SearchX, X } from "lucide-react";
 import type { BinderCard } from "@/lib/services/binderService";
 
+const TRUSTED_IMAGE_HOSTNAME = "images.scrydex.com";
+
+function isTrustedImageSrc(src: string | undefined): src is string {
+  if (!src) return false;
+  try {
+    const url = new URL(src);
+    return url.protocol === "https:" && url.hostname === TRUSTED_IMAGE_HOSTNAME;
+  } catch {
+    return false;
+  }
+}
+
 type SlotItemProps = {
   id: string;
   label: string;
@@ -31,7 +43,8 @@ export default function SlotItem({
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id });
   const isDragging = transform !== null;
-  const imageSrc = card?.image?.small ?? card?.image?.large;
+  const rawImageSrc = card?.image?.small ?? card?.image?.large;
+  const imageSrc = isTrustedImageSrc(rawImageSrc) ? rawImageSrc : undefined;
   const isDraggable = Boolean(card) && !isEditMode;
   const isEmpty = !card;
   const isMissing = (card?.collectionStatus ?? "collected") === "missing";

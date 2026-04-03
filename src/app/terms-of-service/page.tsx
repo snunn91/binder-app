@@ -17,19 +17,20 @@ export default function TermsOfServicePage() {
 
       <div className="mt-6 space-y-6 text-sm leading-7">
         <p>
-          These Terms of Service (&quot;Terms&quot;) govern your access to and use of
-          PokeBinder (the &quot;Service&quot;). By using the Service, you agree to these
-          Terms.
+          These Terms of Service (&quot;Terms&quot;) govern your access to and
+          use of PokeBinder (the &quot;Service&quot;). By using the Service, you
+          agree to these Terms.
         </p>
-        <p>
-          PokeBinder is operated from Ontario, Canada.
-        </p>
+        <p>PokeBinder is operated from Ontario, Canada.</p>
 
         <section>
           <h2 className="text-xl font-semibold">1. Eligibility and Account</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>You must have legal capacity to enter into these Terms.</li>
-            <li>You are responsible for your account credentials and account activity.</li>
+            <li>
+              You are responsible for your account credentials and account
+              activity.
+            </li>
             <li>You must provide accurate information and keep it current.</li>
           </ul>
         </section>
@@ -38,8 +39,8 @@ export default function TermsOfServicePage() {
           <h2 className="text-xl font-semibold">2. Service Description</h2>
           <p className="mt-2">
             PokeBinder provides tools to build and manage digital trading card
-            binders. Features may change, be suspended, or be discontinued at any
-            time.
+            binders. Features may change, be suspended, or be discontinued at
+            any time.
           </p>
         </section>
 
@@ -48,18 +49,26 @@ export default function TermsOfServicePage() {
           <p className="mt-2">You agree not to:</p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>Violate laws or infringe the rights of others.</li>
-            <li>Attempt unauthorized access, interfere with systems, or bypass security.</li>
+            <li>
+              Attempt unauthorized access, interfere with systems, or bypass
+              security.
+            </li>
             <li>Upload malicious code, spam, or abusive/illegal content.</li>
-            <li>Scrape, automate, or reverse engineer beyond what law allows.</li>
-            <li>Misrepresent affiliation with Nintendo, The Pokemon Company, or any third party.</li>
+            <li>
+              Scrape, automate, or reverse engineer beyond what law allows.
+            </li>
+            <li>
+              Misrepresent affiliation with Nintendo, The Pokemon Company, or
+              any third party.
+            </li>
           </ul>
         </section>
 
         <section>
           <h2 className="text-xl font-semibold">4. User Content</h2>
           <p className="mt-2">
-            You retain ownership of content you submit (for example binder names,
-            notes, and organization data). You grant us a non-exclusive,
+            You retain ownership of content you submit (for example binder
+            names, notes, and organization data). You grant us a non-exclusive,
             worldwide, royalty-free license to host, process, and display your
             content solely to operate and improve the Service.
           </p>
@@ -69,14 +78,16 @@ export default function TermsOfServicePage() {
           <h2 className="text-xl font-semibold">5. Intellectual Property</h2>
           <p className="mt-2">
             The Service software, branding, and original materials are owned by
-            us or our licensors and protected by applicable intellectual property
-            laws. No rights are granted except as expressly provided in these
-            Terms.
+            us or our licensors and protected by applicable intellectual
+            property laws. No rights are granted except as expressly provided in
+            these Terms.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">6. Third-Party Services and Data</h2>
+          <h2 className="text-xl font-semibold">
+            6. Third-Party Services and Data
+          </h2>
           <p className="mt-2">
             The Service may depend on third-party providers (authentication,
             hosting, APIs, card data, etc.). We are not responsible for
@@ -85,7 +96,9 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">7. Fees and Payments (If Applicable)</h2>
+          <h2 className="text-xl font-semibold">
+            7. Fees and Payments (If Applicable)
+          </h2>
           <p className="mt-2">
             If paid features are introduced, pricing and billing terms will be
             provided at purchase. Fees are generally non-refundable unless
@@ -94,9 +107,9 @@ export default function TermsOfServicePage() {
           <p className="mt-2">
             For Ontario consumers, if an arrangement qualifies as an internet or
             remote agreement under the Consumer Protection Act, 2002, any
-            mandatory disclosures, delivery requirements, and cancellation rights
-            under that law apply. Nothing in these Terms limits non-waivable
-            consumer rights.
+            mandatory disclosures, delivery requirements, and cancellation
+            rights under that law apply. Nothing in these Terms limits
+            non-waivable consumer rights.
           </p>
         </section>
 
@@ -112,10 +125,10 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-xl font-semibold">9. Disclaimers</h2>
           <p className="mt-2">
-            The Service is provided on an &quot;as is&quot; and &quot;as available&quot; basis,
-            without warranties of any kind, express or implied, including
-            merchantability, fitness for a particular purpose, non-infringement,
-            and uninterrupted availability.
+            The Service is provided on an &quot;as is&quot; and &quot;as
+            available&quot; basis, without warranties of any kind, express or
+            implied, including merchantability, fitness for a particular
+            purpose, non-infringement, and uninterrupted availability.
           </p>
         </section>
 
@@ -140,7 +153,9 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">12. Governing Law and Disputes</h2>
+          <h2 className="text-xl font-semibold">
+            12. Governing Law and Disputes
+          </h2>
           <p className="mt-2">
             These Terms are governed by the laws of the Province of Ontario and
             the federal laws of Canada applicable therein, excluding
@@ -161,16 +176,20 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-xl font-semibold">14. Contact</h2>
           <p className="mt-2">
-            Questions about these Terms: <a className="underline" href="mailto:sam.nunn91+binder-app@gmail.com">sam.nunn91+binder-app@gmail.com</a>
+            Questions about these Terms:{" "}
+            <a
+              className="underline"
+              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
+              sam.nunn91.bulkboxbinder@gmail.com
+            </a>
           </p>
-          <p>
-            Location: Ontario, Canada
-          </p>
+          <p>Location: Ontario, Canada</p>
         </section>
 
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-600/50 dark:bg-amber-900/20 dark:text-amber-200">
           This page is a general terms template and may need review by qualified
-          legal counsel based on your jurisdiction, business model, and risk profile.
+          legal counsel based on your jurisdiction, business model, and risk
+          profile.
         </p>
       </div>
     </section>

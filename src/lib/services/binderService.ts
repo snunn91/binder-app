@@ -313,6 +313,12 @@ async function createBinderDoc(userId: string, payload: BinderDraft) {
     .insert(starterPages);
 
   if (pagesError) {
+    await supabase
+      .from("binder_pages")
+      .delete()
+      .eq("binder_id", binderRow.id)
+      .eq("user_id", userId);
+
     const { error: cleanupError } = await supabase
       .from("binders")
       .delete()

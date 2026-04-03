@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
             href="https://samnunn.me"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline text-slate-700 dark:text-slate-100 transition">
+            className="underline text-slate-700 hover:opacity-70 dark:text-slate-100">
             Sam Nunn
           </Link>
         </p>
@@ -23,28 +23,28 @@ const Footer: React.FC = () => {
         <ul className="font-exo text-sm flex items-center justify-center gap-x-4 pt-4 list-none">
           <li className="inline-block">
             <Link
-              className="underline text-slate-700 dark:text-slate-100 transition"
+              className="underline text-slate-700 hover:opacity-70 dark:text-slate-100"
               href="/">
               Home
             </Link>
           </li>
           <li className="inline-block">
             <Link
-              className="underline text-slate-700 dark:text-slate-100 transition"
+              className="underline text-slate-700 hover:opacity-70 dark:text-slate-100"
               href="/binders">
               Binders
             </Link>
           </li>
           <li className="inline-block">
             <Link
-              className="underline text-slate-700 dark:text-slate-100 transition"
+              className="underline text-slate-700 hover:opacity-70 dark:text-slate-100"
               href="/privacy-policy">
               Privacy Policy
             </Link>
           </li>
           <li className="inline-block">
             <Link
-              className="underline text-slate-700 dark:text-slate-100 transition"
+              className="underline text-slate-700 hover:opacity-70 dark:text-slate-100"
               href="/terms-of-service">
               Terms of Service
             </Link>
