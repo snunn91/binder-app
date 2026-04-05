@@ -88,6 +88,10 @@
 }
 
 @layer components {
+  @keyframes dash-flow {
+    to { background-position: 12px 0; }
+  }
+
   @keyframes goal-check-pop {
     0% {
       transform: scale(0.9);

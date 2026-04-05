@@ -9,14 +9,7 @@ const Footer: React.FC = () => {
           Nintendo or The Pokemon Company.
         </p>
         <p className="text-sm mt-2">
-          &copy; {new Date().getFullYear()}{" "}
-          <Link
-            href="https://samnunn.me"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline text-slate-700 hover:opacity-70 dark:text-slate-100">
-            Sam Nunn
-          </Link>
+          &copy; {new Date().getFullYear()} Bulk Box Binder
         </p>
       </div>
       <div>

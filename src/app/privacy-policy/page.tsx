@@ -26,29 +26,29 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="text-xl font-semibold">1. Information We Collect</h2>
           <p className="mt-2">
-            We may collect the following categories of information:
+            We directly collect and store the following information:
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              Account information, such as name, email address, and
-              authentication identifiers.
+              Account information: your name and email address, which you
+              provide when creating an account.
             </li>
             <li>
               Binder and collection data you create, upload, or organize in the
               app.
             </li>
             <li>
-              Usage data, such as interactions, pages viewed, device/browser
-              metadata, and approximate diagnostics.
-            </li>
-            <li>
-              Technical data, such as IP address, timestamps, log data, and
-              cookies/local storage identifiers.
-            </li>
-            <li>
               Communications you send us (support emails, feedback, reports).
             </li>
           </ul>
+          <p className="mt-2">
+            In addition, third-party services we rely on to operate the Service
+            (such as authentication providers, hosting infrastructure, and
+            analytics tools) may independently collect technical data such as IP
+            addresses, device/browser metadata, cookies, and usage logs. This
+            collection is governed by those providers&apos; own privacy policies,
+            not ours.
+          </p>
         </section>
 
         <section>
@@ -123,7 +123,18 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">7. Security</h2>
+          <h2 className="text-xl font-semibold">7. Accuracy</h2>
+          <p className="mt-2">
+            We take reasonable steps to keep the personal information we hold
+            about you accurate, complete, and up-to-date as necessary for the
+            purposes for which it was collected. If your information changes,
+            please update it through your account settings or contact us so we
+            can correct it.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="text-xl font-semibold">8. Security</h2>
           <p className="mt-2">
             We use reasonable administrative, technical, and organizational
             safeguards to protect information. No system can guarantee absolute
@@ -132,7 +143,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">8. Your Privacy Rights</h2>
+          <h2 className="text-xl font-semibold">9. Your Privacy Rights</h2>
           <p className="mt-2">
             Depending on your jurisdiction, you may have rights to:
           </p>
@@ -145,17 +156,15 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p className="mt-2">
             To exercise rights, contact us at:{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-semibold">
-            9. California Privacy Notice
+            10. California Privacy Notice
           </h2>
           <p className="mt-2">
             California residents may have rights under California privacy laws,
@@ -167,35 +176,40 @@ export default function PrivacyPolicyPage() {
 
         <section>
           <h2 className="text-xl font-semibold">
-            10. Canada and Ontario Privacy Notice
+            11. Canada and Ontario Privacy Notice
           </h2>
           <p className="mt-2">
             For users in Canada, we handle personal information in line with
             applicable Canadian privacy laws, including the Personal Information
             Protection and Electronic Documents Act (PIPEDA), and other
-            applicable provincial requirements.
+            applicable provincial requirements, including Quebec&apos;s Act
+            respecting the protection of personal information in the private
+            sector (Law 25) where applicable.
           </p>
           <p className="mt-2">
             Subject to applicable law, Canadian users may request access to
             personal information we hold about them and request correction of
-            inaccuracies. We will respond within timelines required by law.
+            inaccuracies. We will respond within 30 days as required under
+            PIPEDA, or within any shorter timeline required by provincial law.
           </p>
           <p className="mt-2">
             If you believe we have not handled your personal information
             appropriately, you may contact us first at{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
             . You may also have the right to file a complaint with the Office of
-            the Privacy Commissioner of Canada.
+            the Privacy Commissioner of Canada at{" "}
+            <a className="underline" href="https://www.priv.gc.ca" target="_blank" rel="noopener noreferrer">
+              www.priv.gc.ca
+            </a>
+            .
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-semibold">
-            11. International Data Transfers
+            12. International Data Transfers
           </h2>
           <p className="mt-2">
             If you access the service from outside the country where our systems
@@ -206,7 +220,7 @@ export default function PrivacyPolicyPage() {
 
         <section>
           <h2 className="text-xl font-semibold">
-            12. Marketing Communications (Canada CASL)
+            13. Marketing Communications (Canada CASL)
           </h2>
           <p className="mt-2">
             If we send commercial electronic messages to users in Canada, we do
@@ -217,25 +231,28 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">13. Breach Notification</h2>
+          <h2 className="text-xl font-semibold">14. Breach Notification</h2>
           <p className="mt-2">
-            Where required by applicable law, we will notify affected users and
-            regulators of eligible data breaches within required timelines.
+            Where a breach of security safeguards creates a real risk of
+            significant harm to individuals, we will notify affected users and
+            the Office of the Privacy Commissioner of Canada as soon as feasible,
+            as required by PIPEDA. We also maintain a record of all security
+            breaches as required by law.
           </p>
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">14. Children&apos;s Privacy</h2>
+          <h2 className="text-xl font-semibold">15. Children&apos;s Privacy</h2>
           <p className="mt-2">
-            The service is not directed to children under 13 (or higher age
-            where required by local law). If you believe a child provided
-            personal data, contact us so we can remove it.
+            The service is not directed to children under 13. If you believe a
+            child under 13 has provided personal information without parental
+            consent, contact us so we can remove it promptly.
           </p>
         </section>
 
         <section>
           <h2 className="text-xl font-semibold">
-            15. Third-Party Links and Content
+            16. Third-Party Links and Content
           </h2>
           <p className="mt-2">
             The service may include links or third-party content. We are not
@@ -244,7 +261,7 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">16. Changes to This Policy</h2>
+          <h2 className="text-xl font-semibold">17. Changes to This Policy</h2>
           <p className="mt-2">
             We may update this Privacy Policy from time to time. Material
             changes will be posted with an updated &quot;Last updated&quot;
@@ -253,29 +270,23 @@ export default function PrivacyPolicyPage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">17. Contact Us</h2>
+          <h2 className="text-xl font-semibold">18. Contact Us</h2>
           <p className="mt-2">
             Privacy questions:{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
           </p>
           <p>
             General support:{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
           </p>
           <p>
             Privacy Officer:{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
           </p>
           <p>Location: Ontario, Canada</p>

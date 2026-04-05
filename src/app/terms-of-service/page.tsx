@@ -26,7 +26,13 @@ export default function TermsOfServicePage() {
         <section>
           <h2 className="text-xl font-semibold">1. Eligibility and Account</h2>
           <ul className="mt-2 list-disc space-y-1 pl-5">
-            <li>You must have legal capacity to enter into these Terms.</li>
+            <li>
+              You must be at least 13 years old to use the Service. If you are
+              between 13 and 17 years of age, you represent that your parent or
+              legal guardian has reviewed and agreed to these Terms on your
+              behalf. Users 18 and over must have the legal capacity to enter
+              into a binding agreement.
+            </li>
             <li>
               You are responsible for your account credentials and account
               activity.
@@ -114,11 +120,21 @@ export default function TermsOfServicePage() {
         </section>
 
         <section>
-          <h2 className="text-xl font-semibold">8. Termination</h2>
+          <h2 className="text-xl font-semibold">8. Termination and Account Deletion</h2>
           <p className="mt-2">
             You may stop using the Service at any time. We may suspend or
             terminate access for violation of these Terms, security risk, legal
             requirements, or prolonged inactivity.
+          </p>
+          <p className="mt-2">
+            To request deletion of your account and associated personal data,
+            contact us at{" "}
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
+            </a>
+            . We will process your request within 30 days. Note that some
+            information may be retained where required by law or legitimate
+            business purposes (such as dispute resolution or legal compliance).
           </p>
         </section>
 
@@ -177,10 +193,8 @@ export default function TermsOfServicePage() {
           <h2 className="text-xl font-semibold">14. Contact</h2>
           <p className="mt-2">
             Questions about these Terms:{" "}
-            <a
-              className="underline"
-              href="mailto:sam.nunn91.bulkboxbinder@gmail.com">
-              sam.nunn91.bulkboxbinder@gmail.com
+            <a className="underline" href="mailto:bulkboxbinder@gmail.com">
+              bulkboxbinder@gmail.com
             </a>
           </p>
           <p>Location: Ontario, Canada</p>

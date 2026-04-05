@@ -15,6 +15,14 @@ const montserrat = Montserrat({
 export const metadata: Metadata = {
   title: "PokeBinder",
   description: "A virtual Pokemon card binder application.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/icon.png?v=2", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico?v=2",
+    apple: "/icon.png?v=2",
+  },
 };
 
 export default function RootLayout({
