@@ -6,7 +6,7 @@ import {
 } from "@/config/binderLimits";
 import { supabase } from "@/lib/supabase/client";
 
-const DEFAULT_BINDER_PAGE_COUNT = 5;
+const DEFAULT_BINDER_PAGE_COUNT = 9;
 
 type BinderGoal = {
   id: string;
@@ -95,7 +95,10 @@ function normalizeGoalCooldowns(input: unknown): string[] {
     .filter((value): value is string => value !== null);
 }
 
-function normalizeBulkBoxCards(input: unknown, maxCards: number = 16): BinderCard[] {
+function normalizeBulkBoxCards(
+  input: unknown,
+  maxCards: number = 16,
+): BinderCard[] {
   return normalizeCardOrder(input, maxCards).filter(
     (card): card is BinderCard => card !== null,
   );
@@ -255,7 +258,10 @@ function normalizeCardOrder(
   return normalized.slice(0, slots);
 }
 
-function assertSupabase(resultError: { message: string } | null, action: string) {
+function assertSupabase(
+  resultError: { message: string } | null,
+  action: string,
+) {
   if (!resultError) return;
   throw new Error(`${action}: ${resultError.message}`);
 }
@@ -456,7 +462,11 @@ async function fetchBinderPages(userId: string, binderId: string) {
   })) as BinderPage[];
 }
 
-async function updateBinderLayout(userId: string, binderId: string, newLayout: string) {
+async function updateBinderLayout(
+  userId: string,
+  binderId: string,
+  newLayout: string,
+) {
   const newSlots = layoutToSlots(newLayout);
 
   const { data, error } = await supabase
@@ -489,7 +499,9 @@ async function updateBinderLayout(userId: string, binderId: string, newLayout: s
     const oldOrder = page.cardOrder;
     const nextOrder =
       newSlots > oldOrder.length
-        ? oldOrder.concat(Array.from({ length: newSlots - oldOrder.length }, () => null))
+        ? oldOrder.concat(
+            Array.from({ length: newSlots - oldOrder.length }, () => null),
+          )
         : oldOrder.slice(0, newSlots);
 
     return {
