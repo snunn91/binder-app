@@ -62,7 +62,7 @@ export default function TypeFilter({
           <div className="flex items-center gap-2">
             <Shapes className="h-4 w-4 shrink-0" />
             <span
-              className={`whitespace-nowrap text-sm font-exo font-medium transition-opacity duration-200 ${
+              className={`whitespace-nowrap text-sm font-nunito font-medium transition-opacity duration-200 ${
                 showLabels ? "opacity-100" : "opacity-0"
               }`}>
               Type

@@ -63,8 +63,10 @@ export default function SlotItem({
       style={style}
       {...(isDraggable ? attributes : {})}
       {...(isDraggable ? listeners : {})}
-      className={`group relative flex ${aspectClassName} ${sizeClassName} ${cursorClassName} items-center justify-center overflow-visible rounded-lg border border-zinc-300 bg-gray-50 text-xs font-exo text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
-        isEmpty ? "border-dashed opacity-30 dark:opacity-100" : ""
+      className={`group relative flex ${aspectClassName} ${sizeClassName} ${cursorClassName} items-center justify-center overflow-visible rounded-lg border border-zinc-300 bg-gray-50 text-xs font-nunito text-zinc-700 shadow-sm dark:border-zinc-500 dark:bg-zinc-900/25 dark:text-slate-100 ${
+        isEmpty
+          ? "border-dashed border-zinc-300/50 bg-gray-50/35 text-zinc-700/60 dark:border-zinc-500/70 dark:bg-zinc-900/25 dark:text-slate-100"
+          : ""
       } ${isDragging ? "border-dashed opacity-40" : ""}`}>
       <div className="relative h-full w-full overflow-hidden rounded-lg">
         {imageSrc ? (
@@ -88,7 +90,7 @@ export default function SlotItem({
                   event.stopPropagation();
                   onAddCard();
                 }}
-                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-slate-200 px-2 py-0.5 text-[10px] font-exo font-medium text-zinc-700 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100">
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-slate-200 px-2 py-0.5 text-[10px] font-nunito font-medium text-zinc-700 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100">
                 Add Card
               </button>
             ) : null}

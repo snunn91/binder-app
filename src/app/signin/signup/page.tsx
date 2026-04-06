@@ -82,7 +82,7 @@ export default function SignUpPage() {
                 }
           }>
           <CardHeader className="items-center">
-            <CardTitle className="text-2xl font-exo font-bold text-zinc-700 dark:text-slate-100">
+            <CardTitle className="text-2xl font-nunito font-bold text-zinc-700 dark:text-slate-100">
               Create account
             </CardTitle>
           </CardHeader>
@@ -101,7 +101,7 @@ export default function SignUpPage() {
           }>
           <CardContent className="w-full">
             {confirmationEmail ? (
-              <div className="space-y-4 text-center font-exo">
+              <div className="space-y-4 text-center font-nunito">
                 <p className="text-sm font-medium text-green-700 dark:text-green-300">
                   Account created. Please confirm your email to continue.
                 </p>
@@ -143,12 +143,12 @@ export default function SignUpPage() {
                           name="name"
                           type="text"
                           placeholder="Name"
-                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-nunito font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="name"
                           component="p"
-                          className="mt-1 text-md font-exo font-medium text-red-400"
+                          className="mt-1 text-md font-nunito font-medium text-red-400"
                         />
                       </div>
 
@@ -159,12 +159,12 @@ export default function SignUpPage() {
                           name="email"
                           type="email"
                           placeholder="you@example.com"
-                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-nunito font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="email"
                           component="p"
-                          className="mt-1 text-md font-exo font-medium text-red-400"
+                          className="mt-1 text-md font-nunito font-medium text-red-400"
                         />
                       </div>
 
@@ -175,14 +175,14 @@ export default function SignUpPage() {
                           name="password"
                           type="password"
                           placeholder="Password"
-                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-nunito font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="password"
                           component="p"
-                          className="mt-1 text-md font-exo font-medium text-red-400"
+                          className="mt-1 text-md font-nunito font-medium text-red-400"
                         />
-                        <div className="mt-2 space-y-1 text-sm font-exo">
+                        <div className="mt-2 space-y-1 text-sm font-nunito">
                           <p
                             className={`flex items-center gap-2 ${requirementClass(
                               hasMinLength,
@@ -214,21 +214,21 @@ export default function SignUpPage() {
                           name="confirmPassword"
                           type="password"
                           placeholder="Confirm Password"
-                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-exo font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
+                          className="w-full rounded-md border border-zinc-300 bg-slate-100 p-4 text-md font-nunito font-medium text-zinc-700 shadow-sm placeholder:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-800 dark:text-slate-100 dark:placeholder:text-slate-100"
                         />
                         <ErrorMessage
                           name="confirmPassword"
                           component="p"
-                          className="mt-1 text-md font-exo font-medium text-red-400"
+                          className="mt-1 text-md font-nunito font-medium text-red-400"
                         />
                       </div>
 
-                      {error && <p className="text-md font-exo font-medium text-red-400">{error}</p>}
+                      {error && <p className="text-md font-nunito font-medium text-red-400">{error}</p>}
 
                       <div className="flex items-center justify-center">
                         <button
                           type="submit"
-                          className="relative flex items-center overflow-hidden rounded-full border border-zinc-700 bg-slate-200 px-6 py-3 text-md font-exo font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-slate-100 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
+                          className="relative flex items-center overflow-hidden rounded-full border border-zinc-700 bg-slate-200 px-6 py-3 text-md font-nunito font-medium text-zinc-700 disabled:text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full disabled:cursor-not-allowed disabled:opacity-50 disabled:before:w-0 disabled:before:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-slate-100 dark:bg-zinc-700 dark:text-slate-100 dark:disabled:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700"
                           disabled={isSubmitting || !isValid || !dirty}>
                           <span className="relative z-10">
                             {isSubmitting ? "Creating..." : "Create account"}
@@ -254,7 +254,7 @@ export default function SignUpPage() {
                 }
           }>
           <CardFooter className="flex w-full flex-col items-center gap-3">
-            <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+            <p className="text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100">
               Already have an account?{" "}
               <Link
                 href="/signin"

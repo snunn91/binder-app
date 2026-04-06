@@ -312,7 +312,7 @@ export default function CardSelection({
         <button
           type="button"
           onClick={() => void onAddToBulkBox?.(pileItems)}
-          className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full border border-accent bg-accent px-4 py-2 text-sm font-exo font-medium text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 sm:hidden">
+          className="absolute bottom-3 left-1/2 z-20 flex -translate-x-1/2 items-center justify-center rounded-full border border-accent bg-accent px-4 py-2 text-sm font-nunito font-medium text-white shadow-lg transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 sm:hidden">
           Add to Bulk Box ({totalCardsInPile})
         </button>
       ) : null}

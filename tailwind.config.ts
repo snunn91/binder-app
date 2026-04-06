@@ -6,7 +6,7 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        exo: ["Montserrat", "sans-serif"],
+        nunito: ["Nunito", "sans-serif"],
       },
     },
     container: {

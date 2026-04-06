@@ -70,6 +70,9 @@ const bindersSlice = createSlice({
       state.lastCreatedId = null;
       state.creating = false;
     },
+    removeBinder(state, action: { payload: string }) {
+      state.items = state.items.filter((b) => b.id !== action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -102,5 +105,5 @@ const bindersSlice = createSlice({
   },
 });
 
-export const { resetBinders } = bindersSlice.actions;
+export const { resetBinders, removeBinder } = bindersSlice.actions;
 export default bindersSlice.reducer;

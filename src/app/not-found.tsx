@@ -50,17 +50,17 @@ export default function NotFound() {
           )}
         </div>
 
-        <h1 className="text-3xl font-exo font-bold text-zinc-700 dark:text-slate-100">
+        <h1 className="text-3xl font-nunito font-bold text-zinc-700 dark:text-slate-100">
           404: Wild Snorlax Is Blocking This Route
         </h1>
-        <p className="max-w-md text-sm font-exo text-zinc-600 dark:text-slate-300">
+        <p className="max-w-md text-sm font-nunito text-zinc-600 dark:text-slate-300">
           The page fled before you could throw a Poke Ball. Head back to your
           binder and keep your collection journey going.
         </p>
 
         <Link
           href="/binders"
-          className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
+          className="relative flex items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-nunito font-medium text-zinc-700 before:absolute before:bottom-0 before:left-0 before:top-0 before:z-0 before:h-full before:w-0 before:bg-zinc-700 before:transition-all before:duration-500 hover:text-slate-100 hover:before:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:before:bg-slate-100 dark:hover:text-zinc-700">
           <span className="relative z-10">Back to Binders</span>
         </Link>
       </div>

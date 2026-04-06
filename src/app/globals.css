@@ -4,10 +4,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --default-font-family: var(--font-montserrat);
+  --default-font-family: var(--font-nunito);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-montserrat);
-  --font-exo: var(--font-montserrat);
+  --font-sans: var(--font-nunito);
+  --font-nunito: var(--font-nunito);
   --font-mono: var(--font-geist-mono);
   --color-chart-5: var(--chart-5);
   --color-chart-4: var(--chart-4);

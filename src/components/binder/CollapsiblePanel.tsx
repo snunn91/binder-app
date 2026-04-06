@@ -72,7 +72,7 @@ export default function CollapsiblePanel({
         </button>
         {title ? (
           <div
-            className={`text-sm font-exo font-medium text-zinc-700 dark:text-slate-100 ${
+            className={`text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100 ${
               showLabels ? "block" : "hidden"
             }`}>
             {title}

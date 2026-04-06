@@ -55,7 +55,7 @@ export default function SortByFilter({
 
   return expanded ? (
     <div className="flex w-full flex-col gap-2">
-      <div className="flex items-center gap-2 text-xs font-exo font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+      <div className="flex items-center gap-2 text-xs font-nunito font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
         <ArrowDownAZ className="h-3.5 w-3.5 shrink-0" />
         <span
           className={`transition-opacity duration-200 ${
@@ -77,7 +77,7 @@ export default function SortByFilter({
             }}
             className="flex w-full items-center justify-between rounded-lg border border-zinc-300 bg-slate-200 px-2 py-2 text-sm text-zinc-700 transition hover:bg-slate-300 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 active:border-accent active:ring-2 active:ring-accent/40 data-[state=open]:border-accent data-[state=open]:ring-2 data-[state=open]:ring-accent/50 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
             aria-label="Sort by">
-            <span className="flex items-center gap-2 truncate text-sm font-exo font-medium">
+            <span className="flex items-center gap-2 truncate text-sm font-nunito font-medium">
               {React.createElement(SORT_ICON_MAP[sortBy], {
                 className: "h-4 w-4 shrink-0",
               })}

@@ -19,7 +19,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-8 w-full items-center justify-between rounded-full border border-zinc-300 bg-slate-200 px-3 py-1 text-xs font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent data-[state=open]:border-accent data-[state=open]:ring-2 data-[state=open]:ring-accent/50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600",
+      "flex h-8 w-full items-center justify-between rounded-full border border-zinc-300 bg-slate-200 px-3 py-1 text-xs font-nunito font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent data-[state=open]:border-accent data-[state=open]:ring-2 data-[state=open]:ring-accent/50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600",
       className
     )}
     {...props}
@@ -93,7 +93,7 @@ const SelectLabel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SelectPrimitive.Label
     ref={ref}
-    className={cn("px-2 py-1.5 text-xs font-exo font-medium text-zinc-500", className)}
+    className={cn("px-2 py-1.5 text-xs font-nunito font-medium text-zinc-500", className)}
     {...props}
   />
 ));

@@ -120,7 +120,7 @@ export default function BinderSpreadContent({
           className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
           <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="min-w-[3.5rem] text-center text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
+        <span className="min-w-[3.5rem] text-center text-xs font-nunito font-medium text-zinc-700 dark:text-slate-100">
           {currentPageIndex}/{totalPageSpreads}
         </span>
         <button

@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Providers from "@/app/providers";
 import { Toaster } from "react-hot-toast";
 
-const montserrat = Montserrat({
+const nunito = Nunito({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-montserrat",
+  variable: "--font-nunito",
 });
 
 export const metadata: Metadata = {
-  title: "PokeBinder",
+  title: "Bulk Box Binder",
   description: "A virtual Pokemon card binder application.",
   icons: {
     icon: [
@@ -34,7 +34,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className={`${montserrat.variable} bg-slate-50 dark:bg-zinc-800`}>
+        className={`${nunito.variable} bg-slate-50 dark:bg-zinc-800`}>
         <Providers>
           <Toaster position="top-center" />
           <Header />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, ListChecks } from "lucide-react";
 import type { BinderGoal } from "@/lib/services/binderService";
 import StatusBox from "@/components/ui/StatusBox";
 
@@ -38,8 +38,12 @@ export default function GoalsPanel({
   onAddGoal,
   onCompleteGoal,
 }: GoalsPanelProps) {
-  const [pendingCheckGoalIds, setPendingCheckGoalIds] = useState<Set<string>>(new Set());
-  const [animatingGoalIds, setAnimatingGoalIds] = useState<Set<string>>(new Set());
+  const [pendingCheckGoalIds, setPendingCheckGoalIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [animatingGoalIds, setAnimatingGoalIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   const handleGoalComplete = async (goalId: string) => {
     if (
@@ -72,18 +76,18 @@ export default function GoalsPanel({
   };
 
   return (
-    <section className="mt-4 rounded-xl border border-zinc-300/70 bg-white/55 p-3 dark:border-zinc-600/70 dark:bg-zinc-950/25">
+    <section className="mt-4 rounded-xl bg-white/55 p-3 dark:bg-zinc-950/25 shadow-lg">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-exo font-semibold text-zinc-700 dark:text-slate-100">
+        <p className="text-sm font-nunito font-semibold text-zinc-700 dark:text-slate-100">
           Goals
         </p>
-        <p className="text-xs font-exo font-medium text-zinc-600 dark:text-slate-200">
-          {activeGoalCount}/{goalLimit} active
+        <p className="text-xs font-nunito font-medium text-zinc-600 dark:text-slate-200">
+          {activeGoalCount} / {goalLimit} active
         </p>
       </div>
 
       {goals.length === 0 ? (
-        <p className="mt-2 text-xs font-exo font-medium text-zinc-600 dark:text-slate-200">
+        <p className="mt-2 text-xs font-nunito font-medium text-zinc-600 dark:text-slate-200">
           No goals yet.
         </p>
       ) : (
@@ -121,7 +125,7 @@ export default function GoalsPanel({
                 )}
               </button>
               <span
-                className={`flex-1 text-xs font-exo font-medium ${
+                className={`flex-1 text-xs font-nunito font-medium ${
                   goal.completed || pendingCheckGoalIds.has(goal.id)
                     ? "text-zinc-500 line-through dark:text-slate-300"
                     : "text-zinc-700 dark:text-slate-100"
@@ -142,18 +146,19 @@ export default function GoalsPanel({
           disabled={goalInputDisabled}
           onChange={(event) => onGoalTextChange(event.target.value)}
           placeholder="Write your next goal..."
-          className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-exo text-zinc-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-400"
+          className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-nunito text-zinc-700 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-400"
         />
         <div className="mt-2 flex items-center justify-between gap-2">
-          <span className="text-[11px] font-exo font-medium text-zinc-600 dark:text-slate-300">
-            {goalText.length}/{goalCharLimit}
+          <span className="text-[11px] font-nunito font-medium text-zinc-600 dark:text-slate-300">
+            {goalText.length} / {goalCharLimit}
           </span>
           <button
             type="button"
             onClick={onAddGoal}
             disabled={goalSubmitDisabled}
-            className="rounded-full border border-accent bg-accent px-4 py-1.5 text-xs font-exo font-semibold text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:border-zinc-400 disabled:bg-zinc-400 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-700">
-            Add goal
+            className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-1.5 text-xs font-nunito font-semibold text-white transition hover:bg-accent/90 disabled:cursor-not-allowed disabled:border-zinc-400 disabled:bg-zinc-400 dark:disabled:border-zinc-600 dark:disabled:bg-zinc-700">
+            <ListChecks className="h-4 w-4" aria-hidden="true" />
+            <span>Add goal</span>
           </button>
         </div>
         {goalInputDisabledReason ? (

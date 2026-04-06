@@ -763,10 +763,29 @@ async function updateBinderBulkBoxCards(
   assertSupabase(error, "Failed to update bulk box cards");
 }
 
+async function deleteBinderDoc(userId: string, binderId: string) {
+  const { error: pagesError } = await supabase
+    .from("binder_pages")
+    .delete()
+    .eq("user_id", userId)
+    .eq("binder_id", binderId);
+
+  assertSupabase(pagesError, "Failed to delete binder pages");
+
+  const { error: binderError } = await supabase
+    .from("binders")
+    .delete()
+    .eq("user_id", userId)
+    .eq("id", binderId);
+
+  assertSupabase(binderError, "Failed to delete binder");
+}
+
 export type { BinderDraft, BinderItem, BinderPage, BinderCard, BinderGoal };
 export {
   addCardsToBinder,
   createBinderDoc,
+  deleteBinderDoc,
   fetchBindersForUser,
   fetchBinderById,
   updateBinderGoals,

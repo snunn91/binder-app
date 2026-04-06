@@ -9,7 +9,7 @@ const UPDATED_DATE = "February 22, 2026";
 
 export default function TermsOfServicePage() {
   return (
-    <section className="mx-auto w-full max-w-4xl px-4 py-10 font-exo text-zinc-700 dark:text-slate-100">
+    <section className="mx-auto w-full max-w-4xl px-4 py-10 font-nunito text-zinc-700 dark:text-slate-100">
       <h1 className="text-3xl font-bold">Terms of Service</h1>
       <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
         Last updated: {UPDATED_DATE}

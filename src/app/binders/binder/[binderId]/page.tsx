@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { useAppSelector } from "@/lib/store/storeHooks";
+import { useAppDispatch, useAppSelector } from "@/lib/store/storeHooks";
+import { removeBinder } from "@/lib/store/slices/bindersSlice";
 import {
   DragEndEvent,
   DragStartEvent,
@@ -16,11 +17,13 @@ import { arraySwap } from "@dnd-kit/sortable";
 import {
   type BinderGoal,
   type BinderCard,
+  deleteBinderDoc,
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
   updateBinderBulkBoxCards,
   updateBinderGoals,
+  updateBinderLayout,
   updateBinderPageCardOrders,
   updateBinderSettings,
 } from "@/lib/services/binderService";
@@ -42,10 +45,12 @@ import type { CardPileEntry } from "@/components/binder/CardSelection/CardSelect
 import useIsMobile from "@/lib/hooks/useIsMobile";
 import {
   type BinderPage,
+  type CardSortOrder,
   GOAL_CHAR_LIMIT,
   GOAL_DELETE_LIMIT,
   GOAL_LIMIT,
   addCardsToLocalPages,
+  applyCardSortToPages,
   buildCardsToAddFromPile,
   buildPageSignatures,
   computeDirtyPageIds,
@@ -54,6 +59,7 @@ import {
 
 export default function BinderDetailPage() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const params = useParams<{ binderId: string }>();
   const binderId = params?.binderId;
   const user = useAppSelector((state) => state.auth.user);
@@ -92,9 +98,12 @@ export default function BinderDetailPage() {
   const [aiPromptsUsed, setAiPromptsUsed] = useState(0);
   const [aiResetAt, setAiResetAt] = useState<string | null>(null);
   const [settingsName, setSettingsName] = useState("");
+  const [settingsLayout, setSettingsLayout] = useState("3x3");
+  const [settingsCardSort, setSettingsCardSort] = useState<CardSortOrder>("none");
   const [settingsShowGoals, setSettingsShowGoals] = useState(true);
   const [settingsShowStats, setSettingsShowStats] = useState(true);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
+  const [isDeletingBinder, setIsDeletingBinder] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [hasEditSessionChanges, setHasEditSessionChanges] = useState(false);
   const pendingNavigationRef = useRef<null | (() => void)>(null);
@@ -814,7 +823,7 @@ export default function BinderDetailPage() {
     }
 
     let didSave = true;
-    if (hasEditSessionChanges) {
+    if (hasEditSessionChanges && hasUnsavedChanges) {
       didSave = await handleSaveChanges(binderMessages.toast.editSaved);
     }
     if (!didSave) {
@@ -831,6 +840,8 @@ export default function BinderDetailPage() {
   const handleSettingsFromMenu = () => {
     setIsActionMenuOpen(false);
     setSettingsName(binder?.name ?? "");
+    setSettingsLayout(binder?.layout ?? "3x3");
+    setSettingsCardSort("none");
     setSettingsShowGoals(binder?.showGoals ?? true);
     setSettingsShowStats(binder?.showStats ?? true);
     setIsSettingsModalOpen(true);
@@ -847,6 +858,57 @@ export default function BinderDetailPage() {
 
     setIsSavingSettings(true);
     try {
+      let currentPages = pagesRef.current;
+
+      // Layout change
+      if (settingsLayout !== binder.layout) {
+        const { slots: newSlots } = await updateBinderLayout(
+          user.uid,
+          binderId,
+          settingsLayout,
+        );
+        currentPages = currentPages.map((page) => {
+          const order = page.cardOrder;
+          const nextOrder =
+            newSlots > order.length
+              ? [
+                  ...order,
+                  ...Array.from<null>({ length: newSlots - order.length }).fill(
+                    null,
+                  ),
+                ]
+              : order.slice(0, newSlots);
+          return { ...page, slots: newSlots, cardOrder: nextOrder };
+        });
+        baselinePageSignaturesRef.current = buildPageSignatures(currentPages);
+        setPages(currentPages);
+        pagesRef.current = currentPages;
+        setDirtyPageIds(new Set());
+        setBinder((prev) =>
+          prev ? { ...prev, layout: settingsLayout } : prev,
+        );
+      }
+
+      // Card sort
+      if (settingsCardSort !== "none") {
+        const sortedPages = applyCardSortToPages(currentPages, settingsCardSort);
+        const dirtySortIds = computeDirtyPageIds(
+          sortedPages,
+          baselinePageSignaturesRef.current,
+        );
+        if (dirtySortIds.size > 0) {
+          const updates = sortedPages
+            .filter((p) => dirtySortIds.has(p.id))
+            .map((p) => ({ pageId: p.id, cardOrder: p.cardOrder }));
+          await updateBinderPageCardOrders(user.uid, binderId, updates);
+        }
+        baselinePageSignaturesRef.current = buildPageSignatures(sortedPages);
+        setPages(sortedPages);
+        pagesRef.current = sortedPages;
+        setDirtyPageIds(new Set());
+      }
+
+      // Name / visibility
       await updateBinderSettings(user.uid, binderId, {
         name: nextName,
         showGoals: settingsShowGoals,
@@ -864,10 +926,28 @@ export default function BinderDetailPage() {
       );
       setIsSettingsModalOpen(false);
       toast.success(binderMessages.toast.settingsSaved);
-    } catch {
-      toast.error(binderMessages.errors.saveFailed);
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : binderMessages.errors.saveFailed;
+      toast.error(message);
     } finally {
       setIsSavingSettings(false);
+    }
+  };
+
+  const handleDeleteBinder = async () => {
+    if (!user || !binderId || isDeletingBinder) return;
+    setIsDeletingBinder(true);
+    try {
+      await deleteBinderDoc(user.uid, binderId);
+      dispatch(removeBinder(binderId));
+      toast.success("Binder deleted.");
+      router.push("/binders");
+    } catch {
+      toast.error("Failed to delete binder. Please try again.");
+      setIsDeletingBinder(false);
     }
   };
 
@@ -1036,16 +1116,16 @@ export default function BinderDetailPage() {
     return (
       <div className="flex min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center">
         <div className="w-full max-w-3xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
-          <p className="text-base font-exo font-medium text-zinc-700 dark:text-slate-100">
+          <p className="text-base font-nunito font-medium text-zinc-700 dark:text-slate-100">
             {binderMessages.auth.signInRequired}
           </p>
           <div className="mt-3">
             <Link
               href="/signin"
-              className="text-sm font-exo font-bold text-sky-700 underline underline-offset-2">
+              className="text-sm font-nunito font-bold text-sky-700 underline underline-offset-2">
               sign in
             </Link>{" "}
-            <span className="text-sm font-exo text-zinc-700 dark:text-slate-100">
+            <span className="text-sm font-nunito text-zinc-700 dark:text-slate-100">
               to continue.
             </span>
           </div>
@@ -1191,12 +1271,18 @@ export default function BinderDetailPage() {
         onOpenChange={setIsSettingsModalOpen}
         binderName={settingsName}
         onBinderNameChange={setSettingsName}
+        layout={settingsLayout}
+        onLayoutChange={setSettingsLayout}
+        cardSort={settingsCardSort}
+        onCardSortChange={setSettingsCardSort}
         showGoals={settingsShowGoals}
         onShowGoalsChange={setSettingsShowGoals}
         showStats={settingsShowStats}
         onShowStatsChange={setSettingsShowStats}
         isSaving={isSavingSettings}
         onSave={() => void handleSaveSettings()}
+        isDeleting={isDeletingBinder}
+        onDeleteBinder={() => void handleDeleteBinder()}
       />
 
       {/* TODO: Lift language state to page level to support Japanese in AI generator */}

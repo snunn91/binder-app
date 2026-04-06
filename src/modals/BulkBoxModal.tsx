@@ -84,10 +84,10 @@ export default function BulkBoxModal({
                     <button
                       type="button"
                       onClick={onEmptyBox}
-                      className="text-xs font-exo font-medium text-zinc-600 transition hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-slate-100">
+                      className="text-xs font-nunito font-medium text-zinc-600 transition hover:text-zinc-800 dark:text-zinc-300 dark:hover:text-slate-100">
                       Empty box
                     </button>
-                    <p className="text-xs font-exo text-zinc-500 dark:text-slate-400">
+                    <p className="text-xs font-nunito text-zinc-500 dark:text-slate-400">
                       {visibleCards.length}/{capacity}
                     </p>
                   </div>
@@ -153,13 +153,13 @@ export default function BulkBoxModal({
                   </div>
                 </div>
                 {!canMoveCardsToBinder ? (
-                  <p className="text-center text-xs font-exo text-zinc-600 dark:text-slate-300">
+                  <p className="text-center text-xs font-nunito text-zinc-600 dark:text-slate-300">
                     Mobile mode only supports adding cards to Bulk Box. Move
                     cards into binder slots on tablet or desktop.
                   </p>
                 ) : null}
                 {canMoveCardsToBinder && !canAddToBinder ? (
-                  <p className="text-center text-xs font-exo text-zinc-600 dark:text-slate-300">
+                  <p className="text-center text-xs font-nunito text-zinc-600 dark:text-slate-300">
                     Free up binder space to add cards from Bulk Box.
                   </p>
                 ) : null}
@@ -167,20 +167,20 @@ export default function BulkBoxModal({
             ) : (
               <div className="flex h-64 flex-col items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50/70 px-4 text-center dark:border-zinc-700 dark:bg-zinc-900/30">
                 <LayoutList className="h-10 w-10 text-zinc-400 dark:text-zinc-500" />
-                <p className="mt-3 text-sm font-exo font-semibold text-zinc-700 dark:text-slate-100">
+                <p className="mt-3 text-sm font-nunito font-semibold text-zinc-700 dark:text-slate-100">
                   Bulk Box is empty
                 </p>
-                <p className="mt-1 text-xs font-exo text-zinc-600 dark:text-slate-300">
+                <p className="mt-1 text-xs font-nunito text-zinc-600 dark:text-slate-300">
                   Add cards here to hold them until you are ready to place them
                   in your binder.
                 </p>
-                <p className="mt-2 text-[11px] font-exo text-zinc-500 dark:text-slate-400">
+                <p className="mt-2 text-[11px] font-nunito text-zinc-500 dark:text-slate-400">
                   Capacity: up to {capacity} cards.
                 </p>
                 <button
                   type="button"
                   onClick={onAddCards}
-                  className="mt-4 rounded-full border border-accent bg-accent px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent">
+                  className="mt-4 rounded-full border border-accent bg-accent px-4 py-2 text-sm font-nunito font-medium text-white transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent">
                   Add cards
                 </button>
               </div>
@@ -191,7 +191,7 @@ export default function BulkBoxModal({
             <button
               type="button"
               onClick={() => onOpenChange(false)}
-              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-nunito font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
               Close
             </button>
           </div>

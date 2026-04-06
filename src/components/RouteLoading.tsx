@@ -39,7 +39,7 @@ export default function RouteLoading({
             <div className="aspect-square w-full rounded-xl bg-zinc-200/60 dark:bg-zinc-800/70" />
           )}
         </div>
-        <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+        <p className="text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100">
           {message}
         </p>
       </div>

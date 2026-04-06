@@ -2,13 +2,14 @@
 
 import {
   Box,
+  CircleX,
   EllipsisVertical,
   Pencil,
   Plus,
+  RefreshCw,
   Save,
   Settings,
   Sparkles,
-  X,
 } from "lucide-react";
 
 const AI_PROMPT_LIMIT = 5;
@@ -58,7 +59,7 @@ export default function BinderActionToggle({
         <button
           type="button"
           onClick={onOpenAddCards}
-          className="group relative flex h-12 items-center overflow-hidden rounded-full border border-accent bg-accent px-4 text-sm font-exo font-medium text-white shadow-lg transition-all duration-300 hover:pr-5 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
+          className="group relative flex h-12 items-center overflow-hidden rounded-full border border-accent bg-accent px-4 text-sm font-nunito font-medium text-white shadow-lg transition-all duration-300 hover:pr-5 hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-accent dark:bg-accent dark:text-white dark:hover:bg-accent/90">
           <Plus className="relative z-10 h-4 w-4 shrink-0" />
           <span className="relative z-10 max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
             Add card
@@ -70,14 +71,14 @@ export default function BinderActionToggle({
           onClick={aiLimitReached ? undefined : onOpenAiGenerator}
           disabled={aiLimitReached}
           title={aiLimitReached ? "AI prompt limit reached (5/5)" : undefined}
-          className={`group relative flex h-12 items-center rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+          className={`group relative flex h-12 items-center rounded-full border px-4 text-sm font-nunito font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
             aiLimitReached
               ? "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-400 opacity-60 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-500"
               : "border-zinc-300 bg-slate-200 text-zinc-700 hover:pr-5 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
           }`}>
           {aiPromptsUsed > 0 && (
             <span
-              className={`absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-exo font-semibold leading-none text-white ${
+              className={`absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-nunito font-semibold leading-none text-white ${
                 aiLimitReached ? "bg-red-500" : "bg-accent"
               }`}>
               {aiPromptsUsed}/{AI_PROMPT_LIMIT}
@@ -92,8 +93,8 @@ export default function BinderActionToggle({
         <button
           type="button"
           onClick={onOpenBulkBox}
-          className="group relative flex h-12 items-center rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-          <span className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-exo font-semibold leading-none text-white">
+          className="group relative flex h-12 items-center rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-nunito font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+          <span className="absolute -right-1.5 -top-1.5 z-20 flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-nunito font-semibold leading-none text-white">
             {bulkBoxCount}
           </span>
           <Box className="h-4 w-4 shrink-0" />
@@ -108,7 +109,7 @@ export default function BinderActionToggle({
             onClick={() => void onSave()}
             disabled={!hasUnsavedChanges || isSaving}
             aria-label={isSaving ? "Saving changes" : "Save changes"}
-            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
+            className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-nunito font-medium shadow-lg transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent ${
               hasUnsavedChanges && !isSaving
                 ? "border-red-600 bg-red-500 text-white animate-[pulse_3s_ease-in-out_infinite] hover:pr-5 hover:bg-red-600 dark:border-red-500 dark:bg-red-600 dark:text-white dark:hover:bg-red-500"
                 : "cursor-not-allowed border-zinc-300 bg-slate-200 text-zinc-700 opacity-70 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100"
@@ -124,27 +125,35 @@ export default function BinderActionToggle({
           type="button"
           onClick={() => void onEdit()}
           disabled={isSaving}
-          className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-exo font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:before:transition-none ${
-            isEditMode && hasEditSessionChanges
+          className={`group flex h-12 items-center overflow-hidden rounded-full border px-4 text-sm font-nunito font-medium shadow-lg transition-all duration-300 hover:pr-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent disabled:cursor-not-allowed disabled:opacity-50 disabled:before:transition-none ${
+            isEditMode && hasEditSessionChanges && hasUnsavedChanges
               ? "border-emerald-600 bg-emerald-500 text-white hover:bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-600 dark:text-white dark:hover:bg-emerald-500"
               : "border-zinc-300 bg-slate-200 text-zinc-700 hover:bg-slate-300 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600"
           }`}>
-          {isEditMode && hasEditSessionChanges ? (
+          {isEditMode && hasEditSessionChanges && hasUnsavedChanges ? (
             <Save className="h-4 w-4 shrink-0" />
+          ) : isEditMode && hasEditSessionChanges ? (
+            <RefreshCw className="h-4 w-4 shrink-0" />
           ) : isEditMode ? (
-            <X className="h-4 w-4 shrink-0" />
+            <CircleX className="h-4 w-4 shrink-0" />
           ) : (
             <Pencil className="h-4 w-4 shrink-0" />
           )}
-          <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-16 group-hover:pl-2">
-            {isEditMode ? (hasEditSessionChanges ? "Save" : "Cancel") : "Edit"}
+          <span className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${isEditMode ? "max-w-20 pl-2" : "max-w-0 pl-0 group-hover:max-w-16 group-hover:pl-2"}`}>
+            {isEditMode
+              ? hasEditSessionChanges && hasUnsavedChanges
+                ? "Save"
+                : hasEditSessionChanges
+                  ? "Update"
+                  : "Cancel"
+              : "Edit"}
           </span>
         </button>
 
         <button
           type="button"
           onClick={onOpenSettings}
-          className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-exo font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+          className="group flex h-12 items-center overflow-hidden rounded-full border border-zinc-300 bg-slate-200 px-4 text-sm font-nunito font-medium text-zinc-700 shadow-lg transition-all duration-300 hover:pr-5 hover:bg-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent active:ring-2 active:ring-accent/40 active:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
           <Settings className="h-4 w-4 shrink-0" />
           <span className="max-w-0 overflow-hidden whitespace-nowrap pl-0 transition-all duration-300 group-hover:max-w-20 group-hover:pl-2">
             Settings

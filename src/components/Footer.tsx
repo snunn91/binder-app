@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
         </p>
       </div>
       <div>
-        <ul className="font-exo text-sm flex items-center justify-center gap-x-4 pt-4 list-none">
+        <ul className="font-nunito text-sm flex items-center justify-center gap-x-4 pt-4 list-none">
           <li className="inline-block">
             <Link
               className="underline text-slate-700 hover:opacity-70 dark:text-slate-100"

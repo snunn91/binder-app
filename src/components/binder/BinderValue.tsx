@@ -12,7 +12,7 @@ export default function BinderValue({ binderTotalUsd = 0 }: BinderValueProps) {
 
   return (
     <section className="mt-1">
-      <div className="mb-2 flex items-center justify-between text-xs font-exo font-medium text-zinc-700 dark:text-slate-100">
+      <div className="mb-2 flex items-center justify-between text-xs font-nunito font-medium text-zinc-700 dark:text-slate-100">
         <div className="flex items-center gap-1.5">
           <h3 className="text-lg font-semibold">Binder value</h3>
           <span className="group relative inline-flex">

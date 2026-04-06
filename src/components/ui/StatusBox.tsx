@@ -37,7 +37,7 @@ export default function StatusBox({
   return (
     <div
       role="status"
-      className={`mt-2 flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] font-exo font-medium ${statusStyles[type]} ${className}`}>
+      className={`mt-2 flex items-start gap-2 rounded-md px-2.5 py-2 text-[11px] font-nunito font-medium ${statusStyles[type]} ${className}`}>
       {icon ?? getDefaultIcon(type)}
       <span className="leading-4 mb-0">{children ?? text}</span>
     </div>

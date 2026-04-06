@@ -92,13 +92,13 @@ export default function AuthCallbackPage() {
   return (
     <div className="flex min-h-[calc(100vh-var(--header-h)-169px)] items-center justify-center px-4">
       <div className="w-full max-w-xl rounded-xl border border-zinc-300 bg-gray-50 p-6 text-center shadow-xl dark:border-zinc-500 dark:bg-zinc-900/25">
-        <h1 className="text-xl font-exo font-bold text-zinc-700 dark:text-slate-100">
+        <h1 className="text-xl font-nunito font-bold text-zinc-700 dark:text-slate-100">
           Confirmation link failed
         </h1>
-        <p className="mt-2 text-sm font-exo font-medium text-red-400">
+        <p className="mt-2 text-sm font-nunito font-medium text-red-400">
           {error}
         </p>
-        <p className="mt-4 text-sm font-exo text-zinc-700 dark:text-slate-100">
+        <p className="mt-4 text-sm font-nunito text-zinc-700 dark:text-slate-100">
           Try signing in manually or request a new confirmation link.
         </p>
         <div className="mt-4">

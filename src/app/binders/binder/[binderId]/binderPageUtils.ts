@@ -86,6 +86,114 @@ export function buildCardsToAddFromPile(items: CardPileEntry[]): BinderCard[] {
   return cardsToAdd;
 }
 
+export type CardSortOrder =
+  | "none"
+  | "name-asc"
+  | "name-desc"
+  | "number-asc"
+  | "number-desc"
+  | "rarity-high"
+  | "rarity-low"
+  | "price-high"
+  | "price-low"
+  | "set-asc"
+  | "set-desc"
+  | "status-collected"
+  | "status-missing";
+
+const RARITY_RANK: Record<string, number> = {
+  common: 1,
+  uncommon: 2,
+  rare: 3,
+  "rare holo": 4,
+  "holo rare": 4,
+  "rare holo ex": 5,
+  "rare holo gx": 5,
+  "rare holo v": 5,
+  "rare holo vmax": 6,
+  "rare holo vstar": 6,
+  "rare ultra": 7,
+  "ultra rare": 7,
+  "double rare": 7,
+  "illustration rare": 7,
+  "rare secret": 8,
+  "secret rare": 8,
+  "special illustration rare": 9,
+  "hyper rare": 9,
+};
+
+function getRarityRank(rarity: string | undefined): number {
+  if (!rarity) return 0;
+  return RARITY_RANK[rarity.toLowerCase()] ?? 3;
+}
+
+function parseCardNumber(number: string | undefined): number {
+  if (!number) return Number.MAX_SAFE_INTEGER;
+  const n = parseInt(number, 10);
+  return Number.isNaN(n) ? Number.MAX_SAFE_INTEGER : n;
+}
+
+function sortCards(cards: BinderCard[], order: CardSortOrder): BinderCard[] {
+  if (order === "none") return cards;
+  return [...cards].sort((a, b) => {
+    switch (order) {
+      case "name-asc":
+        return (a.name ?? "").localeCompare(b.name ?? "");
+      case "name-desc":
+        return (b.name ?? "").localeCompare(a.name ?? "");
+      case "number-asc":
+        return parseCardNumber(a.number) - parseCardNumber(b.number);
+      case "number-desc":
+        return parseCardNumber(b.number) - parseCardNumber(a.number);
+      case "rarity-high":
+        return getRarityRank(b.rarity) - getRarityRank(a.rarity);
+      case "rarity-low":
+        return getRarityRank(a.rarity) - getRarityRank(b.rarity);
+      case "price-high":
+        return (b.priceUsd ?? 0) - (a.priceUsd ?? 0);
+      case "price-low":
+        return (a.priceUsd ?? 0) - (b.priceUsd ?? 0);
+      case "set-asc":
+        return (a.expansion?.name ?? "").localeCompare(b.expansion?.name ?? "");
+      case "set-desc":
+        return (b.expansion?.name ?? "").localeCompare(a.expansion?.name ?? "");
+      case "status-collected":
+        if (a.collectionStatus === b.collectionStatus) return 0;
+        return a.collectionStatus === "collected" ? -1 : 1;
+      case "status-missing":
+        if (a.collectionStatus === b.collectionStatus) return 0;
+        return a.collectionStatus === "missing" ? -1 : 1;
+      default:
+        return 0;
+    }
+  });
+}
+
+export function applyCardSortToPages(
+  pages: BinderPage[],
+  order: CardSortOrder,
+): BinderPage[] {
+  if (order === "none") return pages;
+  const sortedByIndex = [...pages].sort((a, b) => a.index - b.index);
+
+  const allCards: BinderCard[] = [];
+  for (const page of sortedByIndex) {
+    for (const card of page.cardOrder) {
+      if (card !== null) allCards.push(card);
+    }
+  }
+
+  const sorted = sortCards(allCards, order);
+  let cardIndex = 0;
+
+  return sortedByIndex.map((page) => ({
+    ...page,
+    cardOrder: page.cardOrder.map((slot) =>
+      slot === null ? null : (sorted[cardIndex++] ?? null),
+    ),
+  }));
+}
+
 export function addCardsToLocalPages(
   pages: BinderPage[],
   cards: BinderCard[],

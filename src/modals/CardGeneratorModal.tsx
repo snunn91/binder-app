@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles } from "lucide-react";
+import { CircleX, Sparkles } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -142,18 +142,18 @@ export default function CardGeneratorModal({
           <div className="space-y-4 p-4">
             {isLimitReached ? (
               <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/50 dark:bg-red-950/30">
-                <p className="text-sm font-exo font-medium text-red-600 dark:text-red-400">
+                <p className="text-sm font-nunito font-medium text-red-600 dark:text-red-400">
                   You&apos;ve reached your 5 prompt limit.
                 </p>
                 {resetAt && (
-                  <p className="mt-1 text-xs font-exo text-red-500/80 dark:text-red-400/70">
+                  <p className="mt-1 text-xs font-nunito text-red-500/80 dark:text-red-400/70">
                     Resets in {formatResetTime(resetAt)}.
                   </p>
                 )}
               </div>
             ) : (
               <>
-                <p className="text-sm font-exo text-zinc-500 dark:text-zinc-400">
+                <p className="text-sm font-nunito text-zinc-500 dark:text-zinc-400">
                   Just type the cards you want to add to the current Binder
                   page. For example:{" "}
                   <span className="italic">
@@ -174,11 +174,11 @@ export default function CardGeneratorModal({
                     rows={3}
                     maxLength={500}
                     disabled={isLoading || emptySlots === 0}
-                    className="w-full mb-1 resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-exo text-zinc-700 shadow-sm transition-colors focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100"
+                    className="w-full mb-1 resize-none rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-nunito text-zinc-700 shadow-sm transition-colors focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-slate-100"
                   />
                   <div className="flex justify-end">
                     <span
-                      className={`text-xs font-exo font-medium tabular-nums ${
+                      className={`text-xs font-nunito font-medium tabular-nums ${
                         isLimitReached
                           ? "text-red-500 dark:text-red-400"
                           : promptsUsed >= 4
@@ -191,18 +191,18 @@ export default function CardGeneratorModal({
                 </div>
 
                 {emptySlots === 0 && (
-                  <p className="text-sm font-exo text-amber-600 dark:text-amber-400">
+                  <p className="text-sm font-nunito text-amber-600 dark:text-amber-400">
                     The current spread has no empty slots. Navigate to a spread
                     with available space before generating.
                   </p>
                 )}
 
                 {error && (
-                  <p className="text-sm font-exo text-red-500">{error}</p>
+                  <p className="text-sm font-nunito text-red-500">{error}</p>
                 )}
 
                 {emptySlots > 0 && (
-                  <p className="text-xs font-exo text-zinc-400 dark:text-zinc-500">
+                  <p className="text-xs font-nunito text-zinc-400 dark:text-zinc-500">
                     Will fill up to {emptySlots} empty slot
                     {emptySlots !== 1 ? "s" : ""} on the Binder page.
                   </p>
@@ -216,8 +216,9 @@ export default function CardGeneratorModal({
               type="button"
               onClick={() => handleOpenChange(false)}
               disabled={isLoading}
-              className="rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-exo font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
-              Cancel
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-300 bg-slate-200 px-4 py-2 text-sm font-nunito font-medium text-zinc-700 transition hover:bg-slate-300 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:opacity-50 dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100 dark:hover:bg-zinc-600">
+              <CircleX className="h-4 w-4" aria-hidden="true" />
+              <span>Cancel</span>
             </button>
             <button
               type="button"
@@ -228,7 +229,7 @@ export default function CardGeneratorModal({
                 emptySlots === 0 ||
                 isLimitReached
               }
-              className="rounded-full border border-accent bg-accent px-4 py-2 text-sm font-exo font-medium text-white transition hover:bg-accent/90 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-60">
+              className="rounded-full border border-accent bg-accent px-4 py-2 text-sm font-nunito font-medium text-white transition hover:bg-accent/90 focus-visible:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 disabled:cursor-not-allowed disabled:opacity-60">
               {isLoading ? "Generating..." : "Generate"}
             </button>
           </DialogFooter>

@@ -118,13 +118,13 @@ function ScreenshotSection({
       <motion.div
         variants={shouldReduceMotion ? undefined : slideText}
         className={`space-y-3 ${reverse ? "md:order-1" : "md:order-2"}`}>
-        <p className="font-exo text-xs font-semibold uppercase tracking-widest text-accent">
+        <p className="font-nunito text-xs font-semibold uppercase tracking-widest text-accent">
           {step}
         </p>
-        <h2 className="font-exo text-3xl font-bold text-zinc-800 dark:text-slate-100 md:text-4xl">
+        <h2 className="font-nunito text-3xl font-bold text-zinc-800 dark:text-slate-100 md:text-4xl">
           {title}
         </h2>
-        <p className="font-exo text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:max-w-sm">
+        <p className="font-nunito text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:max-w-sm">
           {description}
         </p>
       </motion.div>
@@ -148,10 +148,10 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
       <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10 text-accent">
         {icon}
       </div>
-      <h3 className="mb-1 font-exo text-sm font-semibold text-zinc-800 dark:text-slate-100">
+      <h3 className="mb-1 font-nunito text-sm font-semibold text-zinc-800 dark:text-slate-100">
         {title}
       </h3>
-      <p className="font-exo text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+      <p className="font-nunito text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
         {description}
       </p>
     </motion.div>
@@ -215,7 +215,7 @@ export default function Home() {
         <motion.div
           variants={shouldReduceMotion ? undefined : fadeUp}
           className="mb-5 flex justify-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.08] px-3.5 py-1.5 font-exo text-xs font-medium text-accent dark:bg-accent/[0.12]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-accent/25 bg-accent/[0.08] px-3.5 py-1.5 font-nunito text-xs font-medium text-accent dark:bg-accent/[0.12]">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
             Free to use · No credit card required
           </span>
@@ -224,7 +224,7 @@ export default function Home() {
         {/* Headline */}
         <motion.h1
           variants={shouldReduceMotion ? undefined : fadeUp}
-          className="text-4xl font-exo font-bold leading-tight text-zinc-800 dark:text-slate-100 md:text-6xl">
+          className="text-4xl font-nunito font-bold leading-tight text-zinc-800 dark:text-slate-100 md:text-6xl">
           Build Your Pokémon
           <br className="hidden md:block" /> Collection,{" "}
           <span className="relative inline-block">
@@ -236,7 +236,7 @@ export default function Home() {
         {/* Subtext */}
         <motion.p
           variants={shouldReduceMotion ? undefined : fadeUp}
-          className="mx-auto mt-5 max-w-lg font-exo text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
+          className="mx-auto mt-5 max-w-lg font-nunito text-sm leading-relaxed text-zinc-500 dark:text-zinc-400 md:text-base">
           Less bulk box, more bangers. Search any card, build your pages, and
           track your progress toward the perfect collection — all in one place.
         </motion.p>
@@ -247,7 +247,7 @@ export default function Home() {
           className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Link
             href={ctaHref}
-            className="relative overflow-hidden rounded-full border border-accent bg-accent px-6 py-2.5 font-exo text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+            className="relative overflow-hidden rounded-full border border-accent bg-accent px-6 py-2.5 font-nunito text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
             {ctaLabel}
           </Link>
         </motion.div>
@@ -263,10 +263,10 @@ export default function Home() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease }}
           className="mb-12 text-center">
-          <p className="mb-2 font-exo text-xs font-semibold uppercase tracking-widest text-accent">
+          <p className="mb-2 font-nunito text-xs font-semibold uppercase tracking-widest text-accent">
             How It Works
           </p>
-          <h2 className="font-exo text-2xl font-bold text-zinc-800 dark:text-slate-100 md:text-3xl">
+          <h2 className="font-nunito text-2xl font-bold text-zinc-800 dark:text-slate-100 md:text-3xl">
             Three steps to your perfect binder
           </h2>
         </motion.div>
@@ -318,15 +318,15 @@ export default function Home() {
               className="flex flex-col items-center gap-3 text-center">
               <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-md shadow-accent/30">
                 {icon}
-                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-900 font-exo text-[9px] font-bold text-white dark:bg-zinc-950">
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-zinc-900 font-nunito text-[9px] font-bold text-white dark:bg-zinc-950">
                   {n}
                 </span>
               </div>
               <div>
-                <h3 className="font-exo text-sm font-semibold text-zinc-800 dark:text-slate-100">
+                <h3 className="font-nunito text-sm font-semibold text-zinc-800 dark:text-slate-100">
                   {title}
                 </h3>
-                <p className="mt-1 font-exo text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+                <p className="mt-1 font-nunito text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                   {desc}
                 </p>
               </div>
@@ -371,10 +371,10 @@ export default function Home() {
           viewport={{ once: true, margin: "-60px" }}
           transition={{ duration: 0.6, ease }}
           className="mb-10 text-center">
-          <p className="mb-2 font-exo text-xs font-semibold uppercase tracking-widest text-accent">
+          <p className="mb-2 font-nunito text-xs font-semibold uppercase tracking-widest text-accent">
             Features
           </p>
-          <h2 className="font-exo text-2xl font-bold text-zinc-800 dark:text-slate-100 md:text-3xl">
+          <h2 className="font-nunito text-2xl font-bold text-zinc-800 dark:text-slate-100 md:text-3xl">
             Everything a collector needs
           </h2>
         </motion.div>
@@ -430,19 +430,19 @@ export default function Home() {
           <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(125,211,252,0.28)_0%,transparent_70%)] blur-2xl" />
           <div className="pointer-events-none absolute -bottom-10 -left-10 h-44 w-44 rounded-full bg-[radial-gradient(circle,rgba(125,211,252,0.18)_0%,transparent_70%)] blur-2xl" />
 
-          <p className="mb-2 font-exo text-xs font-semibold uppercase tracking-widest text-accent">
+          <p className="mb-2 font-nunito text-xs font-semibold uppercase tracking-widest text-accent">
             Ready to start?
           </p>
-          <h2 className="mb-3 font-exo text-3xl font-bold text-zinc-800 dark:text-slate-100 md:text-4xl">
+          <h2 className="mb-3 font-nunito text-3xl font-bold text-zinc-800 dark:text-slate-100 md:text-4xl">
             Build your perfect binder today
           </h2>
-          <p className="mx-auto mb-8 max-w-md font-exo text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
+          <p className="mx-auto mb-8 max-w-md font-nunito text-sm leading-relaxed text-zinc-500 dark:text-zinc-400">
             Join collectors building beautiful, organised digital binders — free
             to start, no credit card required.
           </p>
           <Link
             href={ctaHref}
-            className="inline-flex items-center rounded-full border border-accent bg-accent px-7 py-3 font-exo text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
+            className="inline-flex items-center rounded-full border border-accent bg-accent px-7 py-3 font-nunito text-sm font-semibold text-white shadow-lg shadow-accent/25 transition hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50">
             {ctaLabel}
           </Link>
         </motion.div>

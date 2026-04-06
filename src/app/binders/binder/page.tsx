@@ -25,15 +25,15 @@ export default function BindersPage() {
       }`}>
       {binders.length === 0 && (
         <div className="w-full max-w-5xl px-6 py-10 text-center bg-gray-50 border border-zinc-300 rounded-xl shadow-xl backdrop-blur-sm dark:bg-zinc-900/25 dark:border-zinc-500">
-          <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+          <p className="text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100">
             Welcome{user?.displayName ? `, ${user.displayName}` : ""}.
           </p>
 
           <>
-            <h1 className="mt-2 text-3xl font-exo font-bold text-zinc-700 dark:text-slate-100">
+            <h1 className="mt-2 text-3xl font-nunito font-bold text-zinc-700 dark:text-slate-100">
               Your Binders
             </h1>
-            <p className="max-w-xl mx-auto mt-2 text-base font-exo text-zinc-700 dark:text-slate-100">
+            <p className="max-w-xl mx-auto mt-2 text-base font-nunito text-zinc-700 dark:text-slate-100">
               This is your dashboard space. Soon you’ll be able to organize,
               track, and showcase your collections here.
             </p>
@@ -43,7 +43,7 @@ export default function BindersPage() {
             {user ? (
               <AddBinderModal />
             ) : (
-              <p className="text-sm font-exo font-medium text-zinc-700 dark:text-slate-100">
+              <p className="text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100">
                 You need to{" "}
                 <Link
                   href="/signin"
@@ -68,7 +68,7 @@ export default function BindersPage() {
             <Link
               href={`/binders/binder/${binder.id}`}
               key={binder.id}
-              className={`relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-exo font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
+              className={`relative min-h-52 overflow-hidden rounded-xl border p-4 text-sm font-nunito font-medium text-zinc-700 shadow-lg dark:text-slate-100 ${
                 getBinderColorSchemeClasses(binder.colorScheme).card
               }`}>
               <span>{binder.name}</span>
@@ -83,7 +83,7 @@ export default function BindersPage() {
               </div>
             </Link>
           ))}
-          <div className="relative min-h-52 p-4 text-sm font-exo font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
+          <div className="relative min-h-52 p-4 text-sm font-nunito font-medium text-zinc-700 bg-gray-50 border border-zinc-300 rounded-xl shadow-lg dark:text-slate-100 dark:bg-zinc-900/25 dark:border-zinc-500">
             <div className="flex h-full items-center justify-center">
               <AddBinderModal />
             </div>
