@@ -26,6 +26,7 @@ type PagePanelProps = {
   sensors: SensorDescriptor<Record<string, unknown>>[];
   activeId: string | null;
   colorScheme?: string;
+  showCardBack?: boolean;
   onAddCard?: () => void;
   onDeleteCard?: (pageId: string, slotIndex: number) => void;
   onToggleMissing?: (pageId: string, slotIndex: number) => void;
@@ -41,6 +42,7 @@ export default function PagePanel({
   sensors,
   activeId,
   colorScheme = "default",
+  showCardBack = false,
   onAddCard,
   onDeleteCard,
   onToggleMissing,
@@ -107,6 +109,7 @@ export default function PagePanel({
                 card={page.cardOrder?.[index] ?? null}
                 aspectClassName={slotAspectClassName}
                 sizeClassName={slotSizeClassName}
+                showCardBack={showCardBack}
                 onAddCard={page.cardOrder?.[index] ? undefined : onAddCard}
                 onDeleteCard={
                   page.cardOrder?.[index]

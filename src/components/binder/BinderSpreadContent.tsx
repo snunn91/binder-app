@@ -3,7 +3,12 @@ import {
   type DragStartEvent,
   type SensorDescriptor,
 } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronsLeft,
+  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import InsideCover from "@/components/binder/InsideCover";
 import PagePanel from "@/components/binder/PagePanel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +37,7 @@ type BinderSpreadContentProps = {
   colorScheme?: string;
   showGoals?: boolean;
   showStats?: boolean;
+  showCardBack?: boolean;
   filledSlots: number;
   totalSlots: number;
   binderTotalUsd: number;
@@ -47,8 +53,10 @@ type BinderSpreadContentProps = {
   activeGoalCount: number;
   isUpdatingGoals: boolean;
   isEditMode: boolean;
+  onFirstSpread: () => void;
   onPrevSpread: () => void;
   onNextSpread: () => void;
+  onLastSpread: () => void;
   onGoalTextChange: (value: string) => void;
   onAddGoal: () => void;
   onCompleteGoal: (goalId: string) => Promise<void>;
@@ -76,6 +84,7 @@ export default function BinderSpreadContent({
   colorScheme,
   showGoals,
   showStats,
+  showCardBack,
   filledSlots,
   totalSlots,
   binderTotalUsd,
@@ -91,8 +100,10 @@ export default function BinderSpreadContent({
   activeGoalCount,
   isUpdatingGoals,
   isEditMode,
+  onFirstSpread,
   onPrevSpread,
   onNextSpread,
+  onLastSpread,
   onGoalTextChange,
   onAddGoal,
   onCompleteGoal,
@@ -114,8 +125,18 @@ export default function BinderSpreadContent({
       <div className="flex items-center justify-center gap-2 rounded-full border border-zinc-300 bg-slate-200 px-2 py-1 dark:border-zinc-500 dark:bg-zinc-700">
         <button
           type="button"
+          onClick={onFirstSpread}
+          disabled={loading || spreadIndex === 0}
+          aria-label="Go to first page"
+          aria-hidden={loading}
+          className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
           onClick={onPrevSpread}
           disabled={loading || spreadIndex === 0}
+          aria-label="Go to previous page"
           aria-hidden={loading}
           className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
           <ChevronLeft className="h-4 w-4" />
@@ -127,9 +148,19 @@ export default function BinderSpreadContent({
           type="button"
           onClick={onNextSpread}
           disabled={loading || spreadIndex >= totalPageSpreads - 1}
+          aria-label="Go to next page"
           aria-hidden={loading}
           className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
           <ChevronRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={onLastSpread}
+          disabled={loading || spreadIndex >= totalPageSpreads - 1}
+          aria-label="Go to last page"
+          aria-hidden={loading}
+          className="flex h-6 w-6 shrink-0 items-center justify-center text-zinc-700 disabled:opacity-50 focus-visible:outline-none dark:text-slate-100">
+          <ChevronsRight className="h-4 w-4" />
         </button>
       </div>
 
@@ -203,6 +234,7 @@ export default function BinderSpreadContent({
                 sensors={sensors}
                 activeId={activeId}
                 colorScheme={colorScheme}
+                showCardBack={showCardBack}
                 onAddCard={onAddCard}
                 onDeleteCard={onDeleteCard}
                 onToggleMissing={onToggleMissing}
@@ -219,6 +251,7 @@ export default function BinderSpreadContent({
               sensors={sensors}
               activeId={activeId}
               colorScheme={colorScheme}
+              showCardBack={showCardBack}
               onAddCard={onAddCard}
               onDeleteCard={onDeleteCard}
               onToggleMissing={onToggleMissing}

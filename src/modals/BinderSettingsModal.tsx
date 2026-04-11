@@ -49,6 +49,8 @@ type BinderSettingsModalProps = {
   onShowGoalsChange: (nextValue: boolean) => void;
   showStats: boolean;
   onShowStatsChange: (nextValue: boolean) => void;
+  showCardBack: boolean;
+  onShowCardBackChange: (nextValue: boolean) => void;
   isSaving: boolean;
   onSave: () => void;
   isDeleting: boolean;
@@ -68,6 +70,8 @@ export default function BinderSettingsModal({
   onShowGoalsChange,
   showStats,
   onShowStatsChange,
+  showCardBack,
+  onShowCardBackChange,
   isSaving,
   onSave,
   isDeleting,
@@ -198,6 +202,19 @@ export default function BinderSettingsModal({
                   pressed={showStats}
                   onPressedChange={onShowStatsChange}>
                   {showStats ? "On" : "Off"}
+                </Toggle>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-zinc-300/70 bg-slate-50 px-3 py-3 dark:border-zinc-600/70 dark:bg-zinc-900/35">
+                <div>
+                  <p className="text-sm font-nunito font-medium text-zinc-700 dark:text-slate-100">
+                    Show Card Back on Empty Slots
+                  </p>
+                </div>
+                <Toggle
+                  variant="outline"
+                  pressed={showCardBack}
+                  onPressedChange={onShowCardBackChange}>
+                  {showCardBack ? "On" : "Off"}
                 </Toggle>
               </div>
             </div>

@@ -25,6 +25,7 @@ type BinderDraft = {
   bulkBoxCards?: BinderCard[];
   showGoals?: boolean;
   showStats?: boolean;
+  showCardBack?: boolean;
 };
 
 type BinderItem = BinderDraft & {
@@ -63,6 +64,7 @@ type BinderRow = {
   bulk_box_cards: unknown;
   show_goals: boolean;
   show_stats: boolean;
+  show_card_back: boolean;
   created_at: string | null;
 };
 
@@ -166,6 +168,10 @@ function normalizeShowGoals(value: unknown) {
 
 function normalizeShowStats(value: unknown) {
   return value !== false;
+}
+
+function normalizeShowCardBack(value: unknown) {
+  return value === true;
 }
 
 function normalizeBinderCreatedAt(value: unknown): string | null {
@@ -420,7 +426,7 @@ async function fetchBinderById(userId: string, binderId: string) {
   const { data, error } = await supabase
     .from("binders")
     .select(
-      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, show_stats, created_at",
+      "id, user_id, name, layout, color_scheme, goals, goal_cooldowns, bulk_box_cards, show_goals, show_stats, show_card_back, created_at",
     )
     .eq("user_id", userId)
     .eq("id", binderId)
@@ -441,6 +447,7 @@ async function fetchBinderById(userId: string, binderId: string) {
     bulkBoxCards: normalizeBulkBoxCards(row.bulk_box_cards),
     showGoals: normalizeShowGoals(row.show_goals),
     showStats: normalizeShowStats(row.show_stats),
+    showCardBack: normalizeShowCardBack(row.show_card_back),
   } as BinderItem;
 }
 
@@ -715,9 +722,10 @@ async function updateBinderSettings(
     name?: string;
     showGoals?: boolean;
     showStats?: boolean;
+    showCardBack?: boolean;
   },
 ) {
-  const updates: { name?: string; show_goals?: boolean; show_stats?: boolean } =
+  const updates: { name?: string; show_goals?: boolean; show_stats?: boolean; show_card_back?: boolean } =
     {};
 
   if (typeof settings.name === "string") {
@@ -728,6 +736,9 @@ async function updateBinderSettings(
   }
   if (typeof settings.showStats === "boolean") {
     updates.show_stats = settings.showStats;
+  }
+  if (typeof settings.showCardBack === "boolean") {
+    updates.show_card_back = settings.showCardBack;
   }
 
   if (Object.keys(updates).length === 0) return;

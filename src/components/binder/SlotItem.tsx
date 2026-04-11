@@ -23,6 +23,7 @@ type SlotItemProps = {
   card: BinderCard | null;
   aspectClassName?: string;
   sizeClassName?: string;
+  showCardBack?: boolean;
   onAddCard?: () => void;
   onDeleteCard?: () => void;
   onToggleMissing?: () => void;
@@ -35,6 +36,7 @@ export default function SlotItem({
   card,
   aspectClassName = "aspect-[2/3]",
   sizeClassName = "w-full",
+  showCardBack = false,
   onAddCard,
   onDeleteCard,
   onToggleMissing,
@@ -77,6 +79,29 @@ export default function SlotItem({
             className={`h-full w-full object-cover ${isMissing ? "grayscale brightness-75" : ""}`}
             loading="eager"
           />
+        ) : isEmpty && showCardBack ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/img/card-back.png"
+              alt=""
+              aria-hidden="true"
+              className="h-full w-full object-cover"
+              loading="eager"
+            />
+            {onAddCard ? (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onAddCard();
+                }}
+                className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md border border-zinc-300 bg-slate-200 px-2 py-0.5 text-[10px] font-nunito font-medium text-zinc-700 opacity-0 shadow-sm transition-opacity duration-200 group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:border-accent dark:border-zinc-500 dark:bg-zinc-700 dark:text-slate-100">
+                Add Card
+              </button>
+            ) : null}
+          </>
         ) : (
           <>
             {card?.name ? (
