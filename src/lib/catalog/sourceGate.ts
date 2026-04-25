@@ -24,7 +24,5 @@ export function assertScrydexEnabled(context: string): void {
     `Scrydex is disabled in this environment. Blocked access from ${context}. ` +
     `Set CARD_SOURCE=API and DISABLE_SCRYDEX=false to re-enable.`;
 
-  // Keep this loud so unexpected API usage is visible in logs.
-  console.error(message);
   throw new Error(message);
 }

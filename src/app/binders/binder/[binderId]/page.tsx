@@ -21,6 +21,7 @@ import {
   fetchBinderById,
   fetchBinderPages,
   layoutToSlots,
+  moveBulkBoxCardToBinder,
   updateBinderBulkBoxCards,
   updateBinderGoals,
   updateBinderLayout,
@@ -574,36 +575,24 @@ export default function BinderDetailPage() {
   const handleAddBulkBoxCardToBinder = async (cardIndex: number) => {
     if (isMobile || !user || !binderId || !binder || !hasFreeBinderSlot) return;
 
-    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(
-      0,
-      bulkBoxLimit,
-    );
-    const cardToAdd = currentBulkBoxCards[cardIndex];
-    if (!cardToAdd) return;
-
-    const result = addCardsToLocalPages(pagesRef.current, [cardToAdd]);
-    if (result.addedCount === 0) return;
-
-    const nextBulkBoxCards = currentBulkBoxCards.filter(
-      (_, index) => index !== cardIndex,
-    );
+    const currentBulkBoxCards = (binder.bulkBoxCards ?? []).slice(0, bulkBoxLimit);
+    if (!currentBulkBoxCards[cardIndex]) return;
 
     try {
-      await updateBinderBulkBoxCards(
-        user.uid,
-        binderId,
-        nextBulkBoxCards,
-        bulkBoxLimit,
+      if (hasUnsavedChanges) {
+        const saved = await handleSaveChanges(null);
+        if (!saved) return;
+      }
+
+      const moved = await moveBulkBoxCardToBinder(binderId, cardIndex);
+      const nextPages = pagesRef.current.map((page) =>
+        page.id === moved.page.id ? moved.page : page,
       );
 
-      setPages(result.nextPages);
-      pagesRef.current = result.nextPages;
-      setDirtyPageIds(
-        computeDirtyPageIds(
-          result.nextPages,
-          baselinePageSignaturesRef.current,
-        ),
-      );
+      setPages(nextPages);
+      pagesRef.current = nextPages;
+      baselinePageSignaturesRef.current = buildPageSignatures(nextPages);
+      setDirtyPageIds(new Set());
       setSaveError(null);
       setAddCardsError(null);
 
@@ -611,7 +600,7 @@ export default function BinderDetailPage() {
         prev
           ? {
               ...prev,
-              bulkBoxCards: nextBulkBoxCards,
+              bulkBoxCards: moved.bulkBoxCards,
             }
           : prev,
       );
@@ -755,7 +744,7 @@ export default function BinderDetailPage() {
 
   const handleSaveChanges = useCallback(
     async (
-      successMessage: string = binderMessages.toast.saved,
+      successMessage: string | null = binderMessages.toast.saved,
     ): Promise<boolean> => {
       if (!user || !binderId || isSaving) return false;
 
@@ -776,7 +765,9 @@ export default function BinderDetailPage() {
         await updateBinderPageCardOrders(user.uid, binderId, updates);
         baselinePageSignaturesRef.current = buildPageSignatures(pagesToSave);
         setDirtyPageIds(new Set());
-        toast.success(successMessage);
+        if (successMessage) {
+          toast.success(successMessage);
+        }
         return true;
       } catch {
         setSaveError(binderMessages.errors.saveFailed);

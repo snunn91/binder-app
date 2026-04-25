@@ -774,6 +774,49 @@ async function updateBinderBulkBoxCards(
   assertSupabase(error, "Failed to update bulk box cards");
 }
 
+async function moveBulkBoxCardToBinder(binderId: string, cardIndex: number) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+
+  if (!token) {
+    throw new Error("You must be signed in to move cards from Bulk Box.");
+  }
+
+  const res = await fetch("/api/binders/move-bulk-box-card", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ binderId, cardIndex }),
+  });
+
+  const json = (await res.json()) as {
+    error?: string;
+    page?: {
+      id: string;
+      index: number;
+      slots: number;
+      cardOrder: unknown;
+    };
+    bulkBoxCards?: unknown;
+  };
+
+  if (!res.ok || !json.page) {
+    throw new Error(json.error ?? "Failed to move card from Bulk Box.");
+  }
+
+  return {
+    page: {
+      id: json.page.id,
+      index: json.page.index,
+      slots: json.page.slots,
+      cardOrder: normalizeCardOrder(json.page.cardOrder, json.page.slots),
+    } satisfies BinderPage,
+    bulkBoxCards: normalizeBulkBoxCards(json.bulkBoxCards),
+  };
+}
+
 async function deleteBinderDoc(userId: string, binderId: string) {
   const { error: pagesError } = await supabase
     .from("binder_pages")
@@ -807,4 +850,5 @@ export {
   updateBinderLayout,
   updateBinderSettings,
   updateBinderBulkBoxCards,
+  moveBulkBoxCardToBinder,
 };

@@ -2,17 +2,8 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import { clamp } from "@/app/api/cards/search/searchUtils";
-import {
-  DEFAULT_PAGE_SIZE,
-  fetchCards,
-  parseCards,
-} from "@/app/api/cards/search/cardSearch";
-import {
-  buildSetsQuery,
-  DEFAULT_SET_PAGE_SIZE,
-  fetchSets,
-  parseSets,
-} from "@/app/api/cards/search/setSearch";
+import { DEFAULT_PAGE_SIZE } from "@/app/api/cards/search/cardSearch";
+import { DEFAULT_SET_PAGE_SIZE } from "@/app/api/cards/search/setSearch";
 import { sanitizeRarityFilters } from "@/lib/scrydex/rarity";
 import { sanitizeTypeFilters } from "@/lib/scrydex/type";
 import {
@@ -20,12 +11,9 @@ import {
   sanitizeSetSort,
   type CardSortOption,
 } from "@/lib/scrydex/sort";
-import { assertScrydexEnabled, getCardSource } from "@/lib/catalog/sourceGate";
 import { getSupabaseServerClient } from "@/lib/supabase/server";
 
-const CACHE_TTL_MS = 1000 * 60 * 60 * 24 * 14; // 14d
 const MAX_PAGE_SIZE = 50;
-const CACHE_VERSION = "v7";
 
 type CardSearchPreview = {
   id: string;
@@ -48,10 +36,8 @@ type SetSearchPreview = {
   symbol?: string;
 };
 
-type SearchPreview = CardSearchPreview | SetSearchPreview;
-
 type ApiResponse = {
-  results: SearchPreview[];
+  results: CardSearchPreview[] | SetSearchPreview[];
   cached: boolean;
   page: number;
   pageSize: number;
@@ -319,135 +305,6 @@ async function searchSetsFromDb(params: {
   };
 }
 
-async function handleApiMode(params: {
-  type: "cards" | "sets";
-  mode: string | null;
-  setId: string | null;
-  qNorm: string;
-  rarityFilters: string[];
-  typeFilters: string[];
-  cardSort: CardSortOption;
-  setSort: ReturnType<typeof sanitizeSetSort>;
-  page: number;
-  pageSize: number;
-}) {
-  assertScrydexEnabled("GET /api/cards/search");
-
-  const {
-    getCachedSearch,
-    setCachedSearch,
-  }: {
-    getCachedSearch: (q: string) => Promise<SearchPreview[] | null>;
-    setCachedSearch: (
-      q: string,
-      results: SearchPreview[],
-      ttlMs: number,
-    ) => Promise<void>;
-  } = await import("@/lib/scrydex/cache");
-
-  const {
-    type,
-    mode,
-    setId,
-    qNorm,
-    rarityFilters,
-    typeFilters,
-    cardSort,
-    setSort,
-    page,
-    pageSize,
-  } = params;
-
-  const cacheKeyBase =
-    type === "sets"
-      ? mode === "recent"
-        ? `sets|recent|sort=${setSort}|lang=en|tcg=1|${CACHE_VERSION}`
-        : `sets|q=${qNorm}|sort=${setSort}|lang=en|tcg=1|${CACHE_VERSION}`
-      : setId
-        ? mode === "recent"
-          ? `cards|recent|set=${setId}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
-          : `cards|q=${qNorm}|set=${setId}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
-        : mode === "recent"
-          ? `cards|recent|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`
-          : `cards|q=${qNorm}|rarity=${rarityFilters.join(",")}|type=${typeFilters.join(",")}|sort=${cardSort}|lang=en|tcg=1|${CACHE_VERSION}`;
-
-  const cacheKey = `${cacheKeyBase}|page=${page}|page_size=${pageSize}`;
-  const cached = await getCachedSearch(cacheKey);
-
-  if (cached && cached.length > 0) {
-    return {
-      response: {
-        results: cached,
-        cached: true,
-        page,
-        pageSize,
-      } satisfies ApiResponse,
-    };
-  }
-
-  if (type === "sets") {
-    const scrydexUnknown =
-      mode === "recent"
-        ? await fetchSets({ page, pageSize, mode, sort: setSort })
-        : await fetchSets({
-            q: buildSetsQuery(qNorm.length >= 2 ? `name:${qNorm}*` : undefined),
-            page,
-            pageSize,
-            sort: setSort,
-          });
-
-    const { results, totalCount } = parseSets(scrydexUnknown);
-
-    await setCachedSearch(cacheKey, results, CACHE_TTL_MS);
-
-    return {
-      response: {
-        results,
-        cached: false,
-        page,
-        pageSize,
-        totalCount,
-      } satisfies ApiResponse,
-    };
-  }
-
-  const scrydexUnknown =
-    mode === "recent"
-      ? await fetchCards({
-          page,
-          pageSize,
-          mode,
-          setId,
-          rarityFilters,
-          typeFilters,
-          sort: cardSort,
-        })
-      : await fetchCards({
-          q: qNorm.length >= 2 ? `name:${qNorm}*` : undefined,
-          page,
-          pageSize,
-          mode: null,
-          setId,
-          rarityFilters,
-          typeFilters,
-          sort: cardSort,
-        });
-
-  const { results, totalCount } = parseCards(scrydexUnknown);
-
-  await setCachedSearch(cacheKey, results, CACHE_TTL_MS);
-
-  return {
-    response: {
-      results,
-      cached: false,
-      page,
-      pageSize,
-      totalCount,
-    } satisfies ApiResponse,
-  };
-}
-
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -488,35 +345,12 @@ export async function GET(req: Request) {
       return NextResponse.json(empty);
     }
 
-    if (getCardSource() === "DB") {
-      if (type === "sets") {
-        const { results, totalCount } = await searchSetsFromDb({
-          language,
-          qNorm,
-          mode,
-          setSort,
-          page,
-          pageSize,
-        });
-
-        const out: ApiResponse = {
-          results,
-          cached: false,
-          page,
-          pageSize,
-          totalCount,
-        };
-        return NextResponse.json(out);
-      }
-
-      const { results, totalCount } = await searchCardsFromDb({
+    if (type === "sets") {
+      const { results, totalCount } = await searchSetsFromDb({
         language,
         qNorm,
         mode,
-        setId,
-        rarityFilters,
-        typeFilters,
-        cardSort,
+        setSort,
         page,
         pageSize,
       });
@@ -531,26 +365,28 @@ export async function GET(req: Request) {
       return NextResponse.json(out);
     }
 
-    const { response } = await handleApiMode({
-      type,
+    const { results, totalCount } = await searchCardsFromDb({
+      language,
+      qNorm,
       mode,
       setId,
-      qNorm,
       rarityFilters,
       typeFilters,
       cardSort,
-      setSort,
       page,
       pageSize,
     });
 
-    return NextResponse.json(response);
+    const out: ApiResponse = {
+      results,
+      cached: false,
+      page,
+      pageSize,
+      totalCount,
+    };
+    return NextResponse.json(out);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Search failed";
-    const isScrydexDisabledError = message.includes("Scrydex is disabled");
-    return NextResponse.json(
-      { error: message },
-      { status: isScrydexDisabledError ? 503 : 500 },
-    );
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
